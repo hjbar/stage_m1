@@ -1,0 +1,36 @@
+module TyVar = Utils.Variables()
+
+module Structure = struct
+  type 'a t =
+    | Var of TyVar.t
+    | Arrow of 'a * 'a
+
+  let map f = function
+    | Var alpha -> Var alpha
+    | Arrow (t1, t2) -> Arrow (f t1, f t2)
+
+  let map2 f s1 s2 = match s1, s2 with
+    | Var alpha, Var beta ->
+      if TyVar.compare alpha beta = 0 then Some s1
+      else None
+    | Var _, _ | _, Var _ -> None
+    | Arrow (a1, a2), Arrow (b1, b2) ->
+      let c1 = f a1 b1 in
+      let c2 = f a2 b2 in
+      Some (Arrow (c1, c2))
+end
+
+type 'a structure = 'a Structure.t
+
+type ty =
+  | Constr of ty structure
+
+module TeVar = Utils.Variables ()
+
+type term =
+  | Var of TeVar.t
+  | App of term * term
+  | Abs of TeVar.t * ty * term
+  | Let of TeVar.t * ty * term * term
+
+
