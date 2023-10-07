@@ -1,0 +1,16 @@
+name: "constrained_generation"
+opam-version: "2.0"
+maintainer: "gabriel.scherer@inria.fr"
+authors: [
+  "Gabriel Scherer <gabriel.scherer@inria.fr>"
+]
+license: "MIT"
+synopsis: "A random program generator based on inferno-style constraint generation"
+build: [
+  ["dune" "build" "-p" name "-j" jobs]
+]
+depends: [
+  "ocaml" { >= "4.08" }
+  "dune"  { >= "2.8" }
+  "unionFind" { >= "20220109" }
+]
