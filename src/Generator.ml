@@ -3,6 +3,19 @@ open Constraint
 module Env = Untyped.Var.Map
 type env = variable Env.t
 
+let rec bind (ty : STLC.ty) (k : Constraint.variable -> ('a, 'e) t) : ('a, 'e) t =
+  match ty with
+  | Constr s ->
+    match s with
+    | Var v ->
+      let w = Constraint.Var.fresh v.name in
+      Exist (w, Some (Var v), k w)
+    | Arrow (ty1, ty2) ->
+      let warr = Constraint.Var.fresh "arr" in
+      bind ty1 @@ fun w1 ->
+      bind ty2 @@ fun w2 ->
+      Exist (warr, Some (Arrow (w1, w2)), k warr)
+
 let rec has_type (env : env) (t : Untyped.term) (w : variable) : (STLC.term, _) t =
   match t with
   | Untyped.Var x ->
@@ -39,3 +52,9 @@ let rec has_type (env : env) (t : Untyped.term) (w : variable) : (STLC.term, _) 
       and+ u' = has_type (Env.add x wt env) u w
       in STLC.Let(x, tyx, t', u')
    )
+  | Untyped.Annot (t, ty) ->
+    (* [[(t : ty) : w]] := ∃(wt = ty). [[t : wt]] /\ [[wt = w]] *)
+    bind ty @@ fun wt ->
+    let+ t' = has_type env t wt
+    and+ () = Eq(wt, w)
+    in t'

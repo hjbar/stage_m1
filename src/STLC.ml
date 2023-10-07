@@ -32,5 +32,4 @@ type term =
   | App of term * term
   | Abs of TeVar.t * ty * term
   | Let of TeVar.t * ty * term * term
-
-
+  | Annot of term * ty
