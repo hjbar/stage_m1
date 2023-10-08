@@ -11,6 +11,8 @@ module Variables () : sig
 
   val name : t -> string
 
+  val print : t -> PPrint.document
+
   module Set : Set.S with type elt = t
   module Map : Map.S with type key = t
 end = struct
@@ -33,6 +35,10 @@ end = struct
     Hashtbl.replace stamps name (stamp + 1);
     { name; stamp; }
 
+  let print { name; stamp } =
+    if stamp = 0 then PPrint.string name
+    else Printf.ksprintf PPrint.string "%s/%d" name stamp
+    
   module Key = struct
     type nonrec t = t
     let compare = compare
