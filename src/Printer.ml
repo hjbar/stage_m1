@@ -1,5 +1,10 @@
 open PPrint
 
+let string_of_doc doc =
+  let buf = Buffer.create 128 in
+  PPrint.ToBuffer.pretty 0.9 80 buf doc;
+  Buffer.contents buf
+
 (** $t -> $u *)
 let arrow t u = t ^/^ string "->" ^/^ u
 
