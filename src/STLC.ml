@@ -1,9 +1,13 @@
 module TyVar = Structure.TyVar
 
-type 'a structure = 'a Structure.t
+type 'v ty_ =
+  | Constr of ('v, 'v ty_) Structure.t_
 
-type ty =
-  | Constr of ty structure
+type raw_ty = string ty_
+type ty = TyVar.t ty_
+
+let rec freshen_ty (Constr s) =
+  Constr (Structure.freshen freshen_ty s)
 
 module TeVar = Utils.Variables ()
 

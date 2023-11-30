@@ -5,7 +5,7 @@ and unode = {
   var: Constraint.variable;
   data: structure option;
 }
-and structure = uvar STLC.structure
+and structure = uvar Structure.t
 
 module Env : sig
   type t = {

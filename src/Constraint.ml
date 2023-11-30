@@ -1,7 +1,7 @@
 module Var = Utils.Variables()
 type variable = Var.t
 
-type structure = variable STLC.structure
+type structure = variable Structure.t
 
 type ty =
   | Var of variable
@@ -9,7 +9,7 @@ type ty =
 
 type deep_ty =
   | Var of variable
-  | Constr of deep_ty STLC.structure
+  | Constr of deep_ty Structure.t
 
 type ('ok, 'err) t =
   | True : (unit, 'e) t

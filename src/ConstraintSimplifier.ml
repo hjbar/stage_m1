@@ -16,7 +16,7 @@ let simplify (env : env) (c : sat_constraint) : sat_constraint =
   in
   let module VarSet = Set.Make(Constraint.Var) in
   let exist v s (fvs, c) : VarSet.t * sat_constraint =
-    assert (Var.compare v (normalize v) = 0);
+    assert (Var.eq v (normalize v));
     let s =
       match Unif.Env.unode env v with
       | exception Not_found -> s

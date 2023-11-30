@@ -6,3 +6,8 @@
   (wrapped false)
 )
 
+(ocamllex UntypedLexer)
+
+(menhir
+  (modules UntypedParser)
+  (flags --explain))

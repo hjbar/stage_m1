@@ -1,9 +1,12 @@
 module TyVar = Utils.Variables()
 
-type 'a t =
-  | Var of TyVar.t
+type ('v, 'a) t_ =
+  | Var of 'v
   | Arrow of 'a * 'a
   | Prod of 'a list
+
+type 'a raw = (string, 'a) t_
+type 'a t = (TyVar.t, 'a) t_
 
 let eq_head : 'a t -> 'b t -> bool =
   fun s1 s2 -> match s1, s2 with
@@ -39,6 +42,23 @@ let map2 f s1 s2 = match s1, s2 with
     if List.length as1 <> List.length as2
     then None
     else Some (Prod (List.map2 f as1 as2))
+
+let global_tyvar : string -> TyVar.t =
+  (* There are no binders for type variables, which are scoped
+     globally for the whole term. *)
+  let tenv = Hashtbl.create 5 in
+  fun alpha ->
+    match Hashtbl.find tenv alpha with
+    | alpha_var -> alpha_var
+    | exception Not_found ->
+      let alpha_var = TyVar.fresh alpha in
+      Hashtbl.add tenv alpha alpha_var;
+      alpha_var
+
+let freshen freshen = function
+  | Var alpha -> Var (global_tyvar alpha)
+  | Arrow (t1, t2) -> Arrow (freshen t1, freshen t2)
+  | Prod ts -> Prod (List.map freshen ts)
 
 let print p = function
   | Var v -> TyVar.print v
