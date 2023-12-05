@@ -6,7 +6,7 @@ let infer (t : Untyped.term) =
            Decode w)))
   in
   cst,
-  Solver.solve (ref (Unif.Env.empty ())) cst
+  Solver.solve (Unif.Env.empty ()) cst
 
 let print_result =
   let open PPrint in

@@ -20,6 +20,8 @@ module Env : sig
   val add : Constraint.Var.t -> Constraint.structure option -> t -> t
 
   val uvar : t -> Constraint.Var.t -> uvar
+
+  val unode : t -> Constraint.Var.t -> unode
 end = struct
   type t = {
     store: unode UF.store;
@@ -35,8 +37,10 @@ end = struct
 
   let uvar env v : uvar = Constraint.Var.Map.find v env.map
 
+  let unode env v = UF.get env.store (uvar env v)
+
   let add var structure env =
-    let data = Option.map (STLC.Structure.map (uvar env)) structure in
+    let data = Option.map (Structure.map (uvar env)) structure in
     let uvar = UF.make env.store { var; data } in
     { env with map = Constraint.Var.Map.add var uvar env.map }
 end
@@ -67,7 +71,7 @@ and merge queue (n1 : unode) (n2 : unode) : unode =
     | None, (Some _ as d) | (Some _ as d), None -> d
     | Some st1, Some st2 ->
       match
-        STLC.Structure.map2 (fun v1 v2 ->
+        Structure.map2 (fun v1 v2 ->
           Queue.add (v1, v2) queue;
           v1
         ) st1 st2
@@ -76,3 +80,8 @@ and merge queue (n1 : unode) (n2 : unode) : unode =
       | Some d -> Some d
   in
   { n1 with data }
+
+let unifiable env v1 v2 =
+  match unify env v1 v2 with
+  | Ok _ -> true
+  | Error _ -> false

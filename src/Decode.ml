@@ -5,7 +5,7 @@ let decode (env : env) (v : Constraint.variable) : STLC.ty =
   let rec decode (uvar : Unif.uvar) : STLC.ty =
     let s = Unif.UF.get env.store uvar in
     match s.data with
-    | Some s -> STLC.Constr (STLC.Structure.map decode s)
+    | Some s -> STLC.Constr (Structure.map decode s)
     | None ->
       let alpha =
         try Hashtbl.find table s.var with Not_found ->

@@ -72,12 +72,14 @@ let exist bindings body = group @@
   ^^ string "."
   ^//^ body
 
-(** $c1 ∧ $c2 ∧ .... ∧ $cn *)
-let conjunction docs = group @@
-  separate (break 1 ^^ utf8string "∧" ^^ space) docs
-
 let true_ = utf8string "⊤"
 let false_ = utf8string "⊥"
+
+(** $c1 ∧ $c2 ∧ .... ∧ $cn *)
+let conjunction docs = group @@
+  match docs with
+  | [] -> true_
+  | docs -> separate (break 1 ^^ utf8string "∧" ^^ space) docs
 
 (** $v1 = $v2 *)
 let eq v1 v2 = group @@

@@ -5,7 +5,9 @@ module Variables () : sig
     name: string;
     stamp: int;
   }
+
   val compare : t -> t -> int
+  val eq : t -> t -> bool
 
   val fresh : string -> t
 
@@ -24,6 +26,7 @@ end = struct
   let name v = v.name
 
   let compare = Stdlib.compare
+  let eq n1 n2 = (compare n1 n2 = 0)
 
   let stamps = Hashtbl.create 42
   let fresh name =
