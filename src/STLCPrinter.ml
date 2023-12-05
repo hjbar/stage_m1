@@ -11,7 +11,8 @@ let print_ty : ty -> PPrint.document =
 
   and print_atom = function
     | Constr (Var alpha) -> TyVar.print alpha
-    | other -> PPrint.parens (print other)
+    | Constr (Prod ts) -> Printer.product (List.map print ts)
+    | Constr (Arrow _) as other -> PPrint.parens (print other)
 
   in print
 
@@ -34,6 +35,11 @@ let print_term : term -> PPrint.document =
         ~var:(print_binding x tau)
         ~def:(print_top t)
         ~body:(print_self u)
+    | LetTuple (xtaus, t, u) ->
+      Printer.let_
+        ~var:(Printer.tuple (fun (x, tau) -> print_binding x tau) xtaus)
+        ~def:(print_top t)
+        ~body:(print_self u)
     | other -> print_next other
 
   and print_app t =
@@ -51,7 +57,9 @@ let print_term : term -> PPrint.document =
       Printer.annot
         (print_top t)
         (print_ty ty)
-    | (App _ | Abs _ | Let _) as other ->
+    | Tuple ts ->
+      Printer.tuple print_top ts
+    | (App _ | Abs _ | Let _ | LetTuple _) as other ->
       PPrint.parens (print_top other)
 
   in print_top

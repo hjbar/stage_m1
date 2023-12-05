@@ -16,6 +16,11 @@ let print_term : term -> PPrint.document =
         ~var:(Var.print x)
         ~def:(print_top t)
         ~body:(print_self u)
+    | LetTuple (xs, t, u) ->
+      Printer.let_
+        ~var:(Printer.tuple Var.print xs)
+        ~def:(print_top t)
+        ~body:(print_self u)
     | other -> print_next other
 
   and print_app t =
@@ -33,7 +38,9 @@ let print_term : term -> PPrint.document =
       Printer.annot
         (print_top t)
         (STLCPrinter.print_ty ty)
-    | (App _ | Abs _ | Let _) as other ->
+    | Tuple ts ->
+      Printer.tuple print_top ts
+    | (App _ | Abs _ | Let _ | LetTuple _) as other ->
       PPrint.parens (print_top other)
 
   in print_top

@@ -16,6 +16,21 @@ module Input = struct
     (* id_poly has an arrow type, not an atomic type,
        so there should be an error here *)
     App (id_int, id_poly)
+
+  let curry =
+    let f = Untyped.Var.fresh "f" in
+    let x = Untyped.Var.fresh "x" in
+    let y = Untyped.Var.fresh "y" in
+    Abs (f, Abs (x, Abs (y, App (Var f, Tuple [Var x; Var y]))))
+
+  let uncurry =
+    let f = Untyped.Var.fresh "f" in
+    let p = Untyped.Var.fresh "p" in
+    let x = Untyped.Var.fresh "x" in
+    let y = Untyped.Var.fresh "y" in
+    Abs (f, Abs (p, LetTuple ([x; y], Var p,
+      App (App (Var f, Var x), Var y)
+    )))
 end
 
 module Output = struct
@@ -24,6 +39,10 @@ module Output = struct
   let id_int () = Typer.infer Input.id_int
 
   let error () = Typer.infer Input.error
+
+  let curry () = Typer.infer Input.curry
+
+  let uncurry () = Typer.infer Input.uncurry
 end
 
 module Print = struct
@@ -38,4 +57,6 @@ module Print = struct
   let id_poly () = print @@ Output.id_poly ()
   let id_int () = print @@ Output.id_int ()
   let error () = print @@ Output.error ()
+  let curry () = print @@ Output.curry ()
+  let uncurry () = print @@ Output.uncurry ()
 end
