@@ -27,6 +27,11 @@ module Structure = struct
       if List.length as1 <> List.length as2
       then None
       else Some (Prod (List.map2 f as1 as2))
+
+  let print p = function
+    | Var v -> TyVar.print v
+    | Prod ts -> Printer.product (List.map p ts)
+    | Arrow (t1, t2) -> Printer.arrow (p t1) (p t2)
 end
 
 type 'a structure = 'a Structure.t
