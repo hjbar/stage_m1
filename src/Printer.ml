@@ -67,10 +67,13 @@ let exist bindings body = group @@
         ^/^ s
       ) rparen
   in
-  utf8string "∃"
-  ^^ group (separate_map (break 1) print_binding bindings)
-  ^^ string "."
-  ^//^ body
+  let bindings =
+    group (flow_map (break 1) print_binding bindings)
+  in
+  group (utf8string "∃" ^^ ifflat empty space
+         ^^ nest 2 bindings
+         ^^ break 0 ^^ string ".")
+  ^^ prefix 2 1 empty body
 
 let true_ = utf8string "⊤"
 let false_ = utf8string "⊥"
