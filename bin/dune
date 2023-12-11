@@ -1,0 +1,5 @@
+(executable
+  (public_name minihell)
+  (libraries constrained_generation menhirLib)
+  (modules minihell)
+)

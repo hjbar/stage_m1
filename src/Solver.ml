@@ -2,16 +2,22 @@ open Constraint
 
 type env = Unif.Env.t
 
-let solve env c0 =
+let solve ~log env c0 =
   let env = ref env in
   let decode v = Decode.decode !env v in
-  let c0_erased = SatConstraint.erase c0 in
-  let log () =
-    c0_erased
-    |> ConstraintSimplifier.simplify !env
-    |> ConstraintPrinter.print_sat_constraint
-    |> Printer.string_of_doc
-    |> prerr_endline
+  let logs = Queue.create () in
+  let log =
+    if not log then ignore
+    else begin
+      let c0_erased = SatConstraint.erase c0 in
+      fun () ->
+        let doc =
+          c0_erased
+          |> ConstraintSimplifier.simplify !env
+          |> ConstraintPrinter.print_sat_constraint
+        in
+        Queue.add doc logs
+    end
   in
   let rec solve
     : type a e . (a, e) t -> (a, e) result
@@ -27,8 +33,8 @@ let solve env c0 =
         Ok (vc, vd)
       end
     | Eq (v1, v2) ->
-      Unif.unify !env v1 v2
-      |> begin function
+      let result = Unif.unify !env v1 v2 in
+      begin match result with
         | Ok new_env ->
           env := new_env;
           log ();
@@ -38,11 +44,12 @@ let solve env c0 =
       end
     | Exist (v, s, c) ->
       env := Unif.Env.add v s !env;
+      log ();
       solve c
     | Decode v ->
       Ok (decode v)
   in
   log ();
-  Fun.protect ~finally:log (fun () ->
-    solve c0
-  )
+  let result = solve c0 in
+  let logs = logs |> Queue.to_seq |> List.of_seq in
+  logs, result

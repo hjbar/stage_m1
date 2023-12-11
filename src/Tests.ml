@@ -34,15 +34,24 @@ module Input = struct
 end
 
 module Output = struct
-  let id_poly () = Typer.infer Input.id_poly
+  open struct
+    let infer term =
+      let cst, (logs, result) = Typer.infer ~log:true term in
+      PPrint.(separate hardline logs)
+      |> Printer.string_of_doc
+      |> print_endline;
+      cst, result
+  end
 
-  let id_int () = Typer.infer Input.id_int
+  let id_poly () = infer Input.id_poly
 
-  let error () = Typer.infer Input.error
+  let id_int () = infer Input.id_int
 
-  let curry () = Typer.infer Input.curry
+  let error () = infer Input.error
 
-  let uncurry () = Typer.infer Input.uncurry
+  let curry () = infer Input.curry
+
+  let uncurry () = infer Input.uncurry
 end
 
 module Print = struct

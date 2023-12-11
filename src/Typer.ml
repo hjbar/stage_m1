@@ -1,4 +1,4 @@
-let infer (t : Untyped.term) =
+let infer ~log (t : Untyped.term) =
   let cst =
     let w = Constraint.Var.fresh "final_type" in
     Constraint.(Exist (w, None,
@@ -6,7 +6,7 @@ let infer (t : Untyped.term) =
            Decode w)))
   in
   cst,
-  Solver.solve (Unif.Env.empty ()) cst
+  Solver.solve ~log (Unif.Env.empty ()) cst
 
 let print_result =
   let open PPrint in

@@ -93,3 +93,17 @@ let eq v1 v2 = group @@
 (** decode $v *)
 let decode v = group @@
   string "decode" ^^ break 1 ^^ v
+
+(**
+   $ty1
+incompatible with
+   $ty2
+*)
+let incompatible ty1 ty2 =
+  group (blank 2 ^^ nest 2 ty1)
+  ^^ hardline ^^ string "incompatible with" ^^ hardline ^^
+  group (blank 2 ^^ nest 2 ty2)
+
+let with_header header doc =
+  string header ^^ colon ^^ nest 2 (group (hardline ^^ doc))
+
