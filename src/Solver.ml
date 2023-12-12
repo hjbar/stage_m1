@@ -6,7 +6,7 @@ module Make (T : Utils.Applicative) = struct
 
   type env = Unif.Env.t
              
-  let solve ~log (env : env) c0 =
+  let eval ~log (env : env) c0 =
     let env = ref env in
     let decode v = Decode.decode !env v in
     let logs = Queue.create () in
@@ -79,15 +79,17 @@ module Make (T : Utils.Applicative) = struct
       | Do p ->
         Do p
     in
-    let solve c =
-      match eval c with
-      | Ret v -> Ok v
-      | Err e -> Error e
-      | _other ->
-        failwith "[eval] did not return a normal form!"
-    in
+    let logs () = logs |> Queue.to_seq |> List.of_seq in
     log ();
-    let result = solve c0 in
-    let logs = logs |> Queue.to_seq |> List.of_seq in
-    logs, result
+    let result = eval c0 in
+    logs (), !env, result
+
+  let solve ~log env c =
+    let logs, _env, result = eval ~log env c in
+    logs,
+    match result with
+    | Ret v -> Ok v
+    | Err e -> Error e
+    | _other ->
+      failwith "[eval] did not return a normal form!"
 end

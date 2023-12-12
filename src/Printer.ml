@@ -37,7 +37,7 @@ let let_ ~var ~def ~body = group @@
 
 (** $t $u *)
 let app t u = group @@
-  t ^/^ u
+  t ^//^ u
 
 (** (t1, t2... tn) *)
 let tuple p ts = group @@
