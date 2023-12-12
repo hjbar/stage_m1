@@ -66,7 +66,7 @@ let call_typer ~config (term : Untyped.term) =
     let w = Constraint.Var.fresh "final_type" in
     Constraint.(Exist (w, None,
       Conj(Generator.has_type Untyped.Var.Map.empty term w,
-           Decode w)))
+           Generator.decode w)))
   in
   if config.show_constraint then
     print_section "Generated constraint"
@@ -88,13 +88,16 @@ let print_result ~config result =
     if config.show_typed_term then
       print_section "Elaborated term"
         (STLCPrinter.print_term term);
-  | Error (ty1, ty2) ->
-    print_section "Error"
-      (Printer.incompatible
-         (STLCPrinter.print_ty ty1)
-         (STLCPrinter.print_ty ty2)
-      )
-
+  | Error err ->
+    print_section "Error" (match err with
+      | Generator.Clash (ty1, ty2) ->
+        Printer.incompatible
+          (STLCPrinter.print_ty ty1)
+          (STLCPrinter.print_ty ty2)
+      | Generator.Cycle (Utils.Cycle v) ->
+        Printer.cycle (Constraint.Var.print v)
+    )
+      
 let process ~config input_path =
   let ast =
     call_parser ~config UntypedParser.term_eof input_path in

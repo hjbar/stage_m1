@@ -57,7 +57,11 @@ module Make (T : Utils.Applicative) = struct
             log ();
             Ret ()
           | Error (y1, y2) ->
-            Err (decode y1, decode y2)
+            begin match decode y1, decode y2 with
+            | Ok v1, Ok v2 ->
+              Err (Clash (v1, v2))
+            | Error v, _ | _, Error v -> Err (Cycle v)
+            end
         end
       | Exist (x, s, c) ->
         env := Unif.Env.add x s !env;
@@ -68,7 +72,10 @@ module Make (T : Utils.Applicative) = struct
         | c -> Exist (x, s, c)
         end
       | Decode v ->
-        Ret (decode v)
+        begin match decode v with
+        | Ok ty -> Ret ty
+        | Error cycle -> Err cycle
+        end
       | Do p ->
         Do p
     in

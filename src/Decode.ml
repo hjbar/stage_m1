@@ -1,16 +1,30 @@
 type env = Unif.Env.t
 
-let decode (env : env) (v : Constraint.variable) : STLC.ty =
+type slot =
+  | Ongoing
+  | Done of STLC.ty
+
+let decode (env : env) (v : Constraint.variable) : (STLC.ty, Constraint.variable Utils.cycle) result =
   let table = Hashtbl.create 42 in
+  let exception Found_cycle of Constraint.variable Utils.cycle in
   let rec decode (uvar : Unif.uvar) : STLC.ty =
     let s = Unif.UF.get env.store uvar in
-    match s.data with
-    | Some s -> STLC.Constr (Structure.map decode s)
-    | None ->
-      let alpha =
-        try Hashtbl.find table s.var with Not_found ->
-          let alpha = STLC.TyVar.fresh "α" in
-          Hashtbl.add table s.var alpha;
-          alpha
-      in STLC.Constr (Var alpha)
-  in decode (Unif.Env.uvar env v)
+    begin match Hashtbl.find table s.var with
+    | Done ty -> ty
+    | Ongoing -> raise (Found_cycle (Utils.Cycle s.var))
+    | exception Not_found ->
+      Hashtbl.replace table s.var Ongoing;
+      let ty =
+        STLC.Constr (
+          match s.data with
+          | Some s -> Structure.map decode s
+          | None -> Var (STLC.TyVar.fresh "α")
+        )
+      in
+      Hashtbl.replace table s.var (Done ty);
+      ty
+    end
+  in
+  match decode (Unif.Env.uvar env v) with
+  | ty -> Ok ty
+  | exception (Found_cycle cy) -> Error cy

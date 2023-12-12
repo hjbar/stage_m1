@@ -229,3 +229,71 @@ the inference variables.
     (f : α)
     -> fun (p : α/1) -> let ((x : α/2), (y : α/3)) = p in f x y
   
+## Cyclic types
+
+Unification can sometimes create cyclic types. We decide to reject
+these situations with an error. (We could also accept those as they
+preserve type-safety, but they have the issue, just like the
+OCaml -rectypes option, that they allow to write somewhat-nonsensical
+program, and our random term generator will be very good at finding
+a lot of those.)
+
+  $ minihell $FLAGS --log-solver selfapp.test
+  Input term:
+    fun x -> x x
+  
+  Generated constraint:
+    ∃final_type.
+      (∃x wt (warr = x -> wt).
+        final_type = warr
+        ∧ decode x
+        ∧ (∃wu (wt/1 = wu -> wt). wt/1 = x ∧ wu = x))
+      ∧ decode final_type
+  
+  Constraint solving log:
+    ∃final_type.
+      decode final_type
+      ∧ (∃x wt (warr = x -> wt).
+        (∃wu (wt/1 = wu -> wt). wu = x ∧ wt/1 = x)
+        ∧ decode x
+        ∧ final_type = warr)
+    ∃final_type.
+      decode final_type
+      ∧ (∃x wt (warr = x -> wt).
+        (∃wu (wt/1 = wu -> wt). wu = x ∧ wt/1 = x)
+        ∧ decode x
+        ∧ final_type = warr)
+    ∃x final_type.
+      decode final_type
+      ∧ (∃wt (warr = x -> wt).
+        (∃wu (wt/1 = wu -> wt). wu = x ∧ wt/1 = x)
+        ∧ decode x
+        ∧ final_type = warr)
+    ∃x wt final_type.
+      decode final_type
+      ∧ (∃(warr = x -> wt).
+        (∃wu (wt/1 = wu -> wt). wu = x ∧ wt/1 = x)
+        ∧ decode x
+        ∧ final_type = warr)
+    ∃x wt (warr = x -> wt) final_type.
+      decode final_type
+      ∧ (∃wu (wt/1 = wu -> wt). wu = x ∧ wt/1 = x)
+      ∧ decode x
+      ∧ final_type = warr
+    ∃x wt (final_type = x -> wt).
+      decode final_type
+      ∧ (∃wu (wt/1 = wu -> wt). wu = x ∧ wt/1 = x)
+      ∧ decode x
+    ∃x wu wt (final_type = x -> wt).
+      decode final_type ∧ (∃(wt/1 = wu -> wt). wu = x ∧ wt/1 = x) ∧ decode x
+    ∃x wu wt (wt/1 = wu -> wt) wt (final_type = x -> wt).
+      decode final_type ∧ wu = x ∧ wt/1 = x ∧ decode x
+    ∃wu wt (wt/1 = wu -> wt) wt (final_type = wt/1 -> wt).
+      decode final_type ∧ wu = wt/1 ∧ decode wt/1
+    ∃wt (wu = wu -> wt) wt (final_type = wu -> wt).
+      decode final_type ∧ decode wu
+  
+  Error:
+    cycle on constraint variable
+    wu
+  

@@ -12,7 +12,7 @@ module Make(T : Utils.Applicative) = struct
       let w = Constraint.Var.fresh "final_type" in
       Constraint.(Exist (w, None,
         Conj(Generator.has_type Untyped.Var.Map.empty t w,
-             Decode w)))
+             Generator.decode w)))
     in
     cst,
     Solver.solve ~log (Unif.Env.empty ()) cst

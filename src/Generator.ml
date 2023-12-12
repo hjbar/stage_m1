@@ -7,6 +7,13 @@ module Make(T : Utils.Applicative) = struct
   module Env = Untyped.Var.Map
   type env = variable Env.t
 
+  type err = eq_error =
+    | Clash of STLC.ty Utils.clash
+    | Cycle of Constraint.variable Utils.cycle
+
+  let eq v1 v2 = Eq(v1, v2)
+  let decode v = MapErr(Decode v, fun e -> Cycle e)
+
   let rec bind (ty : STLC.ty) (k : Constraint.variable -> ('a, 'e) t) : ('a, 'e) t =
     match ty with
     | Constr s ->
@@ -32,11 +39,11 @@ module Make(T : Utils.Applicative) = struct
           Exist (wprod, Some (Prod ws), k wprod)
         )
   
-  let rec has_type (env : env) (t : Untyped.term) (w : variable) : (STLC.term, _) t =
+  let rec has_type (env : env) (t : Untyped.term) (w : variable) : (STLC.term, err) t =
     match t with
     | Untyped.Var x ->
       (* [[x : w]] := (E(x) = w) *)
-      let+ () = Eq(w, Env.find x env)
+      let+ () = eq w (Env.find x env)
       in STLC.Var x
     | Untyped.App (t, u) ->
        (* [[t u : w]] := ∃wu. [[t : wu -> w]] ∧ [[u : wu]] *)
@@ -54,8 +61,8 @@ module Make(T : Utils.Applicative) = struct
         Constraint.Var.fresh "wt",
         Constraint.Var.fresh "warr" in
       Exist (wx, None, Exist (wt, None, Exist (warr, Some (Arrow (wx, wt)),
-        let+ () = Eq(w, warr)
-        and+ tyx = Decode wx
+        let+ () = eq w warr
+        and+ tyx = decode wx
         and+ t' = has_type (Env.add x wx env) t wt
         in STLC.Abs(x, tyx, t')
       )))
@@ -64,7 +71,7 @@ module Make(T : Utils.Applicative) = struct
       let wt = Constraint.Var.fresh (Untyped.Var.name x) in
       Exist (wt, None,
         let+ t' = has_type env t wt
-        and+ tyx = Decode wt
+        and+ tyx = decode wt
         and+ u' = has_type (Env.add x wt env) u w
         in STLC.Let(x, tyx, t', u')
      )
@@ -72,7 +79,7 @@ module Make(T : Utils.Applicative) = struct
       (* [[(t : ty) : w]] := ∃(wt = ty). [[t : wt]] /\ [[wt = w]] *)
       bind ty @@ fun wt ->
       let+ t' = has_type env t wt
-      and+ () = Eq(wt, w)
+      and+ () = eq wt w
       in t'
     | Untyped.Tuple ts ->
       (* [[(t₁, t₂ ... tₙ) : w]] :=
@@ -100,7 +107,7 @@ module Make(T : Utils.Applicative) = struct
         loop 0 ts (fun ws ->
           let wprod = Constraint.Var.fresh "wprod" in
           Exist (wprod, Some (Prod ws),
-                 let+ () = Eq(w, wprod) in [])
+                 let+ () = eq w wprod in [])
         )
       in STLC.Tuple ts
     | Untyped.LetTuple (xs, t, u) ->
@@ -123,7 +130,7 @@ module Make(T : Utils.Applicative) = struct
             let rec loop = function
               | [] -> Ret []
               | (x, w) :: ws ->
-                let+ ty = Decode w
+                let+ ty = decode w
                 and+ bindings = loop ws
                 in (x, ty) :: bindings
             in loop (List.combine xs ws)

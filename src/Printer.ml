@@ -106,6 +106,9 @@ let incompatible ty1 ty2 =
   ^^ hardline ^^ string "incompatible with" ^^ hardline ^^
   group (blank 2 ^^ nest 2 ty2)
 
+let cycle v =
+  string "cycle on constraint variable" ^/^ v
+
 let with_header header doc =
   string header ^^ colon ^^ nest 2 (group (hardline ^^ doc))
 

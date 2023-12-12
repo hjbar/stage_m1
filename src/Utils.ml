@@ -1,4 +1,5 @@
 type 'a clash = 'a * 'a
+type 'v cycle = Cycle of 'v [@@unboxed]
 
 module Variables () : sig
   type t = private {
