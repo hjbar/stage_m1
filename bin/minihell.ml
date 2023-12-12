@@ -1,3 +1,16 @@
+(* We instantiate the machinery with the Identity applicative functor,
+   under which Do does not introduce any new behavior. *)
+module Id = Utils.Id
+module Untyped = Untyped.Make(Id)
+module UntypedPrinter = UntypedPrinter.Make(Id)
+module Constraint = struct
+  include Constraint
+  include Make(Id)
+end
+module Generator = Generator.Make(Id)
+module ConstraintPrinter = ConstraintPrinter.Make(Id)
+module Solver = Solver.Make(Id)
+
 type config = {
   show_source : bool;
   show_constraint : bool;

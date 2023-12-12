@@ -94,6 +94,8 @@ let eq v1 v2 = group @@
 let decode v = group @@
   string "decode" ^^ break 1 ^^ v
 
+let do_ = string "do?"
+
 (**
    $ty1
 incompatible with

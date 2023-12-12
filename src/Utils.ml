@@ -49,3 +49,22 @@ end = struct
   module Set = Set.Make(Key)
   module Map = Map.Make(Key)
 end
+
+module type Functor = sig
+  type 'a t
+  val map : ('a -> 'b) -> 'a t -> 'b t
+end
+
+module type Applicative = sig
+  include Functor
+  val pure : 'a -> 'a t
+  val pair : 'a t -> 'b t -> ('a * 'b) t
+end
+
+module Id = struct
+  type 'a t = 'a
+  let map f v = f v
+  let pure v = v
+  let pair va vb = (va, vb)
+end
+module _ = (Id : Applicative)

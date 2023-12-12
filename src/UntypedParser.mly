@@ -1,5 +1,5 @@
 %{
-  open Untyped
+    open Untyped.Make(Utils.Id)
 %}
 
 %token <string> LIDENT
@@ -19,7 +19,7 @@
 %token COLON ":"
 %token PERIOD "."
 
-%type<Untyped.raw_term> term_eof
+%type<Untyped.Make(Utils.Id).raw_term> term_eof
 
 %start term_eof
 
@@ -102,3 +102,4 @@ let typ_atom :=
 
 let tyvar :=
   | ~ = LIDENT ; <>
+
