@@ -117,8 +117,7 @@ let rec has_type (env : env) (t : Untyped.term) (w : variable) : (STLC.term, _) 
       Exist (wt, Some (Prod ws),
         let+ bindings =
           let rec loop = function
-            | [] ->
-              let+ () = True in []
+            | [] -> Ret []
             | (x, w) :: ws ->
               let+ ty = Decode w
               and+ bindings = loop ws

@@ -22,8 +22,8 @@ let solve ~log env c0 =
   let rec solve
     : type a e . (a, e) t -> (a, e) result
   = function
-    | True -> Ok ()
-    | False -> Error ()
+    | Ret v -> Ok v
+    | Err e -> Error e
     | Map (c, f) -> Result.map f (solve c)
     | MapErr (c, f) -> Result.map_error f (solve c)
     | Conj (c, d) ->

@@ -11,15 +11,15 @@ let rec erase : type a e. (a, e) t -> sat_constraint = function
 | Exist (v, c, s) -> Exist (v, c, erase s)
 | Map (c, _) -> erase c
 | MapErr (c, _) -> erase c
-| True -> Conj []
-| False -> False
+| Ret _v -> Conj []
+| Err _e -> False
 | Conj (_, _) as conj ->
   let rec peel : type a e . (a, e) t -> sat_constraint list = function
     | Map (c, _) -> peel c
     | MapErr (c, _) -> peel c
     | Conj (c1, c2) -> peel c1 @ peel c2
-    | False -> [False]
-    | True -> []
+    | Err _ -> [False]
+    | Ret _ -> []
     | Exist _  as c -> [erase c]
     | Eq _     as c -> [erase c]
     | Decode _ as c -> [erase c]

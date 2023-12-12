@@ -12,8 +12,8 @@ type deep_ty =
   | Constr of deep_ty Structure.t
 
 type ('ok, 'err) t =
-  | True : (unit, 'e) t
-  | False : ('a, unit) t
+  | Ret : 'a -> ('a, 'e) t
+  | Err : 'e -> ('a, 'e) t
   | Map : ('a, 'e) t * ('a -> 'b) -> ('b, 'e) t
   | MapErr : ('a, 'e) t * ('e -> 'f) -> ('a, 'f) t
   | Conj : ('a, 'e) t * ('b, 'e) t -> ('a * 'b, 'e) t
