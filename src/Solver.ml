@@ -19,35 +19,59 @@ let solve ~log env c0 =
         Queue.add doc logs
     end
   in
-  let rec solve
-    : type a e . (a, e) t -> (a, e) result
+  let rec eval
+    : type a e . (a, e) t -> (a, e) t
   = function
-    | Ret v -> Ok v
-    | Err e -> Error e
-    | Map (c, f) -> Result.map f (solve c)
-    | MapErr (c, f) -> Result.map_error f (solve c)
-    | Conj (c, d) ->
-      begin
-        Result.bind (solve c) @@ fun vc ->
-        Result.bind (solve d) @@ fun vd ->
-        Ok (vc, vd)
+    | Ret v -> Ret v
+    | Err e -> Err e
+    | Map (c, f) ->
+      begin match eval c with
+      | Ret v -> Ret (f v)
+      | Err e -> Err e
+      | c -> Map (c, f)
       end
-    | Eq (v1, v2) ->
-      let result = Unif.unify !env v1 v2 in
+    | MapErr (c, f) ->
+      begin match eval c with
+      | Ret v -> Ret v
+      | Err e -> Err (f e)
+      | c -> MapErr (c, f)
+      end
+    | Conj (c, d) ->
+      begin match eval c with
+        | Err e -> Err e
+        | c ->
+        match c, eval d with
+        | _, Err e -> Err e
+        | Ret v, Ret w -> Ret (v, w)
+        | c, d -> Conj (c, d)
+      end
+    | Eq (x1, x2) ->
+      let result = Unif.unify !env x1 x2 in
       begin match result with
         | Ok new_env ->
           env := new_env;
           log ();
-          Ok ()
-        | Error (w1, w2) ->
-          Error (decode w1, decode w2)
+          Ret ()
+        | Error (y1, y2) ->
+          Err (decode y1, decode y2)
       end
-    | Exist (v, s, c) ->
-      env := Unif.Env.add v s !env;
+    | Exist (x, s, c) ->
+      env := Unif.Env.add x s !env;
       log ();
-      solve c
+      begin match eval c with
+      | Ret v -> Ret v
+      | Err e -> Err e
+      | c -> Exist (x, s, c)
+      end
     | Decode v ->
-      Ok (decode v)
+      Ret (decode v)
+  in
+  let solve c =
+    match eval c with
+    | Ret v -> Ok v
+    | Err e -> Error e
+    | _other ->
+      failwith "[eval] did not return a normal form!"
   in
   log ();
   let result = solve c0 in
