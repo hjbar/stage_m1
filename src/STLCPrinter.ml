@@ -27,7 +27,7 @@ let print_term : term -> PPrint.document =
     and print_next = print_app in
     PPrint.group @@ match t with
     | Abs (x, tau, t) ->
-      Printer.fun_
+      Printer.lambda
         ~input:(print_binding x tau)
         ~body:(print_self t)
     | Let (x, tau, t, u) ->

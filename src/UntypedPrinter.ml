@@ -9,7 +9,7 @@ module Make(T : Utils.Applicative) = struct
       and print_next = print_app in
       PPrint.group @@ match t with
       | Abs (x, t) ->
-        Printer.fun_
+        Printer.lambda
           ~input:(Var.print x)
           ~body:(print_self t)
       | Let (x, t, u) ->

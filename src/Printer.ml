@@ -19,11 +19,11 @@ let annot term ty = group @@
     term ^/^ colon ^//^ ty
   ) rparen
 
-(** fun $input -> $body *)
-let fun_ ~input ~body = group @@
-  string "fun"
+(** lambda $input. $body *)
+let lambda ~input ~body = group @@
+  string "lambda"
   ^/^ input
-  ^/^ string "->"
+  ^^ string "."
   ^//^ body
 
 (** let $var = $def in $body *)

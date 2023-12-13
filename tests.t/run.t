@@ -63,7 +63,7 @@ to the bin/dune content.)
 
   $ minihell $FLAGS id_poly.test
   Input term:
-    fun x -> x
+    lambda x. x
   
   Generated constraint:
     ∃final_type.
@@ -74,7 +74,7 @@ to the bin/dune content.)
     α/1 -> α/1
   
   Elaborated term:
-    fun (x : α) -> x
+    lambda (x : α). x
   
 
 `id_int` is the monomorphic identity on the type `int`. Note
@@ -84,7 +84,7 @@ type, this is just an abstract/rigid type variable: `Constr
 
   $ minihell $FLAGS id_int.test
   Input term:
-    fun x -> (x : int)
+    lambda x. (x : int)
   
   Generated constraint:
     ∃final_type.
@@ -96,7 +96,7 @@ type, this is just an abstract/rigid type variable: `Constr
     int -> int
   
   Elaborated term:
-    fun (x : α) -> x
+    lambda (x : α). x
   
 
 ## Logging the constraint-solving process
@@ -107,7 +107,7 @@ the inference variables.
 
   $ minihell $FLAGS --log-solver id_int.test
   Input term:
-    fun x -> (x : int)
+    lambda x. (x : int)
   
   Generated constraint:
     ∃final_type.
@@ -149,14 +149,14 @@ the inference variables.
     int -> int
   
   Elaborated term:
-    fun (x : α) -> x
+    lambda (x : α). x
   
 
 ## An erroneous program
 
   $ minihell $FLAGS error.test
   Input term:
-    (fun x -> (x : int)) (fun y -> y)
+    (lambda x. (x : int)) (lambda y. y)
   
   Generated constraint:
     ∃final_type.
@@ -176,7 +176,7 @@ the inference variables.
 
   $ minihell $FLAGS curry.test
   Input term:
-    fun f -> fun x -> fun y -> f (x, y)
+    lambda f. lambda x. lambda y. f (x, y)
   
   Generated constraint:
     ∃final_type.
@@ -198,12 +198,12 @@ the inference variables.
     ((α/5 * α/4) -> α/3) -> α/5 -> α/4 -> α/3
   
   Elaborated term:
-    fun (f : α) -> fun (x : α/1) -> fun (y : α/2) -> f (x, y)
+    lambda (f : α). lambda (x : α/1). lambda (y : α/2). f (x, y)
   
 
   $ minihell $FLAGS uncurry.test
   Input term:
-    fun f -> fun p -> let (x, y) = p in f x y
+    lambda f. lambda p. let (x, y) = p in f x y
   
   Generated constraint:
     ∃final_type.
@@ -225,9 +225,8 @@ the inference variables.
     (α/5 -> α/6 -> α/4) -> (α/5 * α/6) -> α/4
   
   Elaborated term:
-    fun
-    (f : α)
-    -> fun (p : α/1) -> let ((x : α/2), (y : α/3)) = p in f x y
+    lambda
+    (f : α). lambda (p : α/1). let ((x : α/2), (y : α/3)) = p in f x y
   
 ## Cyclic types
 
@@ -240,7 +239,7 @@ a lot of those.)
 
   $ minihell $FLAGS --log-solver selfapp.test
   Input term:
-    fun x -> x x
+    lambda x. x x
   
   Generated constraint:
     ∃final_type.
