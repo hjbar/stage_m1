@@ -71,7 +71,7 @@ to the bin/dune content.)
       ∧ decode final_type
   
   Inferred type:
-    α/1 -> α/1
+    α -> α
   
   Elaborated term:
     lambda (x : α). x
@@ -96,7 +96,7 @@ type, this is just an abstract/rigid type variable: `Constr
     int -> int
   
   Elaborated term:
-    lambda (x : α). x
+    lambda (x : int). x
   
 
 ## Logging the constraint-solving process
@@ -149,7 +149,7 @@ the inference variables.
     int -> int
   
   Elaborated term:
-    lambda (x : α). x
+    lambda (x : int). x
   
 
 ## An erroneous program
@@ -169,7 +169,7 @@ the inference variables.
   Error:
       int
     incompatible with
-      α/2 -> α/1
+      β -> α
   
 
 ## Examples with products
@@ -195,10 +195,10 @@ the inference variables.
       ∧ decode final_type
   
   Inferred type:
-    ((α/5 * α/4) -> α/3) -> α/5 -> α/4 -> α/3
+    ((γ * β) -> α) -> γ -> β -> α
   
   Elaborated term:
-    lambda (f : α). lambda (x : α/1). lambda (y : α/2). f (x, y)
+    lambda (f : (γ * β) -> α). lambda (x : γ). lambda (y : β). f (x, y)
   
 
   $ minihell $FLAGS uncurry.test
@@ -222,11 +222,12 @@ the inference variables.
       ∧ decode final_type
   
   Inferred type:
-    (α/5 -> α/6 -> α/4) -> (α/5 * α/6) -> α/4
+    (β -> γ -> α) -> (β * γ) -> α
   
   Elaborated term:
     lambda
-    (f : α). lambda (p : α/1). let ((x : α/2), (y : α/3)) = p in f x y
+    (f : β -> γ -> α).
+      lambda (p : (β * γ)). let ((x : β), (y : γ)) = p in f x y
   
 ## Cyclic types
 
@@ -288,9 +289,7 @@ a lot of those.)
     ∃x wu wt (wt/1 = wu -> wt) wt (final_type = x -> wt).
       decode final_type ∧ wu = x ∧ wt/1 = x ∧ decode x
     ∃wu wt (wt/1 = wu -> wt) wt (final_type = wt/1 -> wt).
-      decode final_type ∧ wu = wt/1 ∧ decode wt/1
-    ∃wt (wu = wu -> wt) wt (final_type = wu -> wt).
-      decode final_type ∧ decode wu
+      decode final_type ∧ ⊥ ∧ decode wt/1
   
   Error:
     cycle on constraint variable

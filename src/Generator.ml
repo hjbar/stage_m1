@@ -128,7 +128,7 @@ module Make(T : Utils.Applicative) = struct
         Exist (wt, Some (Prod ws),
           let+ bindings =
             let rec loop = function
-              | [] -> Ret []
+              | [] -> Ret (fun _sol -> [])
               | (x, w) :: ws ->
                 let+ ty = decode w
                 and+ bindings = loop ws

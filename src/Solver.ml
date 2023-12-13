@@ -30,7 +30,7 @@ module Make (T : Utils.Applicative) = struct
       | Err e -> Err e
       | Map (c, f) ->
         begin match eval c with
-        | Ret v -> Ret (f v)
+        | Ret v -> Ret (fun sol -> f (v sol))
         | Err e -> Err e
         | c -> Map (c, f)
         end
@@ -46,7 +46,7 @@ module Make (T : Utils.Applicative) = struct
           | c ->
           match c, eval d with
           | _, Err e -> Err e
-          | Ret v, Ret w -> Ret (v, w)
+          | Ret v, Ret w -> Ret (fun sol -> (v sol, w sol))
           | c, d -> Conj (c, d)
         end
       | Eq (x1, x2) ->
@@ -55,13 +55,11 @@ module Make (T : Utils.Applicative) = struct
           | Ok new_env ->
             env := new_env;
             log ();
-            Ret ()
-          | Error (y1, y2) ->
-            begin match decode y1, decode y2 with
-            | Ok v1, Ok v2 ->
-              Err (Clash (v1, v2))
-            | Error v, _ | _, Error v -> Err (Cycle v)
-            end
+            Ret (fun _sol -> ())
+          | Error (Cycle cy) ->
+            Err (Cycle cy)
+          | Error (Clash (y1, y2)) ->
+            Err (Clash (decode y1, decode y2))
         end
       | Exist (x, s, c) ->
         env := Unif.Env.add x s !env;
@@ -71,11 +69,7 @@ module Make (T : Utils.Applicative) = struct
         | Err e -> Err e
         | c -> Exist (x, s, c)
         end
-      | Decode v ->
-        begin match decode v with
-        | Ok ty -> Ret ty
-        | Error cycle -> Err cycle
-        end
+      | Decode v -> Ret (fun sol -> sol v)
       | Do p ->
         Do p
     in
@@ -85,10 +79,11 @@ module Make (T : Utils.Applicative) = struct
     logs (), !env, result
 
   let solve ~log env c =
-    let logs, _env, result = eval ~log env c in
+    let logs, env, result = eval ~log env c in
+    let sol = Decode.decode env in
     logs,
     match result with
-    | Ret v -> Ok v
+    | Ret v -> Ok (v sol)
     | Err e -> Error e
     | _other ->
       failwith "[eval] did not return a normal form!"

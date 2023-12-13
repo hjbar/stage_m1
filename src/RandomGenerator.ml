@@ -77,7 +77,7 @@ let typed ~depth : STLC.term RandGen.t =
       ConstraintSolver.eval ~log:false env cstr
     in
     let rec complete : type a e . (a, e) Constraint.t -> a RandGen.t = function
-      | Ret v -> ret v
+      | Ret v -> (fun () -> Seq.Cons (v (Decode.decode env), Seq.empty))
       | Err _ -> fail
       | Map (c, f) ->
         let+ v = complete c in

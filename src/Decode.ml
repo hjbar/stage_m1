@@ -4,8 +4,18 @@ type slot =
   | Ongoing
   | Done of STLC.ty
 
-let decode (env : env) (v : Constraint.variable) : (STLC.ty, Constraint.variable Utils.cycle) result =
-  let table = Hashtbl.create 42 in
+let new_var =
+  let count = ref 0 in
+  let alphabet = [|"α"; "β"; "γ"; "δ"|] in
+  fun () ->
+    let id = !count in
+    incr count;
+    STLC.TyVar.fresh
+      alphabet.(id mod (Array.length alphabet))
+
+let table = Hashtbl.create 42
+
+let decode (env : env) (v : Constraint.variable) : STLC.ty =
   let exception Found_cycle of Constraint.variable Utils.cycle in
   let rec decode (uvar : Unif.uvar) : STLC.ty =
     let s = Unif.UF.get env.store uvar in
@@ -18,13 +28,14 @@ let decode (env : env) (v : Constraint.variable) : (STLC.ty, Constraint.variable
         STLC.Constr (
           match s.data with
           | Some s -> Structure.map decode s
-          | None -> Var (STLC.TyVar.fresh "α")
+          | None -> Var (new_var ())
         )
       in
       Hashtbl.replace table s.var (Done ty);
       ty
     end
   in
-  match decode (Unif.Env.uvar env v) with
-  | ty -> Ok ty
-  | exception (Found_cycle cy) -> Error cy
+  (* Because we now perform an occur-check on unification,
+     we can assume that we never find any cycle during decoding:
+     [Found_cycle] should never be raised here. *)
+  decode (Unif.Env.uvar env v)

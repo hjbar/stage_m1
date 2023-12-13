@@ -45,15 +45,41 @@ end = struct
     { env with map = Constraint.Var.Map.add var uvar env.map }
 end
 
-type clash = Constraint.variable * Constraint.variable
+type clash = Constraint.variable Utils.clash
 exception Clash of clash
+exception Cycle of Constraint.variable Utils.cycle
 
-let rec unify orig_env v1 v2 : (Env.t, clash) result =
+type err =
+  | Clash of clash
+  | Cycle of Constraint.variable Utils.cycle
+
+let check_no_cycle env v =
+  let open struct
+    type status = Visiting | Visited
+  end in
+  let table = Hashtbl.create 42 in
+  let rec loop v =
+    let n = UF.get env.Env.store v in
+    match Hashtbl.find table n.var with
+    | Visited ->
+      ()
+    | Visiting ->
+      raise (Cycle (Utils.Cycle n.var))
+    | exception Not_found ->
+      Hashtbl.replace table n.var Visiting;
+      Option.iter (Structure.iter loop) n.data;
+      Hashtbl.replace table n.var Visited;
+  in loop v
+
+let rec unify orig_env v1 v2 : (Env.t, err) result =
   let env = { orig_env with Env.store = UF.copy orig_env.Env.store } in
   let queue = Queue.create () in
   Queue.add (Env.uvar env v1, Env.uvar env v2) queue;
   match unify_uvars env.Env.store queue with
-  | exception Clash clash -> Error clash
+  | exception Clash clash -> Error (Clash clash)
+  | () ->
+  match check_no_cycle env (Env.uvar env v1) with
+  | exception Cycle v -> Error (Cycle v)
   | () -> Ok env
 
 and unify_uvars store (queue : (uvar * uvar) Queue.t) =

@@ -12,8 +12,10 @@ module Make (T : Utils.Applicative) = struct
     | Clash of STLC.ty Utils.clash
     | Cycle of variable Utils.cycle
 
+  type 'a on_sol = (variable -> STLC.ty) -> 'a
+
   type ('ok, 'err) t =
-    | Ret : 'a -> ('a, 'e) t
+    | Ret : 'a on_sol -> ('a, 'e) t
     | Err : 'e -> ('a, 'e) t
     | Map : ('a, 'e) t * ('a -> 'b) -> ('b, 'e) t
     | MapErr : ('a, 'e) t * ('e -> 'f) -> ('a, 'f) t
