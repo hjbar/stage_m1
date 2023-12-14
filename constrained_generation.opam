@@ -13,4 +13,5 @@ depends: [
   "ocaml" { >= "4.08" }
   "dune"  { >= "2.8" }
   "unionFind" { >= "20220109" }
+  "pprint"
 ]

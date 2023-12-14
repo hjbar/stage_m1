@@ -1,11 +1,28 @@
 module Make(M : Utils.MonadPlus) = struct
-  let ret = M.return
-  let (let+) s f = M.map f s
-  
   module Untyped = Untyped.Make(M)
-  
+  module Constraint = Constraint.Make(M)
+  module Infer = Infer.Make(M)
+  module Solver = Solver.Make(M)
+
+  (*sujet
+  (* just in case... *)
+  /sujet*)
   module TeVarSet = Untyped.Var.Set
   module TyVarSet = STLC.TyVar.Set
+
+(*sujet
+let untyped : Untyped.term =
+  Do (M.delay (Utils.not_yet "Generator.untyped"))
+
+let constraint_ : (STLC.term, Infer.err) Constraint.t =
+  Do (M.delay (Utils.not_yet "Generator.constraint_"))
+
+let typed ~depth =
+  Utils.not_yet "Generator.typed" depth
+/sujet*)
+(*corrige*)
+  let ret = M.return
+  let (let+) s f = M.map f s
   
   module Env = struct
     type t = {
@@ -72,9 +89,6 @@ module Make(M : Utils.MonadPlus) = struct
           ])
     in gen (Env.empty ())
   
-  module Constraint = Constraint.Make(M)
-  module Infer = Infer.Make(M)
-  
   let constraint_ : (STLC.term, Infer.err) Constraint.t =
     let w = Constraint.Var.fresh "final_type" in
     Constraint.(Exist (w, None,
@@ -82,10 +96,7 @@ module Make(M : Utils.MonadPlus) = struct
         Untyped.Var.Map.empty
         untyped
         w))
-      
-  module Solver = Solver.Make(M)
-  module ConstraintPrinter = ConstraintPrinter.Make(M)
-  
+        
   let typed ~depth : STLC.term M.t =
     let open struct
       type env = Solver.env
@@ -142,5 +153,6 @@ module Make(M : Utils.MonadPlus) = struct
         )
     in
     loop ~fuel:depth (Unif.Env.empty ()) constraint_
+(*/corrige*)
 
 end

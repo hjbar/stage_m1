@@ -1,3 +1,15 @@
+(** Constraint defines the type of type-inference constraints that our
+    solver understands -- see Solver.ml.
+    
+    In theory this can let you perform type inference for many
+    different languages, as long as their typing rules can be
+    expressed by the constraints we have defined. In practice most
+    non-trivial language features will require extending the language
+    of constraints (and the solver) with new constructs. *)
+
+(* We found it convenient to include some type definitions both inside
+   and outside the Make functor. Please don't let this small quirk
+   distract you. *)
 module Types = struct
   module Var = Utils.Variables()
 
@@ -17,8 +29,7 @@ module Make (T : Utils.Functor) = struct
     | Clash of STLC.ty Utils.clash
     | Cycle of variable Utils.cycle
 
-  type 'a on_sol = (variable -> STLC.ty) -> 'a
-
+  (* TODO document [t] and [on_sol]. *)
   type ('ok, 'err) t =
     | Ret : 'a on_sol -> ('a, 'e) t
     | Err : 'e -> ('a, 'e) t
@@ -30,6 +41,24 @@ module Make (T : Utils.Functor) = struct
     | Decode : variable -> (STLC.ty, variable Utils.cycle) t
     | Do : ('a, 'e) t T.t -> ('a, 'e) t
 
+  and 'a on_sol = (variable -> STLC.ty) -> 'a
+
   let (let+) c f = Map(c, f)
   let (and+) c1 c2 = Conj(c1, c2)
+  (** These are "binding operators". Usage example:
+      {[
+        let+ ty1 = Decode w1
+        and+ ty2 = Decode w2
+        in Constr (Arrow (ty1, ty2))
+      ]}
+
+      After desugaring the binding operators, this is equivalent to
+      {[
+      Map(Conj(Decode w1, Decode w2), fun (ty1, ty2) ->
+        Constr (Arrow (ty1, ty2)))
+      ]}
+
+      For more details on binding operators, see
+        https://v2.ocaml.org/releases/5.1/manual/bindingops.html
+  *)
 end

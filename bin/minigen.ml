@@ -51,5 +51,5 @@ let () =
   |> Seq.map STLCPrinter.print_term
   |> List.of_seq
   |> PPrint.(separate (hardline ^^ hardline))
-  |> Printer.string_of_doc
+  |> Utils.string_of_doc
   |> print_endline

@@ -6,24 +6,47 @@ module Make (T : Utils.Functor) = struct
 
   type env = Unif.Env.t
   type log = PPrint.document list
+
+  let make_logger c0 =
+    let logs = Queue.create () in
+    let c0_erased = SatConstraint.erase c0 in
+    let add_to_log env =
+      let doc =
+        c0_erased
+        |> ConstraintSimplifier.simplify env
+        |> ConstraintPrinter.print_sat_constraint
+      in
+      Queue.add doc logs
+    in
+    let get_log () =
+      logs |> Queue.to_seq |> List.of_seq
+    in
+    add_to_log, get_log
              
   let eval ~log (env : env) c0 =
+    let add_to_log, get_log =
+      if log then make_logger c0
+      else ignore, (fun _ -> [])
+    in
+(*sujet
+    (* We recommend calling the function [add_to_log] above
+       whenever you get an updated environment. Then call
+       [get_log] at the end to get a list of log message.
+
+       $ dune exec -- minihell --log-solver foo.test
+
+       will show a log that will let you see the evolution
+       of your input constraint (after simplification) as
+       the solver progresses, which is useful for debugging.
+
+       (You can also tweak this code temporarily to print stuff on
+       stderr right away if you need dirtier ways to debug.)
+    *)
+    Utils.not_yet "Solver.eval" (env, c0, add_to_log, get_log)
+/sujet*)
+(*corrige*)
     let env = ref env in
     let decode v = Decode.decode !env v in
-    let logs = Queue.create () in
-    let log =
-      if not log then ignore
-      else begin
-        let c0_erased = SatConstraint.erase c0 in
-        fun () ->
-          let doc =
-            c0_erased
-            |> ConstraintSimplifier.simplify !env
-            |> ConstraintPrinter.print_sat_constraint
-          in
-          Queue.add doc logs
-      end
-    in
     let rec eval
       : type a e . (a, e) t -> (a, e) t
     = function
@@ -55,7 +78,7 @@ module Make (T : Utils.Functor) = struct
         begin match result with
           | Ok new_env ->
             env := new_env;
-            log ();
+            add_to_log !env;
             Ret (fun _sol -> ())
           | Error (Cycle cy) ->
             Err (Cycle cy)
@@ -70,7 +93,7 @@ module Make (T : Utils.Functor) = struct
            which accumulated information through unifications. *)
         if not (Unif.Env.mem x !env) then
           env := Unif.Env.add x s !env;
-        log ();
+        add_to_log !env;
         begin match eval c with
         | Ret v -> Ret v
         | Err e -> Err e
@@ -80,18 +103,23 @@ module Make (T : Utils.Functor) = struct
       | Do p ->
         Do p
     in
-    let logs () = logs |> Queue.to_seq |> List.of_seq in
-    log ();
+    add_to_log !env;
     let result = eval c0 in
-    logs (), !env, result
+    get_log (), !env, result
+(*/corrige*)
 
   let solve ~log env c =
     let logs, env, result = eval ~log env c in
     let sol = Decode.decode env in
+(*sujet
+    Utils.not_yet "Solver.solve" (logs, env, result, sol)
+/sujet*)
+(*corrige*)
     logs,
     match result with
     | Ret v -> Ok (v sol)
     | Err e -> Error e
     | _other ->
       failwith "[eval] did not return a normal form!"
+(*/corrige*)
 end

@@ -1,6 +1,11 @@
 type 'a clash = 'a * 'a
 type 'v cycle = Cycle of 'v [@@unboxed]
 
+let string_of_doc doc =
+  let buf = Buffer.create 128 in
+  PPrint.ToBuffer.pretty 0.9 80 buf doc;
+  Buffer.contents buf
+
 module Variables () : sig
   type t = private {
     name: string;
@@ -90,3 +95,7 @@ module Id = struct
   let map f v = f v
 end
 module _ = (Id : Functor)
+
+(*sujet
+let not_yet fname = fun _ -> failwith (fname ^ ": not implemented yet")
+/sujet*)

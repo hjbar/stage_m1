@@ -24,7 +24,7 @@ module LexUtil = MenhirLib.LexerUtil
 let print_section header doc =
   doc
   |> Printer.with_header header
-  |> Printer.string_of_doc
+  |> Utils.string_of_doc
   |> print_endline
   |> print_newline
 

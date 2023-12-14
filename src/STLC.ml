@@ -1,3 +1,5 @@
+(* TODO document *)
+
 module TyVar = Structure.TyVar
 
 type 'v ty_ =

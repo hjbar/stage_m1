@@ -1,3 +1,5 @@
+(* TODO document *)
+
 module Make(T : Utils.Functor) = struct
   module Var = STLC.TeVar
   

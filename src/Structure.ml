@@ -18,7 +18,12 @@ let map f = function
   | Arrow (t1, t2) -> Arrow (f t1, f t2)
   | Prod ts -> Prod (List.map f ts)
 
-let merge f s1 s2 = match s1, s2 with
+let merge f s1 s2 =
+(*sujet
+    Utils.not_yet "Structure.merge" (f, s1, s2)
+/sujet*)
+(*corrige*)
+  match s1, s2 with
   | Var alpha, Var beta ->
     if TyVar.eq alpha beta then Some (Var alpha)
     else None
@@ -34,6 +39,7 @@ let merge f s1 s2 = match s1, s2 with
     if List.length as1 <> List.length as2
     then None
     else Some (Prod (List.map2 f as1 as2))
+(*/corrige*)
 
 let global_tyvar : string -> TyVar.t =
   (* There are no binders for type variables, which are scoped
@@ -56,4 +62,3 @@ let print p = function
   | Var v -> TyVar.print v
   | Prod ts -> Printer.product (List.map p ts)
   | Arrow (t1, t2) -> Printer.arrow (p t1) (p t2)
-
