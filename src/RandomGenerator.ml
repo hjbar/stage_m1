@@ -70,31 +70,48 @@ module ConstraintSolver = Solver.Make(RandGen)
 module ConstraintPrinter = ConstraintPrinter.Make(RandGen)
 
 let typed ~depth : STLC.term RandGen.t =
-  let rec loop : type a e . fuel:int -> ConstraintSolver.env -> (a, e) Constraint.t -> a RandGen.t =
+  let open struct
+    type env = ConstraintSolver.env
+  end in
+  let rec loop : type a e r . fuel:int -> env -> (a, e) Constraint.t -> a RandGen.t =
   fun ~fuel env cstr ->
     if fuel = 0 then fail else
     let _logs, env, cstr =
       ConstraintSolver.eval ~log:false env cstr
     in
-    let rec complete : type a e . (a, e) Constraint.t -> a RandGen.t = function
-      | Ret v -> (fun () -> Seq.Cons (v (Decode.decode env), Seq.empty))
-      | Err _ -> fail
+    match cstr with
+    | Ret v -> ret (v (Decode.decode env))
+    | Err _ -> fail
+    | _ ->
+    let open Constraint in
+    let ( let+* ) g f = RandGen.bind f g in
+    let ( let++ ) g f = RandGen.map f g in
+    let ( and++ ) g1 g2 = RandGen.pair g1 g2 in
+    let rec complete : type a e . (a, e) Constraint.t -> (a, e) Constraint.t RandGen.t =
+      function
+      | Ret v -> ret (Ret v)
+      | Err e -> ret (Err e)
       | Map (c, f) ->
-        let+ v = complete c in
-        f v
-      | MapErr (c, _) ->
-        complete c
+        let++ c = complete c in
+        Map (c, f)
+      | MapErr (c, f) ->
+        let++ c = complete c in
+        MapErr (c, f)
       | Conj (c1, c2) ->
-        let+ v1 = complete c1
-        and+ v2 = complete c2
-        in (v1, v2)
-      | Exist (_x, _s, c) ->
-        complete c
+        let++ c1 = complete c1
+        and++ c2 = complete c2
+        in Conj (c1, c2)
+      | Exist (x, s, c) ->
+        let++ c = complete c in
+        Exist (x, s, c)
       | Eq _ -> failwith "not a normal form"
       | Decode _ -> failwith "not a normal form"
       | Do p ->
-        let* cstr = p in
-        let env = Unif.Env.copy env in
-        loop ~fuel:(fuel - 1) env cstr
-    in complete cstr
-  in loop ~fuel:depth (Unif.Env.empty ()) constraint_
+        p
+    in
+    let+* cstr = complete cstr in
+    let env = Unif.Env.copy env in
+    loop ~fuel:(fuel - 1) env cstr
+  in
+  loop ~fuel:depth (Unif.Env.empty ()) constraint_
+
