@@ -5,6 +5,7 @@ module Make (T : Utils.Functor) = struct
   module ConstraintPrinter = ConstraintPrinter.Make(T)
 
   type env = Unif.Env.t
+  type log = PPrint.document list
              
   let eval ~log (env : env) c0 =
     let env = ref env in
