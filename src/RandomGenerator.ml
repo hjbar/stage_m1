@@ -96,17 +96,45 @@ let untyped : Untyped.term =
       |> Array.of_seq
       |> RandGen.one_of
     in
-    Do (fun () -> () |>
-    RandGen.sum [
-      (let+ x = fvars in Var x);
-      RandGen.pure (App(gen env, gen env));
-      (fun () ->
-        let x = new_var () in
-        Some (Abs(x, gen (Env.bind_tevar x env)))
-      );
-    ]
-  ) in
-  gen (Env.empty ())
+    Do (RandGen.delay @@ fun () ->
+        let rule_var =
+          let+ x = fvars in Var x in
+        let rule_app =
+          RandGen.pure (App(gen env, gen env)) in
+        let rule_abs =
+          RandGen.delay @@ fun () ->
+          let x = new_var () in
+          ret (Abs(x, gen (Env.bind_tevar x env))) in
+        let rule_let =
+          RandGen.delay @@ fun () ->
+          let x = new_var () in
+          ret (Let(x, gen env, gen (Env.bind_tevar x env))) in
+        let tuple_size () =
+          if Random.bool () then 2
+          else 1 + Random.int 4
+        in
+        let rule_tuple =
+          RandGen.delay @@ fun () ->
+          let size = tuple_size () in
+          let ts = List.init size (fun _ -> gen env) in
+          ret (Tuple ts)
+        in
+        let rule_lettuple =
+          RandGen.delay @@ fun () ->
+          let size = tuple_size () in
+          let xs = List.init size (fun _ -> new_var ()) in
+          let env' = List.fold_right Env.bind_tevar xs env in
+          ret (LetTuple(xs, gen env, gen env'))
+        in
+        RandGen.sum [
+          rule_var;
+          rule_app;
+          rule_abs;
+          rule_let;
+          rule_tuple;
+          rule_lettuple;
+        ])
+  in gen (Env.empty ())
 
 module Constraint = struct
   include Constraint
