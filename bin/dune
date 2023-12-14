@@ -3,3 +3,9 @@
   (libraries constrained_generation menhirLib)
   (modules minihell)
 )
+
+(executable
+  (public_name minigen)
+  (libraries constrained_generation)
+  (modules minigen)
+)
