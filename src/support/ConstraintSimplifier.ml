@@ -15,7 +15,7 @@ module Make(T : Utils.Functor) = struct
       | unode -> unode.Unif.var
       | exception Not_found -> v
     in
-    let module VarSet = Set.Make(Constraint.Var) in
+    let module VarSet = Constraint.Var.Set in
     let exist v s (fvs, c) : VarSet.t * sat_constraint =
       assert (Var.eq v (normalize v));
       let s =

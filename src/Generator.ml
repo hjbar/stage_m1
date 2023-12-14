@@ -5,8 +5,8 @@ module Make(M : Utils.MonadPlus) = struct
   
   module Untyped = Untyped.Make(M)
   
-  module TeVarSet = Set.Make(Untyped.Var)
-  module TyVarSet = Set.Make(STLC.TyVar)
+  module TeVarSet = Untyped.Var.Set
+  module TyVarSet = STLC.TyVar.Set
   
   module Env = struct
     type t = {
