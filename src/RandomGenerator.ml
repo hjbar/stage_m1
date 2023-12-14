@@ -84,34 +84,46 @@ let typed ~depth : STLC.term RandGen.t =
     | Err _ -> fail
     | _ ->
     let open Constraint in
-    let ( let+* ) g f = RandGen.bind f g in
-    let ( let++ ) g f = RandGen.map f g in
-    let ( and++ ) g1 g2 = RandGen.pair g1 g2 in
-    let rec complete : type a e . (a, e) Constraint.t -> (a, e) Constraint.t RandGen.t =
+    let ( let+ ) g f = RandGen.map f g in
+    let ( let++ ) r f =
+      match r with
+      | Ok g -> Ok (RandGen.map f g)
+      | Error c -> Error (f c)
+    in
+    let rec expand : type a e . (a, e) Constraint.t -> ((a, e) Constraint.t RandGen.t, (a, e) Constraint.t) result =
       function
-      | Ret v -> ret (Ret v)
-      | Err e -> ret (Err e)
+      | Ret v -> Error (Ret v)
+      | Err e -> Error (Err e)
       | Map (c, f) ->
-        let++ c = complete c in
-        Map (c, f)
+        let++ c = expand c in Map (c, f)
       | MapErr (c, f) ->
-        let++ c = complete c in
-        MapErr (c, f)
+        let++ c = expand c in MapErr (c, f)
       | Conj (c1, c2) ->
-        let++ c1 = complete c1
-        and++ c2 = complete c2
-        in Conj (c1, c2)
+        begin match expand c1 with
+        | Ok c1 ->
+          Ok (let+ c1 in Conj (c1, c2))
+        | Error c1 ->
+          let++ c2 = expand c2 in Conj (c1, c2)
+        end
       | Exist (x, s, c) ->
-        let++ c = complete c in
+        let++ c = expand c in
         Exist (x, s, c)
       | Eq _ -> failwith "not a normal form"
       | Decode _ -> failwith "not a normal form"
       | Do p ->
-        p
+        Ok p
     in
-    let+* cstr = complete cstr in
-    let env = Unif.Env.copy env in
-    loop ~fuel:(fuel - 1) env cstr
+    match expand cstr with
+    | Error _ ->
+      (* If this normal form constraint has no Do,
+         then it must be a Ret/Err and we have
+         taken the Ret/Err branch earlier. *)
+      assert false
+    | Ok cstr ->
+      RandGen.bind (fun cstr ->
+        let env = Unif.Env.copy env in
+        loop ~fuel:(fuel - 1) env cstr
+      ) cstr
   in
   loop ~fuel:depth (Unif.Env.empty ()) constraint_
 
