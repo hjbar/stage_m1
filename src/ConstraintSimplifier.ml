@@ -1,5 +1,3 @@
-open Constraint
-
 module Make(T : Utils.Applicative) = struct
   open Constraint.Make(T)
   open SatConstraint.Make(T)

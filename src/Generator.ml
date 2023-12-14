@@ -1,146 +1,210 @@
-open Constraint
+(*
+module RandGen = struct
+  type 'a t = 'a Seq.t
+  let map = Seq.map
 
-module Make(T : Utils.Applicative) = struct
-  open Constraint.Make(T)
-  module Untyped = Untyped.Make(T)
-
-  module Env = Untyped.Var.Map
-  type env = variable Env.t
-
-  type err = eq_error =
-    | Clash of STLC.ty Utils.clash
-    | Cycle of Constraint.variable Utils.cycle
-
-  let eq v1 v2 = Eq(v1, v2)
-  let decode v = MapErr(Decode v, fun e -> Cycle e)
-
-  let rec bind (ty : STLC.ty) (k : Constraint.variable -> ('a, 'e) t) : ('a, 'e) t =
-    match ty with
-    | Constr s ->
-      match s with
-      | Var v ->
-        let w = Constraint.Var.fresh v.name in
-        Exist (w, Some (Var v), k w)
-      | Arrow (ty1, ty2) ->
-        let warr = Constraint.Var.fresh "arr" in
-        bind ty1 @@ fun w1 ->
-        bind ty2 @@ fun w2 ->
-        Exist (warr, Some (Arrow (w1, w2)), k warr)
-      | Prod tys ->
-        let wprod = Constraint.Var.fresh "prod" in
-        let rec loop tys k =
-          match tys with
-          | [] -> k []
-          | ty :: tys ->
-            bind ty @@ fun w ->
-            loop tys (fun ws -> k (w :: ws))
-        in
-        loop tys (fun ws ->
-          Exist (wprod, Some (Prod ws), k wprod)
-        )
-  
-  let rec has_type (env : env) (t : Untyped.term) (w : variable) : (STLC.term, err) t =
-    match t with
-    | Untyped.Var x ->
-      (* [[x : w]] := (E(x) = w) *)
-      let+ () = eq w (Env.find x env)
-      in STLC.Var x
-    | Untyped.App (t, u) ->
-       (* [[t u : w]] := ∃wu. [[t : wu -> w]] ∧ [[u : wu]] *)
-      let wu, wt = Constraint.Var.fresh "wu", Constraint.Var.fresh "wt" in
-      Exist (wu, None,
-        Exist (wt, Some (Arrow (wu, w)),
-          let+ t' = has_type env t wt
-          and+ u' = has_type env u wu
-          in STLC.App(t', u')
-        ))
-    | Untyped.Abs (x, t) ->
-      (* [[fun x -> t : w]] := ∃wx wt. w = wx -> wt ∧ [[t : wt]](E,x↦wx) *)
-      let wx, wt, warr =
-        Constraint.Var.fresh (Untyped.Var.name x),
-        Constraint.Var.fresh "wt",
-        Constraint.Var.fresh "warr" in
-      Exist (wx, None, Exist (wt, None, Exist (warr, Some (Arrow (wx, wt)),
-        let+ () = eq w warr
-        and+ tyx = decode wx
-        and+ t' = has_type (Env.add x wx env) t wt
-        in STLC.Abs(x, tyx, t')
-      )))
-    | Untyped.Let (x, t, u) ->
-      (* [[let x = t in u : w]] := ∃wt. [[t : wt]] ∧ [[u : w]](E,x↦wt) *)
-      let wt = Constraint.Var.fresh (Untyped.Var.name x) in
-      Exist (wt, None,
-        let+ t' = has_type env t wt
-        and+ tyx = decode wt
-        and+ u' = has_type (Env.add x wt env) u w
-        in STLC.Let(x, tyx, t', u')
-     )
-    | Untyped.Annot (t, ty) ->
-      (* [[(t : ty) : w]] := ∃(wt = ty). [[t : wt]] /\ [[wt = w]] *)
-      bind ty @@ fun wt ->
-      let+ t' = has_type env t wt
-      and+ () = eq wt w
-      in t'
-    | Untyped.Tuple ts ->
-      (* [[(t₁, t₂ ... tₙ) : w]] :=
-           ∃w₁.
-             [[t₁ : w₁]] /\
-             ∃w₂.
-               [[t₂ : w₂]] /\
-               ...
-               ∃wₙ.
-                 [[tₙ : wₙ]] /\
-                 w = (w₁ * w₂ * ... * wₙ)
-      *)
-      let rec loop i ts k =
-        match ts with
-        | [] -> k []
-        | t :: ts ->
-          let w = Printf.ksprintf Constraint.Var.fresh "w%d" (i + 1) in
-          Exist (w, None,
-            let+ t' = has_type env t w
-            and+ ts' = loop (i + 1) ts (fun ws -> k (w :: ws))
-            in t' :: ts'
-          )
-      in
-      let+ ts =
-        loop 0 ts (fun ws ->
-          let wprod = Constraint.Var.fresh "wprod" in
-          Exist (wprod, Some (Prod ws),
-                 let+ () = eq w wprod in [])
-        )
-      in STLC.Tuple ts
-    | Untyped.LetTuple (xs, t, u) ->
-      (* [[let (x₁, x₂ ... xₙ) = t in u : w]] :=
-         ∃w₁, w₂... wₙ.
-           ∃(wt = (w₁ * w₂ ... wₙ)).
-             [[t : wt]](E)
-             [[u : w]](E, x₁↦x₁, x₂↦w₂... xₙ↦wₙ) *)
-      let rec loop xs k =
-        match xs with
-        | [] -> k []
-        | x :: xs ->
-          let wx = Constraint.Var.fresh (Untyped.Var.name x) in
-          Exist (wx, None, loop xs (fun ws -> k (wx :: ws)))
-      in
-      loop xs (fun ws ->
-        let wt = Constraint.Var.fresh "wt" in
-        Exist (wt, Some (Prod ws),
-          let+ bindings =
-            let rec loop = function
-              | [] -> Ret (fun _sol -> [])
-              | (x, w) :: ws ->
-                let+ ty = decode w
-                and+ bindings = loop ws
-                in (x, ty) :: bindings
-            in loop (List.combine xs ws)
-          and+ t' = has_type env t wt
-          and+ u' =
-            let env = List.fold_right2 Env.add xs ws env in
-            has_type env u w
-          in STLC.LetTuple (bindings, t', u')
-        )
-      )
-    | Do p ->
-      Do (T.map (fun t -> has_type env t w) p)
+  let pure x = Seq.return x
+  let pair sa sb = Seq.product sa sb
+     
+  let sum seqs = seqs |> List.to_seq |> Seq.concat
+  let bind = Seq.concat_map
 end
+module _ = (RandGen : Utils.Applicative)
+*)
+
+let shuffle arr =
+  for i = Array.length arr - 1 downto 1 do
+    let j = Random.int (i + 1) in
+    let t = arr.(j) in
+    arr.(j) <- arr.(i);
+    arr.(i) <- t
+  done
+
+module RandGen = struct
+  type 'a t = unit -> 'a option
+  let map f v = fun () -> Option.map f (v ())
+  let pure x : 'a t = fun () -> Some x
+  let pair v1 v2 : ('a * 'b) t = fun () ->
+    match v1 (), v2 () with
+    | Some a1, Some a2 -> Some (a1, a2)
+    | None, _ | _, None -> None
+
+  let fail = fun () -> None
+
+  let one_of (arr : 'a array) : 'a t =
+    fun () ->
+    if arr = [| |] then None
+    else Some arr.(Random.int (Array.length arr))
+
+
+  let sum (li : 'a t list) : 'a t =
+    let choices = Array.of_list li in
+    fun () ->
+      shuffle choices;
+      Array.find_map (fun f -> f ()) choices
+
+  let delay (f : unit -> 'a t) : 'a t =
+    fun () -> f () ()
+
+  let bind f v =
+    fun () ->
+    match v () with
+    | None -> None
+    | Some a -> f a ()
+
+  let run ~limit (gen : 'a t) : 'a list =
+    Seq.forever (fun () -> gen)
+    |> Seq.filter_map (fun f -> f ())
+    |> Seq.take limit
+    |> List.of_seq
+end
+
+let ret = RandGen.pure
+let (let+) s f = RandGen.map f s
+let (and+) sa sb = RandGen.pair sa sb
+let ( let* ) s f = RandGen.bind f s
+
+module Untyped = Untyped.Make(RandGen)
+
+module TeVarSet = Set.Make(Untyped.Var)
+module TyVarSet = Set.Make(STLC.TyVar)
+
+module Env = struct
+  type t = {
+    tevars : TeVarSet.t;
+    tyvars : TyVarSet.t ref;
+  }
+  let empty () = {
+    tevars = TeVarSet.empty;
+    tyvars = ref TyVarSet.empty;
+  }
+  
+  let bind_tevar x env =
+    { env with tevars = TeVarSet.add x env.tevars }
+end
+
+let untyped : Untyped.term =
+  let open Untyped in
+  let new_var =
+    Utils.namegen Var.fresh
+      [|"x"; "y"; "z"; "u"; "v"; "w"|]
+  in
+  let rec gen env =
+    let fvars =
+      env.Env.tevars
+      |> TeVarSet.to_seq
+      |> Array.of_seq
+      |> RandGen.one_of
+    in
+    Do (RandGen.delay @@ fun () ->
+        let rule_var =
+          let+ x = fvars in Var x in
+        let rule_app =
+          RandGen.pure (App(gen env, gen env)) in
+        let rule_abs =
+          RandGen.delay @@ fun () ->
+          let x = new_var () in
+          ret (Abs(x, gen (Env.bind_tevar x env))) in
+        let rule_let =
+          RandGen.delay @@ fun () ->
+          let x = new_var () in
+          ret (Let(x, gen env, gen (Env.bind_tevar x env))) in
+        let tuple_size () =
+          if Random.bool () then 2
+          else 1 + Random.int 4
+        in
+        let rule_tuple =
+          RandGen.delay @@ fun () ->
+          let size = tuple_size () in
+          let ts = List.init size (fun _ -> gen env) in
+          ret (Tuple ts)
+        in
+        let rule_lettuple =
+          RandGen.delay @@ fun () ->
+          let size = tuple_size () in
+          let xs = List.init size (fun _ -> new_var ()) in
+          let env' = List.fold_right Env.bind_tevar xs env in
+          ret (LetTuple(xs, gen env, gen env'))
+        in
+        RandGen.sum [
+          rule_var;
+          rule_app;
+          rule_abs;
+          rule_let;
+          rule_tuple;
+          rule_lettuple;
+        ])
+  in gen (Env.empty ())
+
+module Constraint = Constraint.Make(RandGen)
+module Infer = Infer.Make(RandGen)
+
+let constraint_ : (STLC.term, Infer.err) Constraint.t =
+  let w = Constraint.Var.fresh "final_type" in
+  Constraint.(Exist (w, None,
+    Infer.has_type
+      Untyped.Var.Map.empty
+      untyped
+      w))
+    
+module ConstraintSolver = Solver.Make(RandGen)
+module ConstraintPrinter = ConstraintPrinter.Make(RandGen)
+
+let typed ~depth : STLC.term RandGen.t =
+  let open struct
+    type env = ConstraintSolver.env
+  end in
+  let rec loop : type a e r . fuel:int -> env -> (a, e) Constraint.t -> a RandGen.t =
+  fun ~fuel env cstr ->
+    if fuel = 0 then RandGen.fail else
+    let _logs, env, cstr =
+      ConstraintSolver.eval ~log:false env cstr
+    in
+    match cstr with
+    | Ret v -> ret (v (Decode.decode env))
+    | Err _ -> RandGen.fail
+    | _ ->
+    let open Constraint in
+    let ( let+ ) g f = RandGen.map f g in
+    let ( let++ ) r f =
+      match r with
+      | Ok g -> Ok (RandGen.map f g)
+      | Error c -> Error (f c)
+    in
+    let rec expand : type a e . (a, e) Constraint.t -> ((a, e) Constraint.t RandGen.t, (a, e) Constraint.t) result =
+      function
+      | Ret v -> Error (Ret v)
+      | Err e -> Error (Err e)
+      | Map (c, f) ->
+        let++ c = expand c in Map (c, f)
+      | MapErr (c, f) ->
+        let++ c = expand c in MapErr (c, f)
+      | Conj (c1, c2) ->
+        begin match expand c1 with
+        | Ok c1 ->
+          Ok (let+ c1 in Conj (c1, c2))
+        | Error c1 ->
+          let++ c2 = expand c2 in Conj (c1, c2)
+        end
+      | Exist (x, s, c) ->
+        let++ c = expand c in
+        Exist (x, s, c)
+      | Eq _ -> failwith "not a normal form"
+      | Decode _ -> failwith "not a normal form"
+      | Do p ->
+        Ok p
+    in
+    match expand cstr with
+    | Error _ ->
+      (* If this normal form constraint has no Do,
+         then it must be a Ret/Err and we have
+         taken the Ret/Err branch earlier. *)
+      assert false
+    | Ok cstr ->
+      RandGen.bind (fun cstr ->
+        let env = Unif.Env.copy env in
+        loop ~fuel:(fuel - 1) env cstr
+      ) cstr
+  in
+  loop ~fuel:depth (Unif.Env.empty ()) constraint_
+

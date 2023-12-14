@@ -7,7 +7,7 @@ module Constraint = struct
   include Constraint
   include Make(Id)
 end
-module Generator = Generator.Make(Id)
+module Infer = Infer.Make(Id)
 module ConstraintPrinter = ConstraintPrinter.Make(Id)
 module Solver = Solver.Make(Id)
 
@@ -65,8 +65,8 @@ let call_typer ~config (term : Untyped.term) =
   let cst =
     let w = Constraint.Var.fresh "final_type" in
     Constraint.(Exist (w, None,
-      Conj(Generator.has_type Untyped.Var.Map.empty term w,
-           Generator.decode w)))
+      Conj(Infer.has_type Untyped.Var.Map.empty term w,
+           Infer.decode w)))
   in
   if config.show_constraint then
     print_section "Generated constraint"
@@ -90,11 +90,11 @@ let print_result ~config result =
         (STLCPrinter.print_term term);
   | Error err ->
     print_section "Error" (match err with
-      | Generator.Clash (ty1, ty2) ->
+      | Infer.Clash (ty1, ty2) ->
         Printer.incompatible
           (STLCPrinter.print_ty ty1)
           (STLCPrinter.print_ty ty2)
-      | Generator.Cycle (Utils.Cycle v) ->
+      | Infer.Cycle (Utils.Cycle v) ->
         Printer.cycle (Constraint.Var.print v)
     )
       
