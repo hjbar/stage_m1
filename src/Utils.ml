@@ -51,6 +51,15 @@ end = struct
   module Map = Map.Make(Key)
 end
 
+let namegen fresh names =
+  if names = [||] then failwith "namegen: empty names array";
+  let counter = ref 0 in
+  let wrap n = n mod (Array.length names) in
+  fun () ->
+    let idx = !counter in
+    counter := wrap (!counter + 1);
+    fresh names.(idx)
+
 module type Functor = sig
   type 'a t
   val map : ('a -> 'b) -> 'a t -> 'b t

@@ -5,13 +5,7 @@ type slot =
   | Done of STLC.ty
 
 let new_var =
-  let count = ref 0 in
-  let alphabet = [|"α"; "β"; "γ"; "δ"|] in
-  fun () ->
-    let id = !count in
-    incr count;
-    STLC.TyVar.fresh
-      alphabet.(id mod (Array.length alphabet))
+  Utils.namegen STLC.TyVar.fresh [|"α"; "β"; "γ"; "δ"|]
 
 let table = Hashtbl.create 42
 

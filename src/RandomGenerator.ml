@@ -40,13 +40,17 @@ end
 
 let untyped : Untyped.term =
   let open Untyped in
+  let new_var =
+    Utils.namegen Var.fresh
+      [|"x"; "y"; "z"; "u"; "v"; "w"|]
+  in
   let rec gen env = Do (fun () -> () |>
     (let+ x = TeVarSet.to_seq env.Env.tevars in Var x)
     ++
     ret (App(gen env, gen env))
     ++
     ret (
-      let x = Var.fresh "x" in
+      let x = new_var () in
       Abs(x, gen (Env.bind_tevar x env))
     )
   ) in
