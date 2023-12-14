@@ -1,5 +1,4 @@
 module Make(M : Utils.MonadPlus) = struct
-
   let ret = M.return
   let (let+) s f = M.map f s
   
@@ -85,23 +84,19 @@ module Make(M : Utils.MonadPlus) = struct
         untyped
         w))
       
-  module ConstraintSolver = Solver.Make(M)
+  module Solver = Solver.Make(M)
   module ConstraintPrinter = ConstraintPrinter.Make(M)
   
   let typed ~depth : STLC.term M.t =
     let open struct
-      type env = ConstraintSolver.env
+      type env = Solver.env
     end in
     let rec loop : type a e r . fuel:int -> env -> (a, e) Constraint.t -> a M.t =
     fun ~fuel env cstr ->
       if fuel = 0 then M.fail else
       let _logs, env, cstr =
-        ConstraintSolver.eval ~log:false env cstr
+        Solver.eval ~log:false env cstr
       in
-      match cstr with
-      | Ret v -> ret (v (Decode.decode env))
-      | Err _ -> M.fail
-      | _ ->
       let open Constraint in
       let ( let+ ) g f = M.map f g in
       let ( let++ ) r f =
@@ -133,11 +128,15 @@ module Make(M : Utils.MonadPlus) = struct
           Ok p
       in
       match expand cstr with
-      | Error _ ->
-        (* If this normal form constraint has no Do,
-           then it must be a Ret/Err and we have
-           taken the Ret/Err branch earlier. *)
-        assert false
+      | Error cstr ->
+        (* We have reached a normal form. If [fuel = 1],
+           we are happy with that. If [fuel > 1] we
+           were expecting a larger program, so we fail. *)
+        if fuel > 1 then M.fail
+        else begin match Solver.solve ~log:false env cstr |> snd with
+          | Ok v -> M.return v
+          | Error _ -> M.fail
+        end
       | Ok cstr ->
         M.bind cstr (fun cstr ->
           let env = Unif.Env.copy env in

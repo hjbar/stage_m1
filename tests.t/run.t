@@ -306,64 +306,105 @@ There are not many programs with depth 3, 4 and 5.
   lambda (z/3 : α/1). z/3
 
   $ minigen --exhaustive --depth 4 --count 100
-  lambda (x/10 : δ/2). x/10
-  
   lambda (x/10 : α/4). lambda (y/14 : δ/3). x/10
   
   lambda (x/10 : β/4). lambda (y/14 : α/4). y/14
 
-  $ minigen --exhaustive --depth 5 --count 100
-  lambda (v/4e : γ/a). v/4e
-  
-  lambda (v/4e : γ/d). lambda (u/65 : β/d). u/65
-  
-  lambda (v/4e : β/d). lambda (u/65 : δ/d). v/4e
-  
-  lambda (v/4e : γ/d). lambda (u/65 : α/f). lambda (z/6a : δ/e). u/65
-  
-  lambda (v/4e : α/f). lambda (u/65 : δ/d). lambda (z/6a : δ/e). v/4e
-  
-  lambda (v/4e : γ/d). lambda (u/65 : δ/d). lambda (z/6a : α/f). z/6a
-  
-  lambda (v/4e : γ/a). let (z/7e : γ/a) = v/4e in v/4e
-  
-  lambda (v/4e : γ/a). let (z/7e : γ/a) = v/4e in z/7e
-  
-  lambda (v/4e : β/12). (v/4e, v/4e)
-  
-  lambda
-  (v/4e : γ/a). let ((y/b5 : δ/14), (z/b5 : γ/14)) = v/4e in v/4e
-  
-  lambda
-  (v/4e : {γ/a * γ/14}).
-    let ((y/b5 : γ/a), (z/b5 : γ/14)) = v/4e in y/b5
-  
-  lambda
-  (v/4e : {γ/a * γ/14}).
-    let ((y/b5 : δ/14), (z/b5 : γ/a)) = v/4e in z/b5
-  
-  let (u/cb : γ) = lambda (v/db : α/1a). v/db in u/cb
-
 An example of random sampling output at higher depth.
 
   $ minigen --seed 42 --depth 10 --count 10
-  lambda (v/14 : β/7). v/14
+  lambda
+  (x/5cb : α/355).
+    lambda
+    (y/5cb : β/354 -> δ/354).
+      lambda (z/5cb : γ/354). lambda (u/5cb : β/354). (z/5cb, y/5cb u/5cb)
   
-  lambda (x/4a : β/27). x/4a
+  let
+  (v/933 : δ/524 -> δ/524)
+  =
+  let (w/933 : δ/524 -> δ/524) = lambda (x/934 : δ/524). x/934 in w/933
+  in (v/933, lambda (y/934 : γ/524). y/934)
   
-  lambda (u/52 : γ/28). u/52
+  lambda
+  (w/a85 : {δ/5ca * γ/5ca}).
+    let
+    (x/a86 : {δ/5ca * γ/5ca})
+    =
+    w/a85
+    in
+      (lambda (y/a86 : δ/5ca). y/a86)
+        (let ((z/a86 : δ/5ca), (u/a86 : γ/5ca)) = w/a85 in z/a86)
   
-  lambda (w/5a : γ/32). w/5a
+  lambda
+  (z/da4 : α/765).
+    let
+    (u/da4 : α/765)
+    =
+    z/da4
+    in
+      lambda
+      (v/da4 : δ/764).
+        lambda (w/da4 : γ/764). (lambda (x/da5 : β/764). v/da4, v/da4)
   
-  (lambda (z/8e : δ/4). z/8e)
-    (lambda (u/8e : γ/4d -> δ/4d). lambda (v/8e : γ/4d). u/8e v/8e)
+  lambda
+  (u/1568 : {α/ba4 * δ/ba3}).
+    (
+      (u/1568, let ((v/1568 : α/ba4), (w/1568 : δ/ba3)) = u/1568 in v/1568),
+      lambda (x/1569 : γ/ba3). u/1568
+    )
   
-  lambda (w/b5 : α/64). w/b5
+  lambda
+  (y/2746 : {γ/1527 * β/1527}).
+    lambda
+    (z/2746 : α/1527).
+      (let
+      ((u/2746 : γ/1527), (v/2746 : β/1527))
+      =
+      y/2746
+      in lambda (w/2746 : α/1527). lambda (x/2747 : δ/1526). x/2747)
+        z/2746
   
-  lambda (w/b8 : β/6a). w/b8
+  let
+  (
+    (v/3113 : α/1a59 -> δ/1a58 -> α/1a59),
+    (w/3113 : γ/1a58 -> γ/1a58)
+  )
+  =
+  (
+    lambda (x/3114 : α/1a59). lambda (y/3114 : δ/1a58). x/3114,
+    lambda (z/3114 : γ/1a58). z/3114
+  )
+  in lambda (u/3114 : β/1a58). u/3114
   
-  lambda (v/107 : α/96). v/107
+  lambda
+  (z/391f : γ/1e91).
+    lambda
+    (u/391f : α/1e91).
+      let
+      (v/391f : α/1e91)
+      =
+      let
+      (w/391f : β/1e91 -> β/1e91)
+      =
+      lambda (x/3920 : β/1e91). x/3920
+      in u/391f
+      in lambda (y/3920 : δ/1e90). u/391f
   
-  lambda (v/116 : δ/9b). (v/116, v/116)
+  (
+    lambda (x/3c59 : α/2052). lambda (y/3c59 : δ/2051). y/3c59,
+    lambda
+    (z/3c59 : γ/2051).
+      lambda
+      (u/3c59 : {β/2051 * α/2051}).
+        let ((v/3c59 : β/2051), (w/3c59 : α/2051)) = u/3c59 in z/3c59
+  )
   
-  lambda (z/119 : α/9e). z/119
+  lambda
+  (w/5708 : δ/2e9e).
+    lambda
+    (x/5709 : γ/2e9f).
+      let
+      (y/5709 : β/2e9f -> α/2e9f -> δ/2e9e)
+      =
+      lambda (z/5709 : β/2e9f). lambda (u/5709 : α/2e9f). w/5708
+      in (x/5709, y/5709)
