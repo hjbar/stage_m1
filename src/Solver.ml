@@ -1,4 +1,4 @@
-module Make (T : Utils.Applicative) = struct
+module Make (T : Utils.Functor) = struct
   open Constraint.Make(T)
   module SatConstraint = SatConstraint.Make(T)
   module ConstraintSimplifier = ConstraintSimplifier.Make(T)

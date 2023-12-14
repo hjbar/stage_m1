@@ -65,10 +65,20 @@ module type Functor = sig
   val map : ('a -> 'b) -> 'a t -> 'b t
 end
 
-module type Applicative = sig
+module type MonadPlus = sig
   include Functor
-  val pure : 'a -> 'a t
-  val pair : 'a t -> 'b t -> ('a * 'b) t
+  val return : 'a -> 'a t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
+
+  (* TODO document/explain *)
+  val delay : (unit -> 'a t) -> 'a t
+
+  val sum : 'a t list -> 'a t
+  (* [fail] and [one_of] can be derived from [sum],
+     but they typically have simpler and more efficient
+     specialized implementations. *)
+  val fail : 'a t
+  val one_of : 'a array -> 'a t
 end
 
 module Id = struct
@@ -77,4 +87,4 @@ module Id = struct
   let pure v = v
   let pair va vb = (va, vb)
 end
-module _ = (Id : Applicative)
+module _ = (Id : Functor)

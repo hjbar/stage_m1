@@ -1,0 +1,13 @@
+type 'a t = 'a Seq.t
+let map = Seq.map
+            
+let delay f = fun () -> f () ()
+
+let return x = Seq.return x
+let bind s f = Seq.concat_map f s
+
+let fail = Seq.empty
+let one_of = Array.to_seq
+let sum seqs = seqs |> List.to_seq |> Seq.concat
+
+let all s = s

@@ -1,4 +1,4 @@
-module Make(T : Utils.Applicative) = struct
+module Make(T : Utils.Functor) = struct
   module Var = STLC.TeVar
   
   type 't term_ =

@@ -1,4 +1,4 @@
-module Make(T : Utils.Applicative) = struct
+module Make(T : Utils.Functor) = struct
   module Constraint = Constraint.Make(T)
   open Constraint
   module Untyped = Untyped.Make(T)

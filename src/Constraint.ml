@@ -10,7 +10,7 @@ module Types = struct
 end
 include Types
 
-module Make (T : Utils.Applicative) = struct
+module Make (T : Utils.Functor) = struct
   include Types
 
   type eq_error =

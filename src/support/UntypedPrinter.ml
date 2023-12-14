@@ -1,4 +1,4 @@
-module Make(T : Utils.Applicative) = struct
+module Make(T : Utils.Functor) = struct
   open Untyped.Make(T)
   
   let print_term : term -> PPrint.document =
