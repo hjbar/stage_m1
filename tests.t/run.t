@@ -303,75 +303,64 @@ fine if your own implementation produces different (sensible) results.
 There are not many programs with depth 3, 4 and 5.
 
   $ minigen --exhaustive --depth 3 --count 100
-  lambda (y/3 : α/1). y/3
+  lambda (x/4 : α/1). x/4
 
   $ minigen --exhaustive --depth 4 --count 100
-  lambda (w/17 : δ/2). w/17
+  lambda (u/f : δ/2). u/f
   
-  lambda (w/17 : β/4). lambda (w/22 : α/4). w/17
+  lambda (u/f : α/4). lambda (x/14 : δ/3). u/f
   
-  lambda (w/17 : γ/4). lambda (w/22 : β/4). w/22
-  
-  lambda (w/17 : δ/4). (w/17,)
+  lambda (u/f : β/4). lambda (x/14 : α/4). x/14
 
   $ minigen --exhaustive --depth 5 --count 100
-  lambda (z/83 : δ/12). z/83
+  lambda (v/4c : β/b). v/4c
   
-  lambda (z/83 : α/16). lambda (u/105 : δ/15). u/105
+  lambda (v/4c : γ/e). lambda (y/64 : β/e). v/4c
   
-  lambda (z/83 : δ/15). lambda (u/105 : β/16). z/83
+  lambda (v/4c : δ/e). lambda (y/64 : γ/e). y/64
   
-  lambda
-  (z/83 : α/16). lambda (u/105 : δ/17). lambda (x/110 : γ/17). u/105
+  lambda (v/4c : α/10). lambda (y/64 : β/e). lambda (w/68 : δ/f). v/4c
   
-  lambda
-  (z/83 : α/16). lambda (u/105 : β/16). lambda (x/110 : δ/17). x/110
+  lambda (v/4c : δ/e). lambda (y/64 : β/e). lambda (w/68 : α/10). w/68
   
-  lambda
-  (z/83 : δ/17). lambda (u/105 : β/16). lambda (x/110 : γ/17). z/83
+  lambda (v/4c : δ/e). lambda (y/64 : α/10). lambda (w/68 : δ/f). y/64
   
-  lambda (z/83 : α/16). lambda (u/105 : α/18). (u/105,)
+  lambda (v/4c : β/b). let (w/7e : β/b) = v/4c in v/4c
   
-  lambda (z/83 : α/18). lambda (u/105 : β/16). (z/83,)
-  
-  lambda (z/83 : δ/12). let (u/128 : δ/12) = z/83 in u/128
-  
-  lambda (z/83 : δ/12). let (u/128 : δ/12) = z/83 in z/83
-  
-  lambda (z/83 : β/21). (z/83, z/83)
+  lambda (v/4c : β/b). let (w/7e : β/b) = v/4c in w/7e
   
   lambda
-  (z/83 : {δ/12 * γ/23}).
-    let ((x/187 : δ/12), (y/187 : γ/23)) = z/83 in x/187
+  (v/4c : β/b). let ((w/b8 : α/16), (x/b9 : δ/15)) = v/4c in v/4c
   
   lambda
-  (z/83 : {δ/12 * γ/23}).
-    let ((x/187 : δ/23), (y/187 : δ/12)) = z/83 in y/187
+  (v/4c : {β/b * δ/15}).
+    let ((w/b8 : β/b), (x/b9 : δ/15)) = v/4c in w/b8
   
   lambda
-  (z/83 : δ/12). let ((x/187 : δ/23), (y/187 : γ/23)) = z/83 in z/83
+  (v/4c : {β/b * δ/15}).
+    let ((w/b8 : α/16), (x/b9 : β/b)) = v/4c in x/b9
   
-  let (w/204 : δ) = lambda (x/221 : β/30). x/221 in w/204
+  let (y/d0 : β) = lambda (u/e0 : γ/1c). u/e0 in y/d0
 
 An example of random sampling output at higher depth.
 
   $ minigen --seed 42 --depth 10 --count 10
-  lambda (w/18 : α/7). w/18
+  lambda (w/12 : α/7). w/12
   
-  lambda (x/19 : β/7). x/19
+  lambda (x/13 : β/7). x/13
   
-  let (v/80 : α/10) = lambda (w/80 : α/63). w/80 in v/80
+  let (v/50 : α/a) = lambda (w/50 : α/3f). w/50 in v/50
   
-  lambda (y/88 : β/69). y/88
+  lambda (y/58 : β/45). y/58
   
-  lambda (u/91 : α/72). u/91
+  lambda (u/5b : α/48). u/5b
   
-  lambda (v/101 : β/80). lambda (w/101 : α/80). w/101
+  lambda (v/65 : β/50). lambda (w/65 : α/50). w/65
   
-  lambda (y/115 : α/88). y/115
+  lambda (y/73 : α/58). y/73
   
-  lambda (u/131 : α/98). u/131
+  lambda (u/83 : α/62). u/83
   
-  lambda (z/163 : β/119). z/163
+  lambda (z/a3 : β/77). z/a3
   
-  lambda (u/163 : γ/119). let (v/163 : γ/119) = u/163 in v/163
+  lambda (u/a3 : γ/77). let (v/a3 : γ/77) = u/a3 in v/a3

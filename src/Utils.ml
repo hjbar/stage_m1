@@ -41,7 +41,7 @@ end = struct
 
   let print { name; stamp } =
     if stamp = 0 then PPrint.string name
-    else Printf.ksprintf PPrint.string "%s/%d" name stamp
+    else Printf.ksprintf PPrint.string "%s/%x" name stamp
     
   module Key = struct
     type nonrec t = t
