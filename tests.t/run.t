@@ -295,3 +295,83 @@ a lot of those.)
     cycle on constraint variable
     wu
   
+## Generator tests
+
+This gives example outputs for my implementation. It is completely
+fine if your own implementation produces different (sensible) results.
+
+There are not many programs with depth 3, 4 and 5.
+
+  $ minigen --exhaustive --depth 3 --count 100
+  lambda (y/3 : α/1). y/3
+
+  $ minigen --exhaustive --depth 4 --count 100
+  lambda (w/17 : δ/2). w/17
+  
+  lambda (w/17 : β/4). lambda (w/22 : α/4). w/17
+  
+  lambda (w/17 : γ/4). lambda (w/22 : β/4). w/22
+  
+  lambda (w/17 : δ/4). (w/17,)
+
+  $ minigen --exhaustive --depth 5 --count 100
+  lambda (z/83 : δ/12). z/83
+  
+  lambda (z/83 : α/16). lambda (u/105 : δ/15). u/105
+  
+  lambda (z/83 : δ/15). lambda (u/105 : β/16). z/83
+  
+  lambda
+  (z/83 : α/16). lambda (u/105 : δ/17). lambda (x/110 : γ/17). u/105
+  
+  lambda
+  (z/83 : α/16). lambda (u/105 : β/16). lambda (x/110 : δ/17). x/110
+  
+  lambda
+  (z/83 : δ/17). lambda (u/105 : β/16). lambda (x/110 : γ/17). z/83
+  
+  lambda (z/83 : α/16). lambda (u/105 : α/18). (u/105,)
+  
+  lambda (z/83 : α/18). lambda (u/105 : β/16). (z/83,)
+  
+  lambda (z/83 : δ/12). let (u/128 : δ/12) = z/83 in u/128
+  
+  lambda (z/83 : δ/12). let (u/128 : δ/12) = z/83 in z/83
+  
+  lambda (z/83 : β/21). (z/83, z/83)
+  
+  lambda
+  (z/83 : {δ/12 * γ/23}).
+    let ((x/187 : δ/12), (y/187 : γ/23)) = z/83 in x/187
+  
+  lambda
+  (z/83 : {δ/12 * γ/23}).
+    let ((x/187 : δ/23), (y/187 : δ/12)) = z/83 in y/187
+  
+  lambda
+  (z/83 : δ/12). let ((x/187 : δ/23), (y/187 : γ/23)) = z/83 in z/83
+  
+  let (w/204 : δ) = lambda (x/221 : β/30). x/221 in w/204
+
+An example of random sampling output at higher depth.
+
+  $ minigen --seed 42 --depth 10 --count 10
+  lambda (w/18 : α/7). w/18
+  
+  lambda (x/19 : β/7). x/19
+  
+  let (v/80 : α/10) = lambda (w/80 : α/63). w/80 in v/80
+  
+  lambda (y/88 : β/69). y/88
+  
+  lambda (u/91 : α/72). u/91
+  
+  lambda (v/101 : β/80). lambda (w/101 : α/80). w/101
+  
+  lambda (y/115 : α/88). y/115
+  
+  lambda (u/131 : α/98). u/131
+  
+  lambda (z/163 : β/119). z/163
+  
+  lambda (u/163 : γ/119). let (v/163 : γ/119) = u/163 in v/163
