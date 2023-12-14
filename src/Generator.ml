@@ -139,7 +139,6 @@ module Make(M : Utils.MonadPlus) = struct
         end
       | Ok cstr ->
         M.bind cstr (fun cstr ->
-          let env = Unif.Env.copy env in
           loop ~fuel:(fuel - 1) env cstr
         )
     in

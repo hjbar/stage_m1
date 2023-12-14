@@ -5,29 +5,19 @@ module Make(T : Utils.Functor) = struct
   type env = Unif.Env.t
 
   let simplify (env : env) (c : sat_constraint) : sat_constraint =
-    let is_in_env v =
-      match Unif.Env.uvar env v with
-      | _ -> true
-      | exception Not_found -> false
-    in
+    let is_in_env v = Unif.Env.mem v env in
     let normalize v =
-      match Unif.Env.unode env v with
-      | unode -> unode.Unif.var
+      match Unif.Env.repr v env with
+      | { var; _ } -> var
       | exception Not_found -> v
     in
     let module VarSet = Constraint.Var.Set in
     let exist v s (fvs, c) : VarSet.t * sat_constraint =
       assert (Var.eq v (normalize v));
       let s =
-        match Unif.Env.unode env v with
+        match Unif.Env.repr v env with
         | exception Not_found -> s
-        | unode ->
-          let cvar_of_uvar uvar =
-            let open Unif in
-            (UF.get env.Env.store uvar).var in
-          Option.map
-            (Structure.map cvar_of_uvar)
-            unode.Unif.data
+        | { structure; _ } -> structure
       in
       let fvs =
         let fvs = ref fvs in

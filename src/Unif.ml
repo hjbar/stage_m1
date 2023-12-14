@@ -1,11 +1,20 @@
 module UF = UnionFind.Make(UnionFind.StoreMap)
 
+type var = Constraint.variable
+
+(* The internal representation in terms of union-find nodes. *)
 type uvar = unode UF.rref
 and unode = {
-  var: Constraint.variable;
-  data: structure option;
+  var: var;
+  data: uvar Structure.t option;
 }
-and structure = uvar Structure.t
+
+(* The user-facing representation hides union-find nodes,
+   replaced by the corresponding constraint variables. *)
+type repr = {
+  var: var;
+  structure: var Structure.t option;
+}
 
 module Env : sig
   type t = {
@@ -15,15 +24,13 @@ module Env : sig
 
   val empty : unit -> t
 
-  val copy : t -> t
+  val mem : var -> t -> bool
 
-  val mem : Constraint.Var.t -> t -> bool
+  val add : var -> Constraint.structure option -> t -> t
 
-  val add : Constraint.Var.t -> Constraint.structure option -> t -> t
+  val uvar : var -> t -> uvar
 
-  val uvar : t -> Constraint.Var.t -> uvar
-
-  val unode : t -> Constraint.Var.t -> unode
+  val repr : var -> t -> repr
 end = struct
   type t = {
     store: unode UF.store;
@@ -35,28 +42,31 @@ end = struct
     let map = Constraint.Var.Map.empty in
     { store; map }
 
-  let copy env = { env with store = UF.copy env.store }
-
-  let uvar env v : uvar = Constraint.Var.Map.find v env.map
-
-  let unode env v = UF.get env.store (uvar env v)
+  let uvar var env : uvar =
+    Constraint.Var.Map.find var env.map
 
   let mem var env =
     Constraint.Var.Map.mem var env.map
 
   let add var structure env =
-    let data = Option.map (Structure.map (uvar env)) structure in
+    let data = Option.map (Structure.map (fun v -> uvar v env)) structure in
     let uvar = UF.make env.store { var; data } in
     { env with map = Constraint.Var.Map.add var uvar env.map }
+
+  let repr var env =
+    let { var; data; } = UF.get env.store (uvar var env) in
+    let var_of_uvar uv = (UF.get env.store uv).var in
+    let structure = Option.map (Structure.map var_of_uvar) data in
+    { var; structure; }
 end
 
-type clash = Constraint.variable Utils.clash
+type clash = var Utils.clash
 exception Clash of clash
-exception Cycle of Constraint.variable Utils.cycle
+exception Cycle of var Utils.cycle
 
 type err =
   | Clash of clash
-  | Cycle of Constraint.variable Utils.cycle
+  | Cycle of var Utils.cycle
 
 let check_no_cycle env v =
   let open struct
@@ -79,11 +89,11 @@ let check_no_cycle env v =
 let rec unify orig_env v1 v2 : (Env.t, err) result =
   let env = { orig_env with Env.store = UF.copy orig_env.Env.store } in
   let queue = Queue.create () in
-  Queue.add (Env.uvar env v1, Env.uvar env v2) queue;
+  Queue.add (Env.uvar v1 env, Env.uvar v2 env) queue;
   match unify_uvars env.Env.store queue with
   | exception Clash clash -> Error (Clash clash)
   | () ->
-  match check_no_cycle env (Env.uvar env v1) with
+  match check_no_cycle env (Env.uvar v1 env) with
   | exception Cycle v -> Error (Cycle v)
   | () -> Ok env
 
