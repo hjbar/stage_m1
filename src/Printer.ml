@@ -9,9 +9,9 @@ let string_of_doc doc =
 let arrow t u = group @@
   t ^/^ string "->" ^/^ u
 
-(** ($t1 * $t2 * ... $tn) *)
+(** {$t1 * $t2 * ... $tn} *)
 let product ts = group @@
-  parens (separate (break 1 ^^ star ^^ space) ts)
+  braces (separate (break 1 ^^ star ^^ space) ts)
 
 (** ($term : $ty) *)
 let annot term ty = group @@

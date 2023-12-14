@@ -191,14 +191,14 @@ the inference variables.
             ∧ decode y
             ∧ (∃wu (wt/3 = wu -> wt/2).
               wt/3 = f
-              ∧ (∃w1. w1 = x ∧ (∃w2. w2 = y ∧ (∃(wprod = (w1 * w2)). wu = wprod)))))))
+              ∧ (∃w1. w1 = x ∧ (∃w2. w2 = y ∧ (∃(wprod = {w1 * w2}). wu = wprod)))))))
       ∧ decode final_type
   
   Inferred type:
-    ((γ * β) -> α) -> γ -> β -> α
+    ({γ * β} -> α) -> γ -> β -> α
   
   Elaborated term:
-    lambda (f : (γ * β) -> α). lambda (x : γ). lambda (y : β). f (x, y)
+    lambda (f : {γ * β} -> α). lambda (x : γ). lambda (y : β). f (x, y)
   
 
   $ minihell $FLAGS uncurry.test
@@ -213,7 +213,7 @@ the inference variables.
         ∧ (∃p wt/1 (warr/1 = p -> wt/1).
           wt = warr/1
           ∧ decode p
-          ∧ (∃x y (wt/2 = (x * y)).
+          ∧ (∃x y (wt/2 = {x * y}).
             decode x
             ∧ decode y
             ∧ wt/2 = p
@@ -222,12 +222,12 @@ the inference variables.
       ∧ decode final_type
   
   Inferred type:
-    (β -> γ -> α) -> (β * γ) -> α
+    (β -> γ -> α) -> {β * γ} -> α
   
   Elaborated term:
     lambda
     (f : β -> γ -> α).
-      lambda (p : (β * γ)). let ((x : β), (y : γ)) = p in f x y
+      lambda (p : {β * γ}). let ((x : β), (y : γ)) = p in f x y
   
 ## Cyclic types
 
