@@ -48,19 +48,18 @@ module Make(M : Utils.MonadPlus) = struct
             M.delay @@ fun () ->
             let x = new_var () in
             ret (Let(x, gen env, gen (Env.bind_tevar x env))) in
-          let tuple_size () =
-            if Random.bool () then 2
-            else 1 + Random.int 4
+          let tuple_size =
+            M.one_of [|2|]
           in
           let rule_tuple =
             M.delay @@ fun () ->
-            let size = tuple_size () in
+            M.bind tuple_size @@ fun size ->
             let ts = List.init size (fun _ -> gen env) in
             ret (Tuple ts)
           in
           let rule_lettuple =
             M.delay @@ fun () ->
-            let size = tuple_size () in
+            M.bind tuple_size @@ fun size ->
             let xs = List.init size (fun _ -> new_var ()) in
             let env' = List.fold_right Env.bind_tevar xs env in
             ret (LetTuple(xs, gen env, gen env'))
