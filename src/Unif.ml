@@ -17,6 +17,8 @@ module Env : sig
 
   val copy : t -> t
 
+  val mem : Constraint.Var.t -> t -> bool
+
   val add : Constraint.Var.t -> Constraint.structure option -> t -> t
 
   val uvar : t -> Constraint.Var.t -> uvar
@@ -38,6 +40,9 @@ end = struct
   let uvar env v : uvar = Constraint.Var.Map.find v env.map
 
   let unode env v = UF.get env.store (uvar env v)
+
+  let mem var env =
+    Constraint.Var.Map.mem var env.map
 
   let add var structure env =
     let data = Option.map (Structure.map (uvar env)) structure in

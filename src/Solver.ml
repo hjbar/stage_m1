@@ -62,7 +62,13 @@ module Make (T : Utils.Applicative) = struct
             Err (Clash (decode y1, decode y2))
         end
       | Exist (x, s, c) ->
-        env := Unif.Env.add x s !env;
+        (* Our solver may re-enter existentials
+           that it has already traversed. In this
+           case we do not want to re-bind them in the
+           environment, but reuse the previous binding
+           which accumulated information through unifications. *)
+        if not (Unif.Env.mem x !env) then
+          env := Unif.Env.add x s !env;
         log ();
         begin match eval c with
         | Ret v -> Ret v
