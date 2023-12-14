@@ -10,6 +10,8 @@ module Make(T : Utils.Functor) = struct
     | Clash of STLC.ty Utils.clash
     | Cycle of Constraint.variable Utils.cycle
 
+  type 'a constraint_ = ('a, err) Constraint.t
+
   let eq v1 v2 = Eq(v1, v2)
   let decode v = MapErr(Decode v, fun e -> Cycle e)
 
