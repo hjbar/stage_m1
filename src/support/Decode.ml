@@ -29,7 +29,7 @@ let decode (env : env) (v : Constraint.variable) : STLC.ty =
       ty
     end
   in
-  (* Because we now perform an occur-check on unification,
-     we can assume that we never find any cycle during decoding:
+  (* Because we perform an occur-check on unification, we can assume
+     that we never find any cycle during decoding:
      [Found_cycle] should never be raised here. *)
   decode v

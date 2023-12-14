@@ -44,6 +44,7 @@ module Make(T : Utils.Functor) = struct
   
     in print_top c
   
-  let print_constraint (type a e) (c : (a, e) t) : PPrint.document =
-    print_sat_constraint (erase c)
+  let print_constraint (type a e) (c : (a, e) Constraint.t)
+    : PPrint.document
+  = print_sat_constraint (erase c)
 end

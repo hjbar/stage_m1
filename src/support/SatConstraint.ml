@@ -1,7 +1,9 @@
 module Make (T : Utils.Functor) = struct
-  open Constraint.Make(T)
+  module Constraint = Constraint.Make(T)
+  open Constraint
 
-  type sat_constraint =
+  type t = sat_constraint
+  and sat_constraint =
     | Exist of variable * structure option * sat_constraint
     | Conj of sat_constraint list (* [True] is [Conj []] *)
     | Eq of variable * variable
@@ -9,14 +11,18 @@ module Make (T : Utils.Functor) = struct
     | False
     | Do of sat_constraint T.t
 
-  let rec erase : type a e. (a, e) t -> sat_constraint = function
+  let rec erase
+    : type a e. (a, e) Constraint.t -> sat_constraint
+  = function
   | Exist (v, c, s) -> Exist (v, c, erase s)
   | Map (c, _) -> erase c
   | MapErr (c, _) -> erase c
   | Ret _v -> Conj []
   | Err _e -> False
   | Conj (_, _) as conj ->
-    let rec peel : type a e . (a, e) t -> sat_constraint list = function
+    let rec peel
+      : type a e . (a, e) Constraint.t -> sat_constraint list
+    = function
       | Map (c, _) -> peel c
       | MapErr (c, _) -> peel c
       | Conj (c1, c2) -> peel c1 @ peel c2
