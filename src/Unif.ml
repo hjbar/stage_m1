@@ -102,7 +102,7 @@ and merge queue (n1 : unode) (n2 : unode) : unode =
     | None, (Some _ as d) | (Some _ as d), None -> d
     | Some st1, Some st2 ->
       match
-        Structure.map2 (fun v1 v2 ->
+        Structure.merge (fun v1 v2 ->
           Queue.add (v1, v2) queue;
           v1
         ) st1 st2

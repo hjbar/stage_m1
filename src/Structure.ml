@@ -8,14 +8,6 @@ type ('v, 'a) t_ =
 type 'a raw = (string, 'a) t_
 type 'a t = (TyVar.t, 'a) t_
 
-let eq_head : 'a t -> 'b t -> bool =
-  fun s1 s2 -> match s1, s2 with
-    | Var alpha1, Var alpha2 ->
-      TyVar.eq alpha1 alpha2
-    | Arrow _, Arrow _ -> true
-    | Prod _, Prod _ -> true
-    | (Var _ | Arrow _ | Prod _), _ -> false
-
 let iter f = function
   | Var _alpha -> ()
   | Arrow (t1, t2) -> f t1; f t2
@@ -26,9 +18,9 @@ let map f = function
   | Arrow (t1, t2) -> Arrow (f t1, f t2)
   | Prod ts -> Prod (List.map f ts)
 
-let map2 f s1 s2 = match s1, s2 with
+let merge f s1 s2 = match s1, s2 with
   | Var alpha, Var beta ->
-    if TyVar.eq alpha beta then Some s1
+    if TyVar.eq alpha beta then Some (Var alpha)
     else None
   | Var _, _ | _, Var _ -> None
 
