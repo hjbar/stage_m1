@@ -312,99 +312,39 @@ There are not many programs with depth 3, 4 and 5.
 
 An example of random sampling output at higher depth.
 
-  $ minigen --seed 42 --depth 10 --count 10
-  lambda
-  (x/5cb : α/355).
-    lambda
-    (y/5cb : β/354 -> δ/354).
-      lambda (z/5cb : γ/354). lambda (u/5cb : β/354). (z/5cb, y/5cb u/5cb)
+  $ minigen --seed 42 --depth 6 --count 10
+  lambda (w/8d : β/4c -> γ/4c). lambda (x/8e : β/4c). w/8d x/8e
   
-  let
-  (v/933 : δ/524 -> δ/524)
-  =
-  let (w/933 : δ/524 -> δ/524) = lambda (x/934 : δ/524). x/934 in w/933
-  in (v/933, lambda (y/934 : γ/524). y/934)
+  lambda (u/e4 : α/78). (lambda (v/e4 : α/78). v/e4) u/e4
+  
+  lambda (v/37d : δ/1a6). lambda (w/37d : δ/1a6 -> γ/1a6). w/37d v/37d
+  
+  lambda (z/3d7 : α/1c3). (lambda (u/3d7 : α/1c3). u/3d7) z/3d7
+  
+  (lambda (y/3e1 : α/1cb). y/3e1, lambda (z/3e1 : δ/1ca). z/3e1)
   
   lambda
-  (w/a85 : {δ/5ca * γ/5ca}).
+  (u/3fa : β/1dd).
+    let (v/3fa : β/1dd) = u/3fa in lambda (w/3fa : α/1dd). u/3fa
+  
+  lambda (y/475 : γ/210). (lambda (z/475 : γ/210). y/475) y/475
+  
+  lambda
+  (x/48e : {γ/222 * β/222}).
     let
-    (x/a86 : {δ/5ca * γ/5ca})
+    ((y/48e : γ/222), (z/48e : β/222))
     =
-    w/a85
-    in
-      (lambda (y/a86 : δ/5ca). y/a86)
-        (let ((z/a86 : δ/5ca), (u/a86 : γ/5ca)) = w/a85 in z/a86)
+    x/48e
+    in lambda (u/48e : α/222). u/48e
   
   lambda
-  (z/da4 : α/765).
+  (z/51f : {β/262 * α/262}).
     let
-    (u/da4 : α/765)
+    ((u/51f : β/262), (v/51f : α/262))
     =
-    z/da4
-    in
-      lambda
-      (v/da4 : δ/764).
-        lambda (w/da4 : γ/764). (lambda (x/da5 : β/764). v/da4, v/da4)
+    z/51f
+    in lambda (w/51f : δ/261). u/51f
   
   lambda
-  (u/1568 : {α/ba4 * δ/ba3}).
-    (
-      (u/1568, let ((v/1568 : α/ba4), (w/1568 : δ/ba3)) = u/1568 in v/1568),
-      lambda (x/1569 : γ/ba3). u/1568
-    )
-  
-  lambda
-  (y/2746 : {γ/1527 * β/1527}).
-    lambda
-    (z/2746 : α/1527).
-      (let
-      ((u/2746 : γ/1527), (v/2746 : β/1527))
-      =
-      y/2746
-      in lambda (w/2746 : α/1527). lambda (x/2747 : δ/1526). x/2747)
-        z/2746
-  
-  let
-  (
-    (v/3113 : α/1a59 -> δ/1a58 -> α/1a59),
-    (w/3113 : γ/1a58 -> γ/1a58)
-  )
-  =
-  (
-    lambda (x/3114 : α/1a59). lambda (y/3114 : δ/1a58). x/3114,
-    lambda (z/3114 : γ/1a58). z/3114
-  )
-  in lambda (u/3114 : β/1a58). u/3114
-  
-  lambda
-  (z/391f : γ/1e91).
-    lambda
-    (u/391f : α/1e91).
-      let
-      (v/391f : α/1e91)
-      =
-      let
-      (w/391f : β/1e91 -> β/1e91)
-      =
-      lambda (x/3920 : β/1e91). x/3920
-      in u/391f
-      in lambda (y/3920 : δ/1e90). u/391f
-  
-  (
-    lambda (x/3c59 : α/2052). lambda (y/3c59 : δ/2051). y/3c59,
-    lambda
-    (z/3c59 : γ/2051).
-      lambda
-      (u/3c59 : {β/2051 * α/2051}).
-        let ((v/3c59 : β/2051), (w/3c59 : α/2051)) = u/3c59 in z/3c59
-  )
-  
-  lambda
-  (w/5708 : δ/2e9e).
-    lambda
-    (x/5709 : γ/2e9f).
-      let
-      (y/5709 : β/2e9f -> α/2e9f -> δ/2e9e)
-      =
-      lambda (z/5709 : β/2e9f). lambda (u/5709 : α/2e9f). w/5708
-      in (x/5709, y/5709)
+  (z/547 : γ/278).
+    let (u/547 : β/278 -> β/278) = lambda (v/547 : β/278). v/547 in z/547
