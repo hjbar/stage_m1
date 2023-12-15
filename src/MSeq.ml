@@ -10,4 +10,4 @@ let fail = Seq.empty
 let one_of = Array.to_seq
 let sum seqs = seqs |> List.to_seq |> Seq.concat
 
-let all s = s
+let run s = s

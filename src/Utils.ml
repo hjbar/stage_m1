@@ -79,12 +79,12 @@ module type MonadPlus = sig
      specialized implementations. *)
   val fail : 'a t
   val one_of : 'a array -> 'a t
+
+  val run : 'a t -> 'a Seq.t
 end
 
 module Id = struct
   type 'a t = 'a
   let map f v = f v
-  let pure v = v
-  let pair va vb = (va, vb)
 end
 module _ = (Id : Functor)

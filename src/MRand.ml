@@ -11,11 +11,6 @@ let map f v = fun () -> Option.map f (v ())
 
 let return x : 'a t = fun () -> Some x
 
-let pair v1 v2 : ('a * 'b) t = fun () ->
-  match v1 (), v2 () with
-  | Some a1, Some a2 -> Some (a1, a2)
-  | None, _ | _, None -> None
-
 let fail = fun () -> None
 
 let one_of (arr : 'a array) : 'a t =
@@ -39,14 +34,6 @@ let bind v f =
   | None -> None
   | Some a -> f a ()
 
-let forever (gen : 'a t) : 'a Seq.t =
+let run (gen : 'a t) : 'a Seq.t =
   Seq.forever (fun () -> gen)
   |> Seq.filter_map (fun f -> f ())
-
-let run (gen : 'a t) : 'a option =
-  forever gen
-  |> Seq.uncons
-  |> Option.map fst
-
-
-

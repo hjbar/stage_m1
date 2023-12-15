@@ -43,11 +43,9 @@ module SeqGen = Generator.Make(MSeq)
 let () =
   begin
     if config.exhaustive then
-      SeqGen.typed ~depth:config.depth
-      |> MSeq.all
+      MSeq.run @@ SeqGen.typed ~depth:config.depth
     else
-      RandGen.typed ~depth:config.depth
-      |> MRand.forever
+      MRand.run @@ RandGen.typed ~depth:config.depth
   end
   |> Seq.take config.count
   |> Seq.map STLCPrinter.print_term
