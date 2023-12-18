@@ -5,7 +5,7 @@ type slot =
   | Done of STLC.ty
 
 let new_var =
-  Utils.namegen STLC.TyVar.fresh [|"α"; "β"; "γ"; "δ"|]
+  STLC.TyVar.namegen [|"α"; "β"; "γ"; "δ"|]
 
 let table = Hashtbl.create 42
 

@@ -24,8 +24,7 @@ module Make(M : Utils.MonadPlus) = struct
   let untyped : Untyped.term =
     let open Untyped in
     let new_var =
-      Utils.namegen Var.fresh
-        [|"x"; "y"; "z"; "u"; "v"; "w"|]
+      Var.namegen [|"x"; "y"; "z"; "u"; "v"; "w"|]
     in
     let rec gen env =
       let fvars =

@@ -12,6 +12,8 @@ module Variables () : sig
 
   val fresh : string -> t
 
+  val namegen : string array -> (unit -> t)
+
   val name : t -> string
 
   val print : t -> PPrint.document
@@ -39,6 +41,15 @@ end = struct
     Hashtbl.replace stamps name (stamp + 1);
     { name; stamp; }
 
+  let namegen names =
+    if names = [||] then failwith "namegen: empty names array";
+    let counter = ref 0 in
+    let wrap n = n mod (Array.length names) in
+    fun () ->
+      let idx = !counter in
+      counter := wrap (!counter + 1);
+      fresh names.(idx)
+
   let print { name; stamp } =
     if stamp = 0 then PPrint.string name
     else Printf.ksprintf PPrint.string "%s/%x" name stamp
@@ -50,15 +61,6 @@ end = struct
   module Set = Set.Make(Key)
   module Map = Map.Make(Key)
 end
-
-let namegen fresh names =
-  if names = [||] then failwith "namegen: empty names array";
-  let counter = ref 0 in
-  let wrap n = n mod (Array.length names) in
-  fun () ->
-    let idx = !counter in
-    counter := wrap (!counter + 1);
-    fresh names.(idx)
 
 module type Functor = sig
   type 'a t
