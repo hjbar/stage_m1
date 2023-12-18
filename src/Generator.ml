@@ -104,55 +104,19 @@ let typed ~depth =
     let rec loop : type a e r . fuel:int -> env -> (a, e) Constraint.t -> a M.t =
     fun ~fuel env cstr ->
       if fuel = 0 then M.fail else
-      let _logs, env, cstr =
+      let _logs, env, nf =
         Solver.eval ~log:false env cstr
       in
-      let open Constraint in
-      let ( let+ ) g f = M.map f g in
-      let ( let++ ) r f =
-        match r with
-        | Ok g -> Ok (M.map f g)
-        | Error c -> Error (f c)
-      in
-      let rec expand : type a e . (a, e) Constraint.t -> ((a, e) Constraint.t M.t, (a, e) Constraint.t) result =
-        function
-        | Ret v -> Error (Ret v)
-        | Err e -> Error (Err e)
-        | Map (c, f) ->
-          let++ c = expand c in Map (c, f)
-        | MapErr (c, f) ->
-          let++ c = expand c in MapErr (c, f)
-        | Conj (c1, c2) ->
-          begin match expand c1 with
-          | Ok c1 ->
-            Ok (let+ c1 in Conj (c1, c2))
-          | Error c1 ->
-            let++ c2 = expand c2 in Conj (c1, c2)
-          end
-        | Exist (x, s, c) ->
-          let++ c = expand c in
-          Exist (x, s, c)
-        | Eq _ -> failwith "not a normal form"
-        | Decode _ -> failwith "not a normal form"
-        | Do p ->
-          Ok p
-      in
-      match expand cstr with
-      | Error cstr ->
-        (* We have reached a normal form. If [fuel = 1],
-           we are happy with that. If [fuel > 1] we
-           were expecting a larger program, so we fail. *)
-        if fuel > 1 then M.fail
-        else begin match Solver.solve ~log:false env cstr |> snd with
-          | Ok v -> M.return v
-          | Error _ -> M.fail
-        end
-      | Ok cstr ->
-        M.bind cstr (fun cstr ->
+      match nf with
+      | (NRet _ | NErr _) when fuel > 1 -> M.fail
+      | NRet v -> M.return (v (Decode.decode env))
+      | NErr _ -> M.fail
+      | NDo p ->
+        M.bind p (fun cstr ->
           loop ~fuel:(fuel - 1) env cstr
         )
     in
-    loop ~fuel:depth (Unif.Env.empty ()) constraint_
+    loop ~fuel:depth Unif.Env.empty constraint_
 (*/corrige*)
 
 end

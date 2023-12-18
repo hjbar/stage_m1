@@ -1,8 +1,16 @@
-(* TODO document *)
+(** Our syntax of untyped terms.
+
+   As explained in the README.md ("Abstracting over an effect"),
+   this module as well as other modules is parametrized over
+   an arbitrary effect [T : Functor].
+*)
 
 module Make(T : Utils.Functor) = struct
   module Var = STLC.TeVar
-  
+
+  (** ['t term_] is parametrized over the representation
+      of term variables. Most of the project code will
+      work with the non-parametrized instance [term] below. *)
   type 't term_ =
     | Var of 'tev
     | App of 't term_ * 't term_
@@ -14,7 +22,14 @@ module Make(T : Utils.Functor) = struct
     | Do of 't term_ T.t
   constraint 't = < tevar : 'tev; tyvar : 'tyv; >
   
+  (** [raw_term] are terms with raw [string] for their
+      variables. Several binders may use the same
+      variable. These terms are produced by the parser. *)
   type raw_term = < tevar : string; tyvar : string > term_
+
+  (** [term] are terms using [STLC.TeVar.t] variables,
+      which include a unique stamp to guarantee uniqueness
+      of binders. This is what most of the code manipulates. *)
   type term = < tevar : Var.t; tyvar : Structure.TyVar.t; > term_
   
   let freshen : raw_term -> term =

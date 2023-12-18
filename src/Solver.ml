@@ -1,5 +1,11 @@
+(*
+   As explained in the README.md ("Abstracting over an effect"),
+   this module as well as other modules is parametrized over
+   an arbitrary effect [T : Functor].
+*)
+
 module Make (T : Utils.Functor) = struct
-  open Constraint.Make(T)
+  module Constraint = Constraint.Make(T)
   module SatConstraint = SatConstraint.Make(T)
   module ConstraintSimplifier = ConstraintSimplifier.Make(T)
   module ConstraintPrinter = ConstraintPrinter.Make(T)
@@ -22,8 +28,18 @@ module Make (T : Utils.Functor) = struct
       logs |> Queue.to_seq |> List.of_seq
     in
     add_to_log, get_log
-             
-  let eval ~log (env : env) c0 =
+
+  (** See [../README.md] ("High-level description") or [Solver.mli]
+      for a description of normal constraints and
+      our expectations regarding the [eval] function. *)
+  type ('a, 'e) normal_constraint =
+    | NRet of 'a Constraint.on_sol
+    | NErr of 'e
+    | NDo of ('a, 'e) Constraint.t T.t
+
+  let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t)
+    : log * env * (a, e) normal_constraint
+  =
     let add_to_log, get_log =
       if log then make_logger c0
       else ignore, (fun _ -> [])
@@ -48,30 +64,34 @@ module Make (T : Utils.Functor) = struct
     let env = ref env in
     let decode v = Decode.decode !env v in
     let rec eval
-      : type a e . (a, e) t -> (a, e) t
-    = function
-      | Ret v -> Ret v
-      | Err e -> Err e
+      : type a e . (a, e) Constraint.t -> (a, e) normal_constraint
+    =
+      let open Constraint in
+      let (let+) nf f = T.map f nf in
+      function
+      | Ret v -> NRet v
+      | Err e -> NErr e
       | Map (c, f) ->
         begin match eval c with
-        | Ret v -> Ret (fun sol -> f (v sol))
-        | Err e -> Err e
-        | c -> Map (c, f)
+        | NRet v -> NRet (fun sol -> f (v sol))
+        | NErr e -> NErr e
+        | NDo p -> NDo (let+ c = p in Map (c, f))
         end
       | MapErr (c, f) ->
         begin match eval c with
-        | Ret v -> Ret v
-        | Err e -> Err (f e)
-        | c -> MapErr (c, f)
+        | NRet v -> NRet v
+        | NErr e -> NErr (f e)
+        | NDo p -> NDo (let+ c = p in MapErr (c, f))
         end
       | Conj (c, d) ->
         begin match eval c with
-          | Err e -> Err e
-          | c ->
-          match c, eval d with
-          | _, Err e -> Err e
-          | Ret v, Ret w -> Ret (fun sol -> (v sol, w sol))
-          | c, d -> Conj (c, d)
+          | NErr e -> NErr e
+          | NDo p -> NDo (let+ c = p in Conj (c, d))
+          | NRet v ->
+          match eval d with
+          | NErr e -> NErr e
+          | NRet w -> NRet (fun sol -> (v sol, w sol))
+          | NDo p -> NDo (let+ d = p in Conj (Ret v, d))
         end
       | Eq (x1, x2) ->
         let result = Unif.unify !env x1 x2 in
@@ -79,11 +99,11 @@ module Make (T : Utils.Functor) = struct
           | Ok new_env ->
             env := new_env;
             add_to_log !env;
-            Ret (fun _sol -> ())
+            NRet (fun _sol -> ())
           | Error (Cycle cy) ->
-            Err (Cycle cy)
+            NErr (Cycle cy)
           | Error (Clash (y1, y2)) ->
-            Err (Clash (decode y1, decode y2))
+            NErr (Clash (decode y1, decode y2))
         end
       | Exist (x, s, c) ->
         (* Our solver may re-enter existentials
@@ -95,31 +115,16 @@ module Make (T : Utils.Functor) = struct
           env := Unif.Env.add x s !env;
         add_to_log !env;
         begin match eval c with
-        | Ret v -> Ret v
-        | Err e -> Err e
-        | c -> Exist (x, s, c)
+        | NRet v -> NRet v
+        | NErr e -> NErr e
+        | NDo p -> NDo (let+ c = p in Exist (x, s, c))
         end
-      | Decode v -> Ret (fun sol -> sol v)
-      | Do p ->
-        Do p
+      | Decode v -> NRet (fun sol -> sol v)
+      | Do p -> NDo p
     in
     add_to_log !env;
     let result = eval c0 in
     get_log (), !env, result
 (*/corrige*)
 
-  let solve ~log env c =
-    let logs, env, result = eval ~log env c in
-    let sol = Decode.decode env in
-(*sujet
-    Utils.not_yet "Solver.solve" (logs, env, result, sol)
-/sujet*)
-(*corrige*)
-    logs,
-    match result with
-    | Ret v -> Ok (v sol)
-    | Err e -> Error e
-    | _other ->
-      failwith "[eval] did not return a normal form!"
-(*/corrige*)
 end

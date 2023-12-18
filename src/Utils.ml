@@ -58,7 +58,7 @@ end = struct
   let print { name; stamp } =
     if stamp = 0 then PPrint.string name
     else Printf.ksprintf PPrint.string "%s/%x" name stamp
-    
+
   module Key = struct
     type nonrec t = t
     let compare = compare
@@ -72,29 +72,52 @@ module type Functor = sig
   val map : ('a -> 'b) -> 'a t -> 'b t
 end
 
+(** A signature for search monads, that represent
+    computations that enumerate zero, one or several
+    values. *)
 module type MonadPlus = sig
   include Functor
   val return : 'a -> 'a t
   val bind : 'a t -> ('a -> 'b t) -> 'b t
 
-  (* TODO document/explain *)
-  val delay : (unit -> 'a t) -> 'a t
-
   val sum : 'a t list -> 'a t
-  (* [fail] and [one_of] can be derived from [sum],
-     but they typically have simpler and more efficient
-     specialized implementations. *)
   val fail : 'a t
   val one_of : 'a array -> 'a t
+  (** [fail] and [one_of] can be derived from [sum], but
+      they typically have simpler and more efficient
+      specialized implementations. *)
+
+  val delay : (unit -> 'a t) -> 'a t
+  (** Many search monad implementations perform their computation
+      on-demand, when elements are requested, instead of forcing
+      computation already to produce the ['a t] value.
+
+      In a strict language, it is easy to perform computation
+      too early in this case, for example
+      [M.sum [foo; bar]] will compute [foo] and [bar] eagerly
+      even though [bar] may not be needed if we only observe
+      the first element.
+
+      The [delay] combinator makes this on-demand nature
+      explicit, for example one can write [M.delay
+      (fun () -> M.sum [foo; bar])] to avoid computing [foo]
+      and [bar] too early. Of course, if the underlying
+      implementation is in fact eager, then this may apply
+      the function right away.*)
 
   val run : 'a t -> 'a Seq.t
+  (** ['a Seq.t] is a type of on-demand sequences from the
+      OCaml standard library:
+        https://v2.ocaml.org/api/Seq.html
+  *)
 end
 
-module Id = struct
-  type 'a t = 'a
-  let map f v = f v
+module Empty = struct
+  type 'a t = | (* the empty type *)
+  let map (_ : 'a -> 'b) : 'a t -> 'b t = function
+    | _ -> .
 end
-module _ = (Id : Functor)
+module _ = (Empty : Functor)
 
 (*sujet
 let not_yet fname = fun _ -> failwith (fname ^ ": not implemented yet")

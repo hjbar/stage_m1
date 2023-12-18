@@ -37,14 +37,13 @@ module Make(T : Utils.Functor) = struct
      
       [bind ty k] takes a type [ty], and a constraint [k] parametrized
       over a constraint variable. It creates a constraint context that
-      binds a new constraint variable [w] that must be equal to [ty],
-      and places [k w] within this context.
+      binds a new constraint variable [?w] that must be equal to [ty],
+      and places [k ?w] within this context.
       
-      For example, if [ty] is the type [v1 -> (v2 -> v3)] (with [v1,
-      v2, v3] constraint variables), then [bind ty k] could be the
-      constraint
-        [∃(w1 = v2 -> v3). ∃(w2 = v1 -> w1). k w2], or equivalently
-        [∃w3 w4. w3 = v1 -> w4 ∧ w4 = v2 -> v3 ∧ k w3].
+      For example, if [ty] is the type [?v1 -> (?v2 -> ?v3)] , then
+      [bind ty k] could be the constraint
+        [∃(?w1 = ?v2 -> ?v3). ∃(?w2 = ?v1 -> ?w1). k ?w2], or equivalently
+        [∃?w3 ?w4. ?w3 = ?v1 -> ?w4 ∧ ?w4 = ?v2 -> ?v3 ∧ k ?w3].
   *)
   let rec bind (ty : STLC.ty) (k : Constraint.variable -> ('a, 'e) t) : ('a, 'e) t =
 (* sujet
@@ -84,7 +83,7 @@ module Make(T : Utils.Functor) = struct
       if [t] is well-typed in [env], and in that case [w] is the type of [t].
 
       For example, if [t] is the term [lambda x. x], then [has_type env t w]
-      generates a constraint equivalent to [∃v. w = (v -> v)].
+      generates a constraint equivalent to [∃?v. ?w = (?v -> ?v)].
 
       Precondition: when calling [has_type env t], [env] must map each
       term variable that is free in [t] to an inference variable.

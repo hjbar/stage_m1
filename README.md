@@ -1,12 +1,14 @@
 # Generating well-typed random terms using constraint-based type inference
 
+## Introduction
+
 The goal of this programming project is to reuse a constraint-based
 type inference engine (for a simple lamda-calculus) to implement
 a random generator of well-typed term.
 
 Contact: gabriel.scherer@inria.fr .
 
-## Motivation
+### Motivation
 
 Random generation of well-typed term has been studied as a research
 problem: if you want to apply random fuzzing testing techniques on the
@@ -46,8 +48,7 @@ similar problems.
 Is it possible to write a type-checker once, and reuse it for random
 generation of well-typed programs?
 
-
-## Project
+### The project
 
 In this project, you will implement a *simple* constraint-based type
 inference engine, basically a miniature version of Inferno
@@ -61,7 +62,43 @@ boring stuff already implemented. Hopefully you can focus on the
 interesting parts. We also tried to provide code to help you test your
 code, debug it, understand what is going wrong.
 
-### Remark: using a different language
+### Grading
+
+The project will be evaluated by:
+
+- checking that the code you provided is correct, by reviewing the
+  code and your testsuite results
+
+- evaluating the quality of the code (clarity, documentation, etc.)
+
+- evaluating the coverage of the "mandatory" tasks suggested
+  by the provided skeleton
+
+- evaluating the difficulty and originality of the extensions you
+  implemented, if any
+
+We would like you to write a short REPORT.md file at the root of the
+project, that details what you did and explains any non-obvious point,
+with pointers to relevant source files. There is no length requirement
+for this REPORT.md file, just include the information that *you* think
+is valuable and useful -- please, no boring intro or ChatGPT prose.
+
+### Code reuse and plagiarism
+
+Reusing third-party code is allowed, as long as (1) the code license
+allows this form of review, and (2) you carefully indicate which parts
+of the code are not yours -- mark it clearly in the code itself, and
+mention it explicitly in your REPORT.md file.
+
+In particular, please feel free to introduce dependencies on
+third-party (free software) packages as long as they are explicit in
+the packaging metadata of your project -- so that I can still build
+the project.
+
+Including code that comes from someone else without proper credit to
+the authors is plagiarism.
+
+### Using a different language
 
 We wrote useful support code in OCaml, so it is going to be much
 easier to implement the project in OCaml. If you insist, you are of
@@ -82,13 +119,108 @@ constraint generation with elaboration to an explicitly-typed
 representation, constraint solving, and then random generation of
 well-typed terms.
 
+## High-level description
 
-### High-level description
+This project contains a simple type inference engine in the spirit of
+Inferno, with a type `Untyped.term` of untyped terms, a type
+`STLC.term` of explicitly-typed terms, a type `('a, 'e) Constraint.t`
+of constraints that produce elaboration witnesses of type `'a`.
 
-### Tasks
+#### Type inference a la inferno
 
-High-level task: implement the missing pieces to get the code working,
-then (optionally) think about extending the project further.
+The general idea is to implement a constraint generator of type
+
+    Untyped.term -> (STLC.term, type_error) Constraint.t
+
+and a constraint solving function of type
+
+    val eval : ('a, 'e) Constraint.t -> ('a, 'e) result
+
+which extracts a result (success or failure) from a normal form
+constraint.
+
+By composing these functions together, you have a type-checker for
+the untyped language, that produces a "witness of well-typedness" in
+the form of an explicitly-tyed term -- presumably an annotation of
+the original program.
+
+(To keep the project difficulty manageable, our "simple type inference
+engine" does not handle ML-style polymorphism, or in fact any sort of
+polymorphism. We are implementing type inference for the simply-typed
+lambda-calculus.)
+
+#### Abstracting over an effect
+
+But then there is a twist: we add to the language of untyped terms
+*and* to the language of constraint a `Do` constructor that represents
+a term (or constraint) produced by an "arbitrary effect", where the
+notion of effect is given by an arbitrary functor (a parametrized type
+with a `map` function). This is implemented by writing all the code
+in OCaml modules `Make(T : Utils.Functor)` parametrized over `T`.
+
+The constraint-generation function is unchanged.
+
+    Untyped.term -> (STLC.term, type_error) Constraint.t
+
+For constraint solving, however, new terms of the form
+  `Do (p : (a, e) Constraint.t T.t)`
+now have to be evaluated. We propose to extend the `eval` function to
+a richer type
+
+    val eval : ('a, 'e) Constraint.t -> ('a, 'e) normal_constraint
+
+where a normal constraint is either a success, a failure, or an effectful
+constraint computation `('a, 'e) Constraint.t T.t`.
+
+We propose an evaluation rule of the form
+
+    eval E[Do p] = NDo E[p]
+
+where E is an evalution context for constraints, `p` has type
+`('a, 'e) Constraint.t T.t` (it is a computation in `T` that
+returns constraints), and `E[p]` is defined by lifting the
+context-surrounding function
+`E[_] : ('a, 'e) Constraint.t -> ('b, 'f) Constraint.t`
+through the `T` functor.
+
+#### Two or three effect instances
+
+An obvious instantion of this `T : Functor` parameter is to use the
+functor `Id.Empty` of empty (parametrized) types with no
+inhabitant. This corresponds to the case where the `Do` constructor
+cannot be used, the terms and constraint are pure. In this case `eval`
+will simply evaluate the constraint to a result. This is what the
+`minihell` test program uses.
+
+The other case of interest for is is when the parameter
+`T : Utils.Functor` is in fact a search monad `M : Utils.MonadPlus`.
+Then it is possible to define a function
+
+    val gen : depth:int -> ('a, 'e) constraint -> ('a, 'e) result M.t
+
+on top of `eval`, that returns all the results that can be reached by
+expanding `Do` nodes using `M.bind`, recursively, exactly `depth`
+times. (Another natural choice would be to generate all the terms that
+can be reached by expanding `Do` nodes *at most* `depth` times, but
+this typically gives a worse generator.)
+
+Finally, to get an actual program generator, you need to instantiate
+this machinery with a certain choice of `M : MonadPlus` structure. We
+ask you to implement two natural variants:
+
+- `MSeq`, which simply enumerates the finite lists of possible
+  results.
+
+- `MRand`, which returns random solutions -- an infinite stream of
+  independent randomly-sampled solutions.
+
+
+## Implementation tasks
+
+In short: implement the missing pieces to get the code working,
+following the high-level description above. Then (optionally) think
+about extending the project further -- we give some ideas in the
+"Extensions" section later on.
 
 In more details, we recommend the following progression (but you do as
 you prefer).
@@ -190,9 +322,10 @@ you prefer).
    (See the "Extensions" section below for some potential ideas.)
 
 
-### Code organization
+## Skeleton code organization
 
-- `tests.t`: the testsuite (see tests.t/run.t for details)
+- `tests.t`: the testsuite. See tests.t/run.t for details.
+   This is important.
 
 - `bin/`: two small executable programs that are used to
    test the main logic in `src/`:
@@ -239,7 +372,7 @@ you prefer).
      to add your stuff there.
 
    + `support/`: the boring modules that help for debugging and
-     testing, but you probably don't need to use or touch them
+     testing, but you probably do not need to use or touch them
      directly. (Feel free to modify stuff there if you want.)
 
      * `ConstraintPrinter.ml,mli`: a pretty-printer for constraints
@@ -271,7 +404,7 @@ you prefer).
        language.
 
    (Again: if you decide to take risks and implement the project in
-   a different language, you don't need to reimplement any of that,
+   a different language, you do not need to reimplement any of that,
    but then you are on your own for testing and debugging.)
 
 
@@ -314,12 +447,12 @@ extensions.
    + You could implement ML-style parametric polymorphism, with
      generalization during type inference. This is the hardest of the
      extensions mentioned here by far: we have not tried this, and we
-     don't know how the interaction between enumeration/generation and
-     generalization will work out. (One might need to change the term
-     generation to stop going 'in and out' of sub-constraints, or to
-     be careful in the implementation of ML-style generalization to
-     use a semi-persistent data structure, a tree of generalization
-     regions instead of a stack.)
+     do not know how the interaction between enumeration/generation
+     and generalization will work out. (One might need to change the
+     term generation to stop going 'in and out' of sub-constraints, or
+     at least to be careful in the implementation of ML-style
+     generalization to use a (semi-)persistent data structure, a tree
+     of generalization regions instead of a stack.)
 
 - You could use the term generator for property-based testing of
   *something*: implement a procedure that manipulates explicitly-typed
@@ -336,12 +469,15 @@ extensions.
   distribution, providing options to generate terms using only
   a subset of the rules, etc.
 
+  An important improvement in practice would be to provide some form
+  of shrinking.
+
 - You could look at existing work on testing of language
   implementations by random generation, and see if they can be
   integrated in the present framework. For example,
-  
+
   https://janmidtgaard.dk/papers/Midtgaard-al%3aICFP17-full.pdf
-  
+
   performs random generation of programs with a custom effect system,
   that determines if a given sub-expression performs an observable
   side-effect or not -- to only generate terms will a deterministic

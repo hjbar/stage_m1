@@ -29,7 +29,7 @@ module Env : sig
     map: uvar Constraint.Var.Map.t;
   }
 
-  val empty : unit -> t
+  val empty : t
 
   val mem : var -> t -> bool
 
@@ -44,7 +44,7 @@ end = struct
     map: uvar Constraint.Var.Map.t;
   }
 
-  let empty () =
+  let empty =
     let store = UF.new_store () in
     let map = Constraint.Var.Map.empty in
     { store; map }

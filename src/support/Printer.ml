@@ -1,5 +1,9 @@
 open PPrint
 
+(** ?w *)
+let inference_variable w =
+  string "?" ^^ w
+
 (** $t -> $u *)
 let arrow t u = group @@
   t ^/^ string "->" ^/^ u

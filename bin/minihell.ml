@@ -1,15 +1,11 @@
-(* We instantiate the machinery with the Identity applicative functor,
-   under which Do does not introduce any new behavior. *)
-module Id = Utils.Id
-module Untyped = Untyped.Make(Id)
-module UntypedPrinter = UntypedPrinter.Make(Id)
-module Constraint = struct
-  include Constraint
-  include Make(Id)
-end
-module Infer = Infer.Make(Id)
-module ConstraintPrinter = ConstraintPrinter.Make(Id)
-module Solver = Solver.Make(Id)
+(* We instantiate the machinery with the Empty functor,
+   which forbids any use of the Do constructor. *)
+module Untyped = Untyped.Make(Utils.Empty)
+module UntypedPrinter = UntypedPrinter.Make(Utils.Empty)
+module Constraint = Constraint.Make(Utils.Empty)
+module Infer = Infer.Make(Utils.Empty)
+module ConstraintPrinter = ConstraintPrinter.Make(Utils.Empty)
+module Solver = Solver.Make(Utils.Empty)
 
 type config = {
   show_source : bool;
@@ -72,7 +68,16 @@ let call_typer ~config (term : Untyped.term) =
     print_section "Generated constraint"
       (ConstraintPrinter.print_constraint cst);
   let logs, result =
-    Solver.solve ~log:config.log_solver (Unif.Env.empty ()) cst
+    let logs, env, nf =
+      Solver.eval ~log:config.log_solver Unif.Env.empty cst
+    in
+    let result =
+      match nf with
+      | NRet v -> Ok (v (Decode.decode env))
+      | NErr e -> Error e
+      | NDo _ -> .
+    in
+    logs, result
   in
   if config.log_solver then
     print_section "Constraint solving log"
@@ -95,7 +100,9 @@ let print_result ~config result =
           (STLCPrinter.print_ty ty1)
           (STLCPrinter.print_ty ty2)
       | Infer.Cycle (Utils.Cycle v) ->
-        Printer.cycle (Constraint.Var.print v)
+        Printer.cycle
+          (Printer.inference_variable
+             (Constraint.Var.print v))
     )
       
 let process ~config input_path =

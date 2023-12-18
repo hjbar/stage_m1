@@ -1,5 +1,5 @@
 %{
-    open Untyped.Make(Utils.Id)
+    open Untyped.Make(Utils.Empty)
 %}
 
 %token <string> LIDENT
@@ -19,7 +19,7 @@
 %token COLON ":"
 %token PERIOD "."
 
-%type<Untyped.Make(Utils.Id).raw_term> term_eof
+%type<Untyped.Make(Utils.Empty).raw_term> term_eof
 
 %start term_eof
 

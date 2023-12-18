@@ -1,4 +1,4 @@
-(* TODO document *)
+(* A type of explicitly-typed terms. *)
 
 module TyVar = Structure.TyVar
 

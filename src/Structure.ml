@@ -1,7 +1,34 @@
+(** Type-formers are defined explicit as type "structures".
+
+    Type structures ['a t] are parametric over the type of
+    their leaves. Typical tree-shaped representation of
+    types would use [ty t], a structure carrying types as
+    sub-expressions, but the types manipulated by the
+    constraint solver are so-called "shallow types" that
+    always use inference variables at the leaves. We cannot
+    write, say, [?w = α -> (β * γ)], one has to write
+    [∃?w1 ?w2 ?w3 ?w4.
+       ?w = ?w1 -> ?w2
+     ∧ ?w1 = α
+     ∧ ?w2 = ?w3 * ?w4
+     ∧ ?w3 = β
+     ∧ ?w4 = γ] instead.
+
+    (The implementation goes through a first step [('v, 'a) t_]
+    that is also parametrized over a notion of type variable,
+    just like ['v Untyped.term] -- see the documentation there.)
+*)
+
 module TyVar = Utils.Variables()
 
 type ('v, 'a) t_ =
   | Var of 'v
+    (** Note: a type variable here represents a rigid/opaque/abstract type [α, β...],
+        not a flexible inference variable like [?w] in constraints.
+
+        For example, for two distinct type variables [α, β]
+        the term [(lambda x. x : α → α) (y : β)] is always
+        ill-typed. *)
   | Arrow of 'a * 'a
   | Prod of 'a list
 

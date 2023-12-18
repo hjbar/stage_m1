@@ -66,9 +66,9 @@ to the bin/dune content.)
     lambda x. x
   
   Generated constraint:
-    ∃final_type.
-      (∃x wt (warr = x -> wt). final_type = warr ∧ decode x ∧ wt = x)
-      ∧ decode final_type
+    ∃?final_type.
+      (∃?x ?wt (?warr = ?x -> ?wt). ?final_type = ?warr ∧ decode ?x ∧ ?wt = ?x)
+      ∧ decode ?final_type
   
   Inferred type:
     α -> α
@@ -87,10 +87,12 @@ type, this is just an abstract/rigid type variable: `Constr
     lambda x. (x : int)
   
   Generated constraint:
-    ∃final_type.
-      (∃x wt (warr = x -> wt).
-        final_type = warr ∧ decode x ∧ (∃(int = int). int = x ∧ int = wt))
-      ∧ decode final_type
+    ∃?final_type.
+      (∃?x ?wt (?warr = ?x -> ?wt).
+        ?final_type = ?warr
+        ∧ decode ?x
+        ∧ (∃(?int = int). ?int = ?x ∧ ?int = ?wt))
+      ∧ decode ?final_type
   
   Inferred type:
     int -> int
@@ -110,40 +112,51 @@ the inference variables.
     lambda x. (x : int)
   
   Generated constraint:
-    ∃final_type.
-      (∃x wt (warr = x -> wt).
-        final_type = warr ∧ decode x ∧ (∃(int = int). int = x ∧ int = wt))
-      ∧ decode final_type
+    ∃?final_type.
+      (∃?x ?wt (?warr = ?x -> ?wt).
+        ?final_type = ?warr
+        ∧ decode ?x
+        ∧ (∃(?int = int). ?int = ?x ∧ ?int = ?wt))
+      ∧ decode ?final_type
   
   Constraint solving log:
-    ∃final_type.
-      decode final_type
-      ∧ (∃x wt (warr = x -> wt).
-        (∃(int = int). int = wt ∧ int = x) ∧ decode x ∧ final_type = warr)
-    ∃final_type.
-      decode final_type
-      ∧ (∃x wt (warr = x -> wt).
-        (∃(int = int). int = wt ∧ int = x) ∧ decode x ∧ final_type = warr)
-    ∃x final_type.
-      decode final_type
-      ∧ (∃wt (warr = x -> wt).
-        (∃(int = int). int = wt ∧ int = x) ∧ decode x ∧ final_type = warr)
-    ∃x wt final_type.
-      decode final_type
-      ∧ (∃(warr = x -> wt).
-        (∃(int = int). int = wt ∧ int = x) ∧ decode x ∧ final_type = warr)
-    ∃x wt (warr = x -> wt) final_type.
-      decode final_type
-      ∧ (∃(int = int). int = wt ∧ int = x)
-      ∧ decode x
-      ∧ final_type = warr
-    ∃x wt (final_type = x -> wt).
-      decode final_type ∧ (∃(int = int). int = wt ∧ int = x) ∧ decode x
-    ∃x wt (int = int) (final_type = x -> wt).
-      decode final_type ∧ int = wt ∧ int = x ∧ decode x
-    ∃wt (int = int) (final_type = int -> wt).
-      decode final_type ∧ int = wt ∧ decode int
-    ∃(int = int) (final_type = int -> int). decode final_type ∧ decode int
+    ∃?final_type.
+      decode ?final_type
+      ∧ (∃?x ?wt (?warr = ?x -> ?wt).
+        (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
+        ∧ decode ?x
+        ∧ ?final_type = ?warr)
+    ∃?final_type.
+      decode ?final_type
+      ∧ (∃?x ?wt (?warr = ?x -> ?wt).
+        (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
+        ∧ decode ?x
+        ∧ ?final_type = ?warr)
+    ∃?x ?final_type.
+      decode ?final_type
+      ∧ (∃?wt (?warr = ?x -> ?wt).
+        (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
+        ∧ decode ?x
+        ∧ ?final_type = ?warr)
+    ∃?x ?wt ?final_type.
+      decode ?final_type
+      ∧ (∃(?warr = ?x -> ?wt).
+        (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
+        ∧ decode ?x
+        ∧ ?final_type = ?warr)
+    ∃?x ?wt (?warr = ?x -> ?wt) ?final_type.
+      decode ?final_type
+      ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
+      ∧ decode ?x
+      ∧ ?final_type = ?warr
+    ∃?x ?wt (?final_type = ?x -> ?wt).
+      decode ?final_type ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x) ∧ decode ?x
+    ∃?x ?wt (?int = int) (?final_type = ?x -> ?wt).
+      decode ?final_type ∧ ?int = ?wt ∧ ?int = ?x ∧ decode ?x
+    ∃?wt (?int = int) (?final_type = ?int -> ?wt).
+      decode ?final_type ∧ ?int = ?wt ∧ decode ?int
+    ∃(?int = int) (?final_type = ?int -> ?int).
+      decode ?final_type ∧ decode ?int
   
   Inferred type:
     int -> int
@@ -159,12 +172,13 @@ the inference variables.
     (lambda x. (x : int)) (lambda y. y)
   
   Generated constraint:
-    ∃final_type.
-      (∃wu (wt = wu -> final_type).
-        (∃x wt/1 (warr = x -> wt/1).
-          wt = warr ∧ decode x ∧ (∃(int = int). int = x ∧ int = wt/1))
-        ∧ (∃y wt/2 (warr/1 = y -> wt/2). wu = warr/1 ∧ decode y ∧ wt/2 = y))
-      ∧ decode final_type
+    ∃?final_type.
+      (∃?wu (?wt = ?wu -> ?final_type).
+        (∃?x ?wt/1 (?warr = ?x -> ?wt/1).
+          ?wt = ?warr ∧ decode ?x ∧ (∃(?int = int). ?int = ?x ∧ ?int = ?wt/1))
+        ∧ (∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+          ?wu = ?warr/1 ∧ decode ?y ∧ ?wt/2 = ?y))
+      ∧ decode ?final_type
   
   Error:
       int
@@ -179,20 +193,22 @@ the inference variables.
     lambda f. lambda x. lambda y. f (x, y)
   
   Generated constraint:
-    ∃final_type.
-      (∃f wt (warr = f -> wt).
-        final_type = warr
-        ∧ decode f
-        ∧ (∃x wt/1 (warr/1 = x -> wt/1).
-          wt = warr/1
-          ∧ decode x
-          ∧ (∃y wt/2 (warr/2 = y -> wt/2).
-            wt/1 = warr/2
-            ∧ decode y
-            ∧ (∃wu (wt/3 = wu -> wt/2).
-              wt/3 = f
-              ∧ (∃w1. w1 = x ∧ (∃w2. w2 = y ∧ (∃(wprod = {w1 * w2}). wu = wprod)))))))
-      ∧ decode final_type
+    ∃?final_type.
+      (∃?f ?wt (?warr = ?f -> ?wt).
+        ?final_type = ?warr
+        ∧ decode ?f
+        ∧ (∃?x ?wt/1 (?warr/1 = ?x -> ?wt/1).
+          ?wt = ?warr/1
+          ∧ decode ?x
+          ∧ (∃?y ?wt/2 (?warr/2 = ?y -> ?wt/2).
+            ?wt/1 = ?warr/2
+            ∧ decode ?y
+            ∧ (∃?wu (?wt/3 = ?wu -> ?wt/2).
+              ?wt/3 = ?f
+              ∧ (∃?w1.
+                ?w1 = ?x
+                ∧ (∃?w2. ?w2 = ?y ∧ (∃(?wprod = {?w1 * ?w2}). ?wu = ?wprod)))))))
+      ∧ decode ?final_type
   
   Inferred type:
     ({γ * β} -> α) -> γ -> β -> α
@@ -206,20 +222,21 @@ the inference variables.
     lambda f. lambda p. let (x, y) = p in f x y
   
   Generated constraint:
-    ∃final_type.
-      (∃f wt (warr = f -> wt).
-        final_type = warr
-        ∧ decode f
-        ∧ (∃p wt/1 (warr/1 = p -> wt/1).
-          wt = warr/1
-          ∧ decode p
-          ∧ (∃x y (wt/2 = {x * y}).
-            decode x
-            ∧ decode y
-            ∧ wt/2 = p
-            ∧ (∃wu (wt/3 = wu -> wt/1).
-              (∃wu/1 (wt/4 = wu/1 -> wt/3). wt/4 = f ∧ wu/1 = x) ∧ wu = y))))
-      ∧ decode final_type
+    ∃?final_type.
+      (∃?f ?wt (?warr = ?f -> ?wt).
+        ?final_type = ?warr
+        ∧ decode ?f
+        ∧ (∃?p ?wt/1 (?warr/1 = ?p -> ?wt/1).
+          ?wt = ?warr/1
+          ∧ decode ?p
+          ∧ (∃?x ?y (?wt/2 = {?x * ?y}).
+            decode ?x
+            ∧ decode ?y
+            ∧ ?wt/2 = ?p
+            ∧ (∃?wu (?wt/3 = ?wu -> ?wt/1).
+              (∃?wu/1 (?wt/4 = ?wu/1 -> ?wt/3). ?wt/4 = ?f ∧ ?wu/1 = ?x)
+              ∧ ?wu = ?y))))
+      ∧ decode ?final_type
   
   Inferred type:
     (β -> γ -> α) -> {β * γ} -> α
@@ -243,57 +260,59 @@ a lot of those.)
     lambda x. x x
   
   Generated constraint:
-    ∃final_type.
-      (∃x wt (warr = x -> wt).
-        final_type = warr
-        ∧ decode x
-        ∧ (∃wu (wt/1 = wu -> wt). wt/1 = x ∧ wu = x))
-      ∧ decode final_type
+    ∃?final_type.
+      (∃?x ?wt (?warr = ?x -> ?wt).
+        ?final_type = ?warr
+        ∧ decode ?x
+        ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x))
+      ∧ decode ?final_type
   
   Constraint solving log:
-    ∃final_type.
-      decode final_type
-      ∧ (∃x wt (warr = x -> wt).
-        (∃wu (wt/1 = wu -> wt). wu = x ∧ wt/1 = x)
-        ∧ decode x
-        ∧ final_type = warr)
-    ∃final_type.
-      decode final_type
-      ∧ (∃x wt (warr = x -> wt).
-        (∃wu (wt/1 = wu -> wt). wu = x ∧ wt/1 = x)
-        ∧ decode x
-        ∧ final_type = warr)
-    ∃x final_type.
-      decode final_type
-      ∧ (∃wt (warr = x -> wt).
-        (∃wu (wt/1 = wu -> wt). wu = x ∧ wt/1 = x)
-        ∧ decode x
-        ∧ final_type = warr)
-    ∃x wt final_type.
-      decode final_type
-      ∧ (∃(warr = x -> wt).
-        (∃wu (wt/1 = wu -> wt). wu = x ∧ wt/1 = x)
-        ∧ decode x
-        ∧ final_type = warr)
-    ∃x wt (warr = x -> wt) final_type.
-      decode final_type
-      ∧ (∃wu (wt/1 = wu -> wt). wu = x ∧ wt/1 = x)
-      ∧ decode x
-      ∧ final_type = warr
-    ∃x wt (final_type = x -> wt).
-      decode final_type
-      ∧ (∃wu (wt/1 = wu -> wt). wu = x ∧ wt/1 = x)
-      ∧ decode x
-    ∃x wu wt (final_type = x -> wt).
-      decode final_type ∧ (∃(wt/1 = wu -> wt). wu = x ∧ wt/1 = x) ∧ decode x
-    ∃x wu wt (wt/1 = wu -> wt) wt (final_type = x -> wt).
-      decode final_type ∧ wu = x ∧ wt/1 = x ∧ decode x
-    ∃wu wt (wt/1 = wu -> wt) wt (final_type = wt/1 -> wt).
-      decode final_type ∧ ⊥ ∧ decode wt/1
+    ∃?final_type.
+      decode ?final_type
+      ∧ (∃?x ?wt (?warr = ?x -> ?wt).
+        (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
+        ∧ decode ?x
+        ∧ ?final_type = ?warr)
+    ∃?final_type.
+      decode ?final_type
+      ∧ (∃?x ?wt (?warr = ?x -> ?wt).
+        (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
+        ∧ decode ?x
+        ∧ ?final_type = ?warr)
+    ∃?x ?final_type.
+      decode ?final_type
+      ∧ (∃?wt (?warr = ?x -> ?wt).
+        (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
+        ∧ decode ?x
+        ∧ ?final_type = ?warr)
+    ∃?x ?wt ?final_type.
+      decode ?final_type
+      ∧ (∃(?warr = ?x -> ?wt).
+        (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
+        ∧ decode ?x
+        ∧ ?final_type = ?warr)
+    ∃?x ?wt (?warr = ?x -> ?wt) ?final_type.
+      decode ?final_type
+      ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
+      ∧ decode ?x
+      ∧ ?final_type = ?warr
+    ∃?x ?wt (?final_type = ?x -> ?wt).
+      decode ?final_type
+      ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
+      ∧ decode ?x
+    ∃?x ?wu ?wt (?final_type = ?x -> ?wt).
+      decode ?final_type
+      ∧ (∃(?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
+      ∧ decode ?x
+    ∃?x ?wu ?wt (?wt/1 = ?wu -> ?wt) ?wt (?final_type = ?x -> ?wt).
+      decode ?final_type ∧ ?wu = ?x ∧ ?wt/1 = ?x ∧ decode ?x
+    ∃?wu ?wt (?wt/1 = ?wu -> ?wt) ?wt (?final_type = ?wt/1 -> ?wt).
+      decode ?final_type ∧ ⊥ ∧ decode ?wt/1
   
   Error:
     cycle on constraint variable
-    wu
+    ?wu
   
 ## Generator tests
 
@@ -303,48 +322,52 @@ fine if your own implementation produces different (sensible) results.
 There are not many programs with depth 3, 4 and 5.
 
   $ minigen --exhaustive --depth 3 --count 100
-  lambda (z/3 : α/1). z/3
+  lambda (x/4 : α). x/4
 
   $ minigen --exhaustive --depth 4 --count 100
-  lambda (x/10 : α/4). lambda (y/14 : δ/3). x/10
+  lambda (v/14 : β/1). lambda (u/19 : α/1). u/19
   
-  lambda (x/10 : β/4). lambda (y/14 : α/4). y/14
+  lambda (v/14 : α/1). lambda (u/19 : γ/1). v/14
 
 An example of random sampling output at higher depth.
 
   $ minigen --seed 42 --depth 6 --count 10
-  lambda (w/8d : β/4c -> γ/4c). lambda (x/8e : β/4c). w/8d x/8e
+  lambda (z/90 : β/21). (z/90, lambda (u/90 : α/21). u/90)
   
-  lambda (u/e4 : α/78). (lambda (v/e4 : α/78). v/e4) u/e4
-  
-  lambda (v/37d : δ/1a6). lambda (w/37d : δ/1a6 -> γ/1a6). w/37d v/37d
-  
-  lambda (z/3d7 : α/1c3). (lambda (u/3d7 : α/1c3). u/3d7) z/3d7
-  
-  (lambda (y/3e1 : α/1cb). y/3e1, lambda (z/3e1 : δ/1ca). z/3e1)
+  lambda (v/3d4 : β/dc). (lambda (w/3d4 : β/dc). v/3d4) v/3d4
   
   lambda
-  (u/3fa : β/1dd).
-    let (v/3fa : β/1dd) = u/3fa in lambda (w/3fa : α/1dd). u/3fa
-  
-  lambda (y/475 : γ/210). (lambda (z/475 : γ/210). y/475) y/475
-  
-  lambda
-  (x/48e : {γ/222 * β/222}).
+  (x/48b : {δ/110 * γ/110}).
     let
-    ((y/48e : γ/222), (z/48e : β/222))
+    ((y/48b : δ/110), (z/48b : γ/110))
     =
-    x/48e
-    in lambda (u/48e : α/222). u/48e
+    x/48b
+    in lambda (u/48b : β/110). u/48b
   
   lambda
-  (z/51f : {β/262 * α/262}).
+  (w/568 : γ/144).
+    lambda
+    (x/569 : {β/144 * α/144}).
+      let ((y/569 : β/144), (z/569 : α/144)) = x/569 in z/569
+  
+  lambda
+  (y/58e : α/14c).
+    let (z/58e : δ/14b -> δ/14b) = lambda (u/58e : δ/14b). u/58e in y/58e
+  
+  (lambda (u/5f3 : γ/165). u/5f3, lambda (v/5f3 : β/165). v/5f3)
+  
+  (lambda (y/6b2 : α/187). y/6b2, lambda (z/6b2 : δ/186). z/6b2)
+  
+  lambda
+  (u/722 : {δ/19c * γ/19c}).
     let
-    ((u/51f : β/262), (v/51f : α/262))
+    ((v/722 : δ/19c), (w/722 : γ/19c))
     =
-    z/51f
-    in lambda (w/51f : δ/261). u/51f
+    u/722
+    in lambda (x/723 : β/19c). v/722
   
   lambda
-  (z/547 : γ/278).
-    let (u/547 : β/278 -> β/278) = lambda (v/547 : β/278). v/547 in z/547
+  (x/7fd : β/1c0).
+    lambda (y/7fd : α/1c0). let (z/7fd : α/1c0) = y/7fd in x/7fd
+  
+  lambda (x/b58 : δ/283). (lambda (y/b58 : γ/283). y/b58, x/b58)
