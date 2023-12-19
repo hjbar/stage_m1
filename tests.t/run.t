@@ -1,3 +1,26 @@
+# TL;DR
+
+To run the tests, run
+
+    dune runtest
+
+from the root of the project directory. If this outputs
+nothing, the testsuite passes. If this outputs a diff, it
+means that there is a mismatch between the recorded/reference
+output and the behavior of your program.
+
+To *promote* the tests outputs (that is, to modify the reference
+output to match the current behavior of your program), run
+
+    dune runtest
+    dune promote
+
+When you submit your project, please check that `dune runtest` does
+not produce a diff -- the recorded output should match your
+program. If some outputs are wrong / not what you would expect, please
+explain this in the present file.
+
+
 # Intro
 
 This file is a "dune cram test" as explained at
