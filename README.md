@@ -16,7 +16,7 @@ implementation of a programming language, you need to generate a lot
 of programs in this language. Generating programs that parse correctly
 is not too hard, but generating well-typed programs can be hard -- and
 generating ill-typed program does not test the rest of the
-implmentation very well.
+implementation very well.
 
 To generate well-typed terms, a common approach is to write a random
 generator that "inverts" the rules of the type-system, from the root
@@ -58,9 +58,9 @@ lambda-calculus (no ML-style polymorphism), and then turn it into
 a random generator of well-typed programs.
 
 We provide you with a skeleton for the project, with most of the
-boring stuff already implemented. Hopefully you can focus on the
-interesting parts. We also tried to provide code to help you test your
-code, debug it, understand what is going wrong.
+boring stuff already implemented, so that you can focus on the
+interesting parts. We also provide code to help you test your
+code.
 
 ### Grading
 
@@ -78,7 +78,7 @@ The project will be evaluated by:
   implemented, if any
 
 We would like you to write a short REPORT.md file at the root of the
-project, that details what you did and explains any non-obvious point,
+project, which details what you did and explains any non-obvious point,
 with pointers to relevant source files. There is no length requirement
 for this REPORT.md file, just include the information that *you* think
 is valuable and useful -- please, no boring intro or ChatGPT prose.
@@ -86,7 +86,7 @@ is valuable and useful -- please, no boring intro or ChatGPT prose.
 ### Code reuse and plagiarism
 
 Reusing third-party code is allowed, as long as (1) the code license
-allows this form of review, and (2) you carefully indicate which parts
+allows this form of reuse, and (2) you carefully indicate which parts
 of the code are not yours -- mark it clearly in the code itself, and
 mention it explicitly in your REPORT.md file.
 
@@ -97,6 +97,26 @@ the project.
 
 Including code that comes from someone else without proper credit to
 the authors is plagiarism.
+
+### OCaml development setup
+
+Install [Opam](https://opam.ocaml.org/doc/Install.html), the OCaml
+package manager, on your system.
+
+If you have never used Opam before, you need to initialize it (otherwise, skip this step):
+
+```
+$ opam init
+```
+
+For convenience, we setup a [local](https://opam.ocaml.org/blog/opam-local-switches/) Opam distribution, using the following commands:
+
+```
+$ opam switch create . --deps-only --with-doc --with-test
+$ eval $(opam env)
+```
+
+To configure your favorite text editor, see the [Real World OCaml setup](http://dev.realworldocaml.org/install.html#editor-setup).
 
 ### Using a different language
 
@@ -141,7 +161,7 @@ constraint.
 
 By composing these functions together, you have a type-checker for
 the untyped language, that produces a "witness of well-typedness" in
-the form of an explicitly-tyed term -- presumably an annotation of
+the form of an explicitly-typed term -- presumably an annotation of
 the original program.
 
 (To keep the project difficulty manageable, our "simple type inference
@@ -192,7 +212,7 @@ cannot be used, the terms and constraint are pure. In this case `eval`
 will simply evaluate the constraint to a result. This is what the
 `minihell` test program uses.
 
-The other case of interest for is is when the parameter
+The other case of interest for this is when the parameter
 `T : Utils.Functor` is in fact a search monad `M : Utils.MonadPlus`.
 Then it is possible to define a function
 
@@ -256,7 +276,7 @@ you prefer).
    `dune runtest` (at the root of the project) and then
    `dune promote`. As you implement more features you should regularly
    run `dune runtest` again, and `dune promote` to save the current
-   testsuite output. This will help you track your progression and
+   testsuite output. This will help you track your progress and
    notice behavior changes (improvements or regressions).
 
    Note: the testsuite outputs are descriptive, not prescriptive. If
@@ -294,7 +314,7 @@ you prefer).
    - MRand should return an infinite sequence, each element being
      a random choice of term of the given size (we do not expect the
      distribution to be uniform: typically, for each syntactic node,
-     people pick each term constructor with a fixed probability).
+     each term constructor can be picked with a fixed probability).
 
    You can implement just one of them before going to the next step,
    or both. You only need one to test your code at first.
@@ -435,7 +455,7 @@ extensions.
      quantifiers. This is a difficult exercise in strongly-typed
      programming.
 
-     (We in fact wrote a shot paper on how we approached this problem
+     (We in fact wrote a short paper on how we approached this problem
      in the context of Inferno, and the difficulties are the same.
      https://inria.hal.science/hal-03145040
      Feel free to reuse our approach if you want.)
@@ -480,7 +500,7 @@ extensions.
 
   performs random generation of programs with a custom effect system,
   that determines if a given sub-expression performs an observable
-  side-effect or not -- to only generate terms will a deterministic
+  side-effect or not -- to only generate terms with a deterministic
   evaluation order. Could one extend the inference engine to also
   check that the program is deterministic in this sense, and thus
   replace the custom-built program generator used in this work?
