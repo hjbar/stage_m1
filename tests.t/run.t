@@ -2,7 +2,9 @@
 
 To run the tests, run
 
-    dune runtest
+```
+dune runtest
+```
 
 from the root of the project directory. If this outputs
 nothing, the testsuite passes. If this outputs a diff, it
@@ -12,8 +14,10 @@ output and the behavior of your program.
 To *promote* the tests outputs (that is, to modify the reference
 output to match the current behavior of your program), run
 
-    dune runtest
-    dune promote
+```
+dune runtest
+dune promote
+```
 
 When you submit your project, please check that `dune runtest` does
 not produce a diff -- the recorded output should match your
