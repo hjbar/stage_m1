@@ -13,6 +13,8 @@
 %token ARROW "->"
 %token LPAR "("
 %token RPAR ")"
+%token LBRACE "{"
+%token RBRACE "}"
 %token STAR "*"
 %token COMMA ","
 %token EQ "="
@@ -96,7 +98,7 @@ let typ_arrow :=
 let typ_atom :=
   | x = tyvar ;
     { STLC.Constr (Structure.Var x) }
-  | "(" ; tys = separated_list ("*", typ) ; ")" ;
+  | "{" ; tys = separated_list ("*", typ) ; "}" ;
     { STLC.Constr (Structure.Prod tys) }
   | "(" ; ~ = typ ; ")" ; <>
 

@@ -34,6 +34,8 @@ rule read = parse
   | "->"         { ARROW }
   | '('		 { LPAR }
   | ')'		 { RPAR }
+  | '{'		 { LBRACE }
+  | '}'		 { RBRACE }
   | '*'		 { STAR }
   | ','		 { COMMA }
   | '='		 { EQ }
