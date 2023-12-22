@@ -10,7 +10,7 @@ build: [
   ["dune" "build" "-p" name "-j" jobs]
 ]
 depends: [
-  "ocaml" { >= "4.08" }
+  "ocaml" { >= "4.14" }
   "dune"  { >= "2.8" }
   "unionFind" { >= "20220109" }
   "pprint"
