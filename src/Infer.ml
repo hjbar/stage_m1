@@ -32,6 +32,16 @@ module Make(T : Utils.Functor) = struct
   let eq v1 v2 = Eq(v1, v2)
   let decode v = MapErr(Decode v, fun e -> Cycle e)
 
+(*sujet
+  let assume_pair = function
+    | [v1; v2] -> (v1, v2)
+    | other ->
+      Printf.ksprintf failwith
+        "Error: this implementation currently only supports pairs,
+         not tuples of size %d."
+        (List.length other)
+/sujet*)
+
   (** This is a helper function to implement constraint generation for
       the [Annot] construct.
      
@@ -157,7 +167,8 @@ module Make(T : Utils.Functor) = struct
 (*/corrige*)
     | Untyped.Tuple ts ->
 (*sujet
-      Utils.not_yet "Infer.has_type: Let case" (env, ts, fun () -> has_type)
+      let (t1, t2) = assume_pair ts in
+      Utils.not_yet "Infer.has_type: Let case" (env, t1, t2, fun () -> has_type)
 /sujet*)
 (*corrige*)
       (* [[(t₁, t₂ ... tₙ) : w]] :=
@@ -191,7 +202,8 @@ module Make(T : Utils.Functor) = struct
 (*/corrige*)
     | Untyped.LetTuple (xs, t, u) ->
 (*sujet
-      Utils.not_yet "Infer.has_type: Let case" (env, xs, t, u, fun () -> has_type)
+      let (x1, x2) = assume_pair xs in
+      Utils.not_yet "Infer.has_type: Let case" (env, x1, x2, t, u, fun () -> has_type)
 /sujet*)
 (*corrige*)
       (* [[let (x₁, x₂ ... xₙ) = t in u : w]] :=
