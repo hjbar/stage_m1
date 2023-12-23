@@ -30,6 +30,14 @@ module Make(T : Utils.Functor) = struct
   let eq v1 v2 = Eq(v1, v2)
   let decode v = MapErr(Decode v, fun e -> Cycle e)
 
+  let assume_pair = function
+    | [v1; v2] -> (v1, v2)
+    | other ->
+      Printf.ksprintf failwith
+        "Error: this implementation currently only supports pairs,
+         not tuples of size %d."
+        (List.length other)
+
   (** This is a helper function to implement constraint generation for
       the [Annot] construct.
      
@@ -72,9 +80,11 @@ module Make(T : Utils.Functor) = struct
     | Untyped.Annot (t, ty) ->
       Utils.not_yet "Infer.has_type: Let case" (env, t, ty, bind, fun () -> has_type)
     | Untyped.Tuple ts ->
-      Utils.not_yet "Infer.has_type: Let case" (env, ts, fun () -> has_type)
+      let (t1, t2) = assume_pair ts in
+      Utils.not_yet "Infer.has_type: Let case" (env, t1, t2, fun () -> has_type)
     | Untyped.LetTuple (xs, t, u) ->
-      Utils.not_yet "Infer.has_type: Let case" (env, xs, t, u, fun () -> has_type)
+      let (x1, x2) = assume_pair xs in
+      Utils.not_yet "Infer.has_type: Let case" (env, x1, x2, t, u, fun () -> has_type)
     | Do p ->
       (* Feel free to postone this until you start looking
          at random generation. Getting type inference to
