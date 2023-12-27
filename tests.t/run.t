@@ -232,9 +232,7 @@ the inference variables.
             ∧ decode ?y
             ∧ (∃?wu (?wt/3 = ?wu -> ?wt/2).
               ?wt/3 = ?f
-              ∧ (∃?w1.
-                ?w1 = ?x
-                ∧ (∃?w2. ?w2 = ?y ∧ (∃(?wprod = {?w1 * ?w2}). ?wu = ?wprod)))))))
+              ∧ (∃?w1 ?w2 (?prod = {?w1 * ?w2}). ?w1 = ?x ∧ ?w2 = ?y ∧ ?wu = ?prod)))))
       ∧ decode ?final_type
   
   Inferred type:
