@@ -128,6 +128,78 @@ type, this is just an abstract/rigid type variable: `Constr
     lambda (x : int). x
   
 
+
+The `Let` case of `Infer` did not properly bind `final_type`, giving all
+`let _ = _ in _` expressions an arbitrary type.
+
+  $ minihell $FLAGS letfun.test
+  Input term:
+    let f = lambda i. i in f
+  
+  Generated constraint:
+    ∃?final_type.
+      (∃?f.
+        decode ?f
+        ∧ (∃?i ?wt (?warr = ?i -> ?wt). ?f = ?warr ∧ decode ?i ∧ ?wt = ?i)
+        ∧ ?final_type = ?f)
+      ∧ decode ?final_type
+  
+  Inferred type:
+    α -> α
+  
+  Elaborated term:
+    let (f : α -> α) = lambda (i : α). i in f
+  
+
+
+Provides coverage for the `Arrow` and `Prod` cases of `Structure.( let-: )`.
+
+  $ minihell $FLAGS funannot.test
+  Input term:
+    (lambda x. (x, x) : i -> {i * i})
+  
+  Generated constraint:
+    ∃?final_type.
+      (∃ (?i = i) (?i/1 = i) (?i/2 = i) (?xy = {?i/1 * ?i/2})
+        (?xy/1 = ?i -> ?xy)
+      .
+        (∃?x ?wt (?warr = ?x -> ?wt).
+          ?xy/1 = ?warr
+          ∧ decode ?x
+          ∧ (∃?w1 ?w2 (?prod = {?w1 * ?w2}). ?w1 = ?x ∧ ?w2 = ?x ∧ ?wt = ?prod))
+        ∧ ?xy/1 = ?final_type)
+      ∧ decode ?final_type
+  
+  Inferred type:
+    i -> {i * i}
+  
+  Elaborated term:
+    lambda (x : i). (x, x)
+  
+
+
+  $ minihell $FLAGS bad-funannot.test
+  Input term:
+    (lambda x. x : i -> {i * i})
+  
+  Generated constraint:
+    ∃?final_type.
+      (∃ (?i = i) (?i/1 = i) (?i/2 = i) (?xy = {?i/1 * ?i/2})
+        (?xy/1 = ?i -> ?xy)
+      .
+        (∃?x ?wt (?warr = ?x -> ?wt). ?xy/1 = ?warr ∧ decode ?x ∧ ?wt = ?x)
+        ∧ ?xy/1 = ?final_type)
+      ∧ decode ?final_type
+  
+  Error:
+      {i * i}
+    incompatible with
+      i
+  
+
+
+
+
 ## Logging the constraint-solving process
 
 You can ask `minihell` to show how the constraint evolves as

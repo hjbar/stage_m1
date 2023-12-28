@@ -47,7 +47,7 @@ let map f = function
 
 let merge (f : 'a -> 'b -> 'c) (s1 : 'a t) (s2 : 'b t) : 'c t option =
     match s1, s2 with
-    | Var _, Var _ -> Some (Var (TyVar.fresh "y"))
+    | Var x, Var y -> if x = y then Some (Var x) else None
     | Arrow (x, y), Arrow (x', y') -> Some (Arrow (f x x', f y y'))
     | Prod tup, Prod tup' -> Some (Prod (List.map2 f tup tup'))
     | _, _ -> None

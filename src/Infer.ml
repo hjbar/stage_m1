@@ -118,11 +118,10 @@ module Make(T : Utils.Functor) = struct
         )
         | Untyped.Let (x, t, u) -> (
             let/? t_var = (uname x, None) in
-            let/? u_var = ("u", None) in
             let env' = STLC.TeVar.Map.(env |> add x t_var) in
             let+ let_typ = decode t_var
             and+ t_typed = has_type env t t_var
-            and+ u_typed = has_type env' u u_var
+            and+ u_typed = has_type env' u w
             in STLC.(Let (x, let_typ, t_typed, u_typed))
         )
         | Untyped.Annot (t, ty) -> (
