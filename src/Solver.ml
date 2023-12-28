@@ -29,6 +29,8 @@ module Make (T : Utils.Functor) = struct
     in
     add_to_log, get_log
 
+  let new_constr_var = STLC.TyVar.namegen [|"α"; "β"; "γ"; "δ"|]
+
   (** Expand variable to its type. This is naturally a subprocedure of
       converting from a [var Utils.clash] (returned by [Unif]) and a
       [STLC.ty Utils.Clash] (output of [eval]). *)
@@ -39,7 +41,8 @@ module Make (T : Utils.Functor) = struct
       | Some (Var y) -> Constr (Var y)
       | Some (Arrow (t, u)) -> Constr (Arrow (typeof env t, typeof env u))
       | Some (Prod tup) -> Constr (Prod (List.map (typeof env) tup))
-      | None -> Constr (Var (Structure.TyVar.fresh "a"))
+      (* Just choose something here *)
+      | None -> Constr (Var (new_constr_var ()))
 
   (** See [../README.md] ("High-level description") or [Solver.mli]
       for a description of normal constraints and
