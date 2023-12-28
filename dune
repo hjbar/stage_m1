@@ -1,5 +1,4 @@
 ; build information for the cram tests in tests.t
 ; see tests.t/run.t for more details
 (cram
-  (deps %{bin:minihell} %{bin:minigen})
-)
+  (deps %{bin:minihell} %{bin:minigen}))

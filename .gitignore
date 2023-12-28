@@ -1,0 +1,7 @@
+# Build artifacts
+_build
+_opam
+
+# Code coverage artifacts
+_coverage
+*.coverage

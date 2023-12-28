@@ -9,10 +9,13 @@ synopsis: "A random program generator based on inferno-style constraint generati
 build: [
   ["dune" "build" "-p" name "-j" jobs]
 ]
+homepage: "https://gitlab.com/Vanille-N/mpri-2.4-project-2023-2024"
+bug-reports: "https://gitlab.com/Vanille-N/mpri-2.4-project-2023-2024/-/issues"
 depends: [
   "ocaml" { >= "4.14" }
   "dune"  { >= "2.8" }
   "unionFind" { >= "20220109" }
   "pprint"
   "menhir"
+  "bisect_ppx" {dev & >= "2.5.0"} # Code coverage analysis
 ]
