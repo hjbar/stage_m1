@@ -1,0 +1,4 @@
+lambda x.
+    let y1 = (x : t1) in
+    let y2 = (x : t2) in
+    (y1, y2)

@@ -197,6 +197,29 @@ Provides coverage for the `Arrow` and `Prod` cases of `Structure.( let-: )`.
       i
   
 
+  $ minihell $FLAGS poly-conflict.test
+  Input term:
+    lambda x. let y1 = (x : t1) in let y2 = (x : t2) in (y1, y2)
+  
+  Generated constraint:
+    ∃?final_type.
+      (∃?x ?wt (?warr = ?x -> ?wt).
+        ?final_type = ?warr
+        ∧ decode ?x
+        ∧ (∃?y1.
+          decode ?y1
+          ∧ (∃(?t1 = t1). ?t1 = ?x ∧ ?t1 = ?y1)
+          ∧ (∃?y2.
+            decode ?y2
+            ∧ (∃(?t2 = t2). ?t2 = ?x ∧ ?t2 = ?y2)
+            ∧ (∃?w1 ?w2 (?prod = {?w1 * ?w2}). ?w1 = ?y1 ∧ ?w2 = ?y2 ∧ ?wt = ?prod))))
+      ∧ decode ?final_type
+  
+  Error:
+      t2
+    incompatible with
+      t1
+  
 
 
 

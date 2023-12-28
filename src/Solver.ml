@@ -104,10 +104,7 @@ module Make (T : Utils.Functor) = struct
             | Error (Unif.Clash (v1, v2)) -> (env, NErr (Clash (typeof env v1, typeof env v2)))
             | Error (Unif.Cycle c) -> (env, NErr (Cycle c))
         )
-        | Exist (x, ty, u) -> (
-            (* Possible improvement: remove dangling existentials ? *)
-            reduce (Unif.Env.add x ty env) u
-        )
+        | Exist (x, ty, u) -> reduce (Unif.Env.add x ty env) u
         | Decode x -> (
             (env, NRet (fun map -> map x))
         )
