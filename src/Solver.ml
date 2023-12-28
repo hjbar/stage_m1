@@ -39,10 +39,7 @@ module Make (T : Utils.Functor) = struct
       | Some (Var y) -> Constr (Var y)
       | Some (Arrow (t, u)) -> Constr (Arrow (typeof env t, typeof env u))
       | Some (Prod tup) -> Constr (Prod (List.map (typeof env) tup))
-      (* Honestly this arm is probably unreachable code because
-         there's no way a variable that doesn't define any structure
-         could be part of a clash. *)
-      | None -> Constr (Var (Structure.TyVar.fresh "x"))
+      | None -> Constr (Var (Structure.TyVar.fresh "a"))
 
   (** See [../README.md] ("High-level description") or [Solver.mli]
       for a description of normal constraints and
