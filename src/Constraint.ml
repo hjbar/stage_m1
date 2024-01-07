@@ -57,11 +57,16 @@ module Make (T : Utils.Functor) = struct
     | Do : ('a, 'e) t T.t -> ('a, 'e) t
 
   and 'a on_sol = (variable -> STLC.ty) -> 'a
-  (** A value of type [('a, 'e) t] represents a part of an
-      inference constraint, but the value of type ['a] that
-      it produces on success may depend on the solution to
-      the whole constraint, not just for this part of the
-      constraint.
+  (** ['a on_sol] represents an elaborated witness of type ['a] that
+      depends on the solution to the whole constraint -- represented
+      by a mapping from inference variables to elaborated types,
+      [variable -> STLC.ty].
+
+      This is used in the success constraint above
+        [Ret : 'a on_sol -> ('a, 'e) t];
+      using just [Ret : 'a -> ('a, 'e) t] would not work, as the
+      witness we want to produce may depend on the solution to the
+      whole constraint.
 
       For example, consider the untyped term
         [(lambda y. 42) 0]
@@ -75,10 +80,6 @@ module Make (T : Utils.Functor) = struct
       handle the application of [0]. We have to solve the
       whole constraint, and then come back to elaborate an
       explictly-typed term [lambda (y : int). 42].
-
-      The solution to the whole constraint is represented by
-      a mapping from inference variables to elaborated
-      types.
   *)
 
   let (let+) c f = Map(c, f)
