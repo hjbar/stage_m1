@@ -58,6 +58,8 @@ module Make (T : Utils.Functor) = struct
        (You can also tweak this code temporarily to print stuff on
        stderr right away if you need dirtier ways to debug.)
     *)
+/sujet*)
+(*sujet
     Utils.not_yet "Solver.eval" (env, c0, add_to_log, get_log)
 /sujet*)
 (*corrige*)

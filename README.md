@@ -373,7 +373,7 @@ you prefer).
 
 - `src/`: the bulk of the code, that place where we expect you to
    work. `src/*.{ml,mli}` are the more important modules that you will
-   have to modify or use directory. `src/support/*.{ml,mli}` has the
+   have to modify or use directly. `src/support/*.{ml,mli}` has the
    less interesting support code. (Again, feel free to modify the
    support code, but you do not need to.)
 

@@ -1,3 +1,10 @@
+(*sujet
+(* There is nothing that you have to implement in this file/module,
+   and no particular need to read its implementation. [Decode.mli]
+   explains its purpose. *)
+/sujet*)
+
+
 type env = Unif.Env.t
 
 type slot =
