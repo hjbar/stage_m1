@@ -37,16 +37,15 @@ let () =
   | None -> Random.self_init ()
   | Some s -> Random.init s
 
-module RandGen = Generator.Make(MRand)
-module SeqGen = Generator.Make(MSeq)
+let generate (module M : Utils.MonadPlus) =
+  let module Gen = Generator.Make(M) in
+  M.run @@ Gen.typed ~depth:config.depth
 
 let () =
-  begin
-    if config.exhaustive then
-      MSeq.run @@ SeqGen.typed ~depth:config.depth
-    else
-      MRand.run @@ RandGen.typed ~depth:config.depth
-  end
+  generate
+    (if config.exhaustive
+     then (module MSeq)
+     else (module MRand))
   |> Seq.take config.count
   |> Seq.map STLCPrinter.print_term
   |> List.of_seq
