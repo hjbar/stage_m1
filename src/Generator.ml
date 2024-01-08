@@ -12,15 +12,21 @@ module Make(M : Utils.MonadPlus) = struct
 let untyped : Untyped.term =
   (* This definition is *not* a good solution,
      but it could give you a flavor of possible definitions. *)
-  let rec gen () : Untyped.term =
-    let open Untyped in
-    Do (M.delay @@ fun () ->
+  let rec gen (fv : TeVar.t list) : Untyped.term =
+    (* try... *)
+    Untyped.(Do (M.delay @@ fun () ->
       M.sum [
-        M.return (App(gen (), gen ())); (* try to generate applications... *)
-        M.delay (Utils.not_yet "Generator.untyped"); (* ... or fail *)
+        M.sum (
+            fv
+            |> List.map (fun v -> M.return (Var v)) (* ...a free variable *)
+        );
+        M.return (App (gen fv, gen fv)); (* ...or an application *)
+        M.return (let x = TeVar.fresh "x" in Abs (x, gen (x::fv))); (* ...or an abstraction *)
+        (*M.return (Utils.not_yet "Generator.untyped" ());*)
+        (* FIXME: unfinished *)
       ]
-    )
-  in gen ()
+    ))
+  in gen []
 
 let constraint_ : (STLC.term, Infer.err) Constraint.t =
   let w = Constraint.Var.fresh "final_type" in
