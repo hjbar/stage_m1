@@ -29,21 +29,6 @@ module Make (T : Utils.Functor) = struct
     in
     add_to_log, get_log
 
-  let new_constr_var = STLC.TyVar.namegen [|"α"; "β"; "γ"; "δ"|]
-
-  (** Expand variable to its type. This is naturally a subprocedure of
-      converting from a [var Utils.clash] (returned by [Unif]) and a
-      [STLC.ty Utils.Clash] (output of [eval]). *)
-  let rec typeof (env : env) (var : Constraint.variable) : STLC.ty =
-      let repr = Unif.Env.repr var env in
-      match repr.structure with
-      (* Just recurse into all types. Very straightforward. *)
-      | Some (Var y) -> Constr (Var y)
-      | Some (Arrow (t, u)) -> Constr (Arrow (typeof env t, typeof env u))
-      | Some (Prod tup) -> Constr (Prod (List.map (typeof env) tup))
-      (* Just choose something here *)
-      | None -> Constr (Var (new_constr_var ()))
-
   (** See [../README.md] ("High-level description") or [Solver.mli]
       for a description of normal constraints and
       our expectations regarding the [eval] function. *)
@@ -104,14 +89,14 @@ module Make (T : Utils.Functor) = struct
         | Eq (v1, v2) -> (
             match Unif.unify env v1 v2 with
             | Ok env' -> (env', NRet (fun _ -> ()))
-            | Error (Unif.Clash (v1, v2)) -> (env, NErr (Clash (typeof env v1, typeof env v2)))
+            | Error (Unif.Clash (v1, v2)) -> (env, NErr (Clash (Decode.decode env v1, Decode.decode env v2)))
             | Error (Unif.Cycle c) -> (env, NErr (Cycle c))
         )
         | Exist (x, ty, u) -> reduce (Unif.Env.add x ty env) u
         | Decode x -> (
             (env, NRet (fun map -> map x))
         )
-        | Do _ -> Utils.not_yet "Solver.reduce Do" (add_to_log, reduce)
+        | Do p -> (env, NDo p)
     in
     let (env, res) = reduce env c0 in
     (get_log (), env, res)

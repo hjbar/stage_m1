@@ -5,8 +5,8 @@ module Make(M : Utils.MonadPlus) = struct
   module Solver = Solver.Make(M)
 
   (* just in case... *)
-  module TeVarSet = Untyped.Var.Set
-  module TyVarSet = STLC.TyVar.Set
+  module TeVar = Untyped.Var
+  module TyVar = STLC.TyVar
 
 let untyped : Untyped.term =
   Do (M.delay (Utils.not_yet "Generator.untyped"))

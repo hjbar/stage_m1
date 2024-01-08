@@ -51,13 +51,13 @@ module Make(T : Utils.Functor) = struct
     (** This is a helper binder to implement constraint generation for
         the [Annot] construct.
 
-        [let*! ty_var = ty in k] takes a type [ty], and a constraint [k] parametrized
+        [let-: ty_var = ty in k] takes a type [ty], and a constraint [k] parametrized
         over a constraint variable. It creates a constraint context that
         binds a new constraint variable [?w] that must be equal to [ty],
         and places [k ?w] within this context.
 
         For example, if [ty] is the type [?v1 -> (?v2 -> ?v3)] , then
-        [let*! ty_var = ty in k] could be the constraint
+        [let-: ty_var = ty in k] could be the constraint
             [∃(?w1 = ?v2 -> ?v3). ∃(?w2 = ?v1 -> ?w1). k ?w2], or equivalently
             [∃?w3 ?w4. ?w3 = ?v1 -> ?w4 ∧ ?w4 = ?v2 -> ?v3 ∧ k ?w3].
     *)
@@ -152,10 +152,7 @@ module Make(T : Utils.Functor) = struct
             and+ u_typed = has_type env' u w
             in STLC.LetTuple ([(x1, x1_typ); (x2, x2_typ)], t_typed, u_typed)
         )
-        | Do p -> (
-          (* Feel free to postone this until you start looking
-             at random generation. Getting type inference to
-             work on all the other cases is a good first step. *)
-            Utils.not_yet "Infer.has_type: Do case" (env, p, fun () -> has_type)
+        | Untyped.Do p -> (
+            Do (T.map (fun term -> has_type env term w) p)
         )
 end
