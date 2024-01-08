@@ -118,6 +118,20 @@ $ eval $(opam env)
 
 To configure your favorite text editor, see the [Real World OCaml setup](http://dev.realworldocaml.org/install.html#editor-setup).
 
+#### Tip on GADTs in OCaml
+
+The type of constraints is a GADT, a Generalized (or Guarded)
+Algebraic Datatype. Writing functions that operate on these datatypes
+requires a bit more ceremony than everyday OCaml code, due to their
+inherent use of polymorphic recursion.
+
+If you are unfamiliar with function declarations that look like
+
+    let rec foo : type a e . (a, e) t -> ...
+
+then you should read the GADT chapter of the OCaml manual:
+  https://v2.ocaml.org/releases/5.1/htmlman/gadts-tutorial.html
+
 ### Using a different language
 
 We wrote useful support code in OCaml, so it is going to be much
