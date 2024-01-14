@@ -1,25 +1,35 @@
-type 'a t = unit -> 'a list
+type 'a t =
+    | Done : 'a list -> 'a t
+    | Bind : 'a t * ('a -> 'b t) -> 'b t
+    | Delay : (unit -> 'a t) -> 'a t
+    | Sum : 'a t list -> 'a t
 
 let map (f : 'a -> 'b) (s : 'a t) : 'b t =
-    fun () -> List.map f (s ())
+    Bind (s, fun x -> Done [f x])
 
 let return (x : 'a) : 'a t =
-    fun () -> [x]
+    Done [x]
 
 let bind (sa : 'a t) (f : 'a -> 'b t) : 'b t =
-    fun () -> List.concat_map (fun l -> f l ()) (sa ())
+    Bind (sa, f)
 
 let delay (f : unit -> 'a t) : 'a t =
-    f ()
+    Delay f
 
 let sum (li : 'a t list) : 'a t =
-    fun () -> List.concat (List.map (fun l -> l ()) li)
+    Sum li
 
 let fail : 'a t =
-    fun () -> []
+    Done []
 
 let one_of (vs : 'a array) : 'a t =
-    fun () -> Array.to_list vs
+    Done (Array.to_list vs)
 
 let run (s : 'a t) : 'a Seq.t =
-    List.to_seq (s ())
+    let rec unfold : type a . a t -> a list = function
+        | Done l -> l
+        | Delay f -> unfold (f ())
+        | Bind (s, f) -> List.concat_map (fun x -> unfold (f x)) (unfold s)
+        | Sum li -> List.concat_map unfold li
+    in
+    List.to_seq (unfold s)
