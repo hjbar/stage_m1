@@ -10,7 +10,7 @@ let bind (sa : 'a t) (f : 'a -> 'b t) : 'b t =
   Utils.not_yet "MSeq.bind" (sa, f)
 
 let delay (f : unit -> 'a t) : 'a t =
-  Utils.not_yet "MSeq.delay" (f ())
+  Utils.not_yet "MSeq.delay" f
 
 let sum (li : 'a t list) : 'a t =
   Utils.not_yet "MSeq.sum" li
