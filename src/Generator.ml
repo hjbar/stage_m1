@@ -10,20 +10,24 @@ module Make(M : Utils.MonadPlus) = struct
 
 
 let untyped : Untyped.term =
-  (* This definition is *not* a good solution,
-     but it could give you a flavor of possible definitions. *)
   let rec gen (fv : TeVar.t list) : Untyped.term =
-    (* try... *)
+    (* The partial terms constructed at this iteration will occur in distinct
+       complete terms. Thus it's fine if we generate fresh variables once and
+       use them several times in different terms, it cannot produce collisions. *)
+    let x = TeVar.fresh "x" in
+    let y = TeVar.fresh "y" in
     Untyped.(Do (M.delay @@ fun () ->
       M.sum [
-        M.sum (
-            fv
-            |> List.map (fun v -> M.return (Var v)) (* ...a free variable *)
-        );
-        M.return (App (gen fv, gen fv)); (* ...or an application *)
-        M.return (let x = TeVar.fresh "x" in Abs (x, gen (x::fv))); (* ...or an abstraction *)
-        (*M.return (Utils.not_yet "Generator.untyped" ());*)
-        (* FIXME: unfinished *)
+        (* One of the existing available variables *)
+        M.sum (fv |> List.map (fun v -> M.return (Var v)));
+        (* or any term constructor recursively filled in. *)
+        M.one_of [|
+            App (gen fv, gen fv);
+            Abs (x, gen (x::fv));
+            Let (x, gen fv, gen (x::fv));
+            LetTuple ([x; y], gen fv, gen (x::y::fv));
+            Tuple [gen fv; gen fv]
+        |]
       ]
     ))
   in gen []
@@ -36,22 +40,20 @@ let constraint_ : (STLC.term, Infer.err) Constraint.t =
       untyped
       w))
 
-let typed ~depth =
-  (* This definition uses [constraint_] to generate well-typed terms.
-     An informal description of a possible way to do this is described
-     in the README, Section "Two or three effect instances", where
-     the function is valled [gen]:
-
-     > it is possible to define a function
-     >
-     >     val gen : depth:int -> ('a, 'e) constraint -> ('a, 'e) result M.t
-     >
-     > on top of `eval`, that returns all the results that can be reached by
-     > expanding `Do` nodes using `M.bind`, recursively, exactly `depth`
-     > times. (Another natural choice would be to generate all the terms that
-     > can be reached by expanding `Do` nodes *at most* `depth` times, but
-     > this typically gives a worse generator.)
-  *)
-  Utils.not_yet "Generator.typed" depth
-
+let typed ~(depth:int) : STLC.term M.t =
+    let rec expand (depth:int) (env:Unif.Env.t) (constr: (STLC.term, Infer.err) Constraint.t) : STLC.term M.t =
+        (* [Solver.eval] will push [NDo] nodes towards the root.
+           depending on the depth and the status we determine when to stop. *)
+        let (_log, env', res) = Solver.eval ~log:false env constr in
+        match res with
+            (* Do-free term at the correct depth: this is a solution *)
+            | NRet map when depth = 1 -> M.return (map (Decode.decode env'))
+            (* Do-expandable term with insufficient depth: we can expand further *)
+            | NDo ts when depth > 1 -> M.bind ts (expand (depth-1) env')
+            (* Anything else (terms that are
+               - ill-typed, or
+               - do-free and too shallow, or
+               - incompletely expanded) are dropped *)
+            | _ -> M.fail
+    in expand depth Unif.Env.empty constraint_
 end

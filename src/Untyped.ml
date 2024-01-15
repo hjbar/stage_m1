@@ -21,7 +21,7 @@ module Make(T : Utils.Functor) = struct
     | Annot of 't term_ * 'tyv STLC.ty_
     | Do of 't term_ T.t
   constraint 't = < tevar : 'tev; tyvar : 'tyv; >
-  
+
   (** [raw_term] are terms with raw [string] for their
       variables. Several binders may use the same
       variable. These terms are produced by the parser. *)
@@ -31,7 +31,7 @@ module Make(T : Utils.Functor) = struct
       which include a unique stamp to guarantee uniqueness
       of binders. This is what most of the code manipulates. *)
   type term = < tevar : Var.t; tyvar : Structure.TyVar.t; > term_
-  
+
   let freshen : raw_term -> term =
     let module Env = Map.Make(String) in
     let bind env x =

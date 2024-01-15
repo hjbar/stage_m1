@@ -60,43 +60,58 @@ module Make (T : Utils.Functor) = struct
     let rec reduce : type a e . env -> (a, e) Constraint.t -> env * (a, e) normal_constraint =
         fun env c ->
         if delta env then add_to_log env;
+        let open Constraint in
         match c with
-        | Ret map -> (env, NRet map)
-        | Err e -> (env, NErr e)
+        (* Trivial base cases *)
+        | Ret map -> env, NRet map
+        | Err e -> env, NErr e
+        (* [Exist] gets consumed with a side-effect of a new variable in the context *)
+        | Exist (x, ty, u) -> reduce (Unif.Env.add x ty env) u
+        (* [Decode] is the "true" base case because the function that we construct here
+           is the one that will end up inside an [NRet] eventually.
+           Whatever final mapping we get, it will be instanciated by [x] *)
+        | Decode x -> env, NRet (( |> ) x)
+        (* We don't compute under [Do] nodes *)
+        | Do p -> env, NDo p
+        (* Simplify [x] then apply [f] *)
         | Map (x, f) -> (
-            match reduce env x with
-            | (env', NRet map) -> (env', NRet (fun x -> f (map x)))
-            | (env', NErr e) -> (env', NErr e)
-            | (_, NDo _) -> failwith "Solver.reduce Map / Do"
+            let env, res = reduce env x in env, match res with
+            | NRet map -> NRet (fun x -> f (map x))
+            | NErr e -> NErr e
+            (* Transpose [NDo] with [Map] *)
+            | NDo ts -> NDo (ts |> T.map (fun t -> Map (t, f)))
         )
+        (* Simplify [x] then apply [f] *)
         | MapErr (x, fe) -> (
-            match reduce env x with
-            | (env', NRet map) -> (env', NRet map)
-            | (env', NErr e) -> (env', NErr (fe e))
-            | (_, NDo _) -> failwith "Solver.reduce MapErr / Do"
+            let env, res = reduce env x in env, match res with
+            | NErr e -> NErr (fe e)
+            | NRet map -> NRet map
+            (* Transpose [NDo] with [MapErr] *)
+            | NDo ts -> NDo (ts |> T.map (fun t -> MapErr (t, fe)))
         )
         | Conj (c1, c2) -> (
-            match reduce env c1 with
-            | (env', NRet map1) -> (
-                match reduce env' c2 with
-                | (env'', NRet map2) -> (env'', NRet (fun v -> (map1 v, map2 v)))
-                | (env'', NErr e) -> (env'', NErr e)
-                | (_, NDo _) -> failwith "Solver.reduce Conj / Do"
-            )
-            | (env', NErr e) -> (env', NErr e)
-            | (_, NDo _) -> failwith "Solver.reduce Conj / Do"
+            let env, res1 = reduce env c1 in
+            let env, res2 = reduce env c2 in env, match res1, res2 with
+            | NRet map1, NRet map2 -> NRet (fun v -> (map1 v, map2 v))
+            | NErr e, _ | _, NErr e -> NErr e
+            (* Transpose [NDo] with [Conj].
+               All cases must preserve the number of [Do] or [NDo] constructors
+               or generated terms will be too deep.
+               In particular it is important that the [Do _, Do _] case doesn't
+               combine the two [Do] constructors into only one [NDo]. *)
+            | NRet map1, NDo ts2 -> NDo (ts2 |> T.map (fun t2 -> Conj (Ret map1, t2)))
+            | NDo ts1, NRet map2 -> NDo (ts1 |> T.map (fun t1 -> Conj (t1, Ret map2)))
+            | NDo ts1, NDo ts2 -> NDo (ts1 |> T.map (fun t1 -> Conj (t1, Do ts2)))
         )
         | Eq (v1, v2) -> (
+            (* Add the equality to the context *)
             match Unif.unify env v1 v2 with
-            | Ok env' -> (env', NRet (fun _ -> ()))
-            | Error (Unif.Clash (v1, v2)) -> (env, NErr (Clash (Decode.decode env v1, Decode.decode env v2)))
-            | Error (Unif.Cycle c) -> (env, NErr (Cycle c))
+            | Ok env -> env, NRet (fun _ -> ())
+            | Error (Unif.Clash (v1, v2)) ->
+                (* Turn a clash on variables into a clash on types *)
+                env, NErr (Clash (Decode.decode env v1, Decode.decode env v2))
+            | Error (Unif.Cycle c) -> env, NErr (Cycle c)
         )
-        | Exist (x, ty, u) -> reduce (Unif.Env.add x ty env) u
-        | Decode x -> (
-            (env, NRet (fun map -> map x))
-        )
-        | Do p -> (env, NDo p)
     in
     let (env, res) = reduce env c0 in
     (get_log (), env, res)
