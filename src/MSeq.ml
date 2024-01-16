@@ -28,8 +28,9 @@ let one_of (vs : 'a array) : 'a t =
 let run (s : 'a t) : 'a Seq.t =
     let rec unfold : type a . a t -> a list = function
         | Done l -> l
-        | Delay f -> unfold (f ())
-        | Bind (s, f) -> List.concat_map (fun x -> unfold (f x)) (unfold s)
-        | Sum li -> List.concat_map unfold li
-    in
-    List.to_seq (unfold s)
+        | Delay f -> f () |> unfold
+        | Bind (s, f) -> s |> unfold |> List.concat_map (fun x -> x |> f |> unfold)
+        | Sum ls -> ls |> List.concat_map unfold
+    in s
+    |> unfold
+    |> List.to_seq

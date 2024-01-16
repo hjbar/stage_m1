@@ -23,3 +23,4 @@ let one_of (vs : 'a array) : 'a t =
 
 let run (s : 'a t) : 'a Seq.t =
   Utils.not_yet "MRand.run" s
+
