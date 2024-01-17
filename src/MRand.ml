@@ -9,7 +9,8 @@ type 'a t = {
 }
 
 let wf (s : 'a t) : 'a t =
-    assert (s.len + s.len' = List.length s.finished + List.length s.later);
+    assert (s.len = List.length s.finished);
+    assert (s.len' = List.length s.later);
     s
 
 let of_finished (a : 'a list) : 'a t =
@@ -91,15 +92,8 @@ let run (s : 'a t) : 'a Seq.t =
                 Picked (List.nth sampler.finished idx), sampler
             ) else (
                 let idx = idx - sampler.len in
-                let gen, trimmed =
-                    idx
-                    |> take_nth sampler.later
-                in
-                let res, gen =
-                    gen
-                    |> ( |> ) ()
-                    |> try_pick
-                in
+                let gen, trimmed = take_nth sampler.later idx in
+                let res, gen = try_pick (gen ()) in
                 match res with
                     | Picked x -> Picked x, wf { sampler with later = (fun () -> gen) :: trimmed }
                     | Retry -> Retry, wf { sampler with later = (fun () -> gen) :: trimmed }
@@ -110,10 +104,7 @@ let run (s : 'a t) : 'a Seq.t =
     let rec pick (miss : int) (sampler : 'a t) : 'a * 'a t =
         let res, trimmed = try_pick sampler in
         match res with
-        | Picked t -> (
-            Format.printf "Found after %d misses\n%!" miss;
-            t, trimmed
-        )
+        | Picked t -> t, trimmed
         | Retry -> pick (miss + 1) trimmed
         | Empty -> failwith "This generator is empty; no such term exists"
     in
