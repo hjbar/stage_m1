@@ -95,6 +95,19 @@ module Make(T : Utils.Functor) = struct
       For example, if [t] is the term [lambda x. x], then [has_type env t w]
       generates a constraint equivalent to [∃?v. ?w = (?v -> ?v)].
 
+      More precisely, one possible generated constraint would be:
+      {[
+        Exist(v, None,
+          Map(
+            Conj(
+              Exist (arr, Some (Arrow (v, v)), Eq (arr, w)),
+              MapErr(Decode v, fun e -> Cycle e)
+            ),
+            fun ((), ty) -> Abs (x, ty, Var x)
+        ))
+      ]}
+      but the actually generated constraint may be more complex/verbose.
+
       Precondition: when calling [has_type env t], [env] must map each
       term variable that is free in [t] to an inference variable.
   *)
