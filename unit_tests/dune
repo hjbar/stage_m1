@@ -1,0 +1,5 @@
+(test
+  (name bug_in_simplifier)
+  (libraries constrained_generation)
+  (modules bug_in_simplifier)
+)

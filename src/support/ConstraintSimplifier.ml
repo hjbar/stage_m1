@@ -58,6 +58,7 @@ module Make(T : Utils.Functor) = struct
             VarSet.of_list [v1; v2], Eq (v1, v2)
         end
       | Exist (v, s, c) ->
+        let v = normalize v in
         let fvs, c = simpl (VarSet.add v bvs) c in
         if is_in_env v then (fvs, c)
         else if not (VarSet.mem v fvs) then (fvs, c)
