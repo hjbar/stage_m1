@@ -26,43 +26,67 @@ let run (s : 'a t) : 'a Seq.t =
   Utils.not_yet "MRand.run" s
 /sujet*)
 (*corrige*)
-let shuffle arr =
-  for i = Array.length arr - 1 downto 1 do
-    let j = Random.int (i + 1) in
-    let t = arr.(j) in
-    arr.(j) <- arr.(i);
-    arr.(i) <- t
-  done
+type 'a t =
+  | Return : 'a -> 'a t
+  | Fail : 'a t
+  | Delay : 'a t Lazy.t -> 'a t
+  | Map : 'a t * ('a -> 'b) -> 'b t
+  | Bind : 'a t * ('a -> 'b t) -> 'b t
+  | Sum : 'a t list -> 'a t
+  | One_of : 'a array -> 'a t
 
-type 'a t = unit -> 'a option
-let map f v = fun () -> Option.map f (v ())
+let rec clearly_empty : type a . a t -> bool = function
+  | Return _ -> false
+  | Fail -> true
+  | Delay f ->
+    Lazy.is_val f && clearly_empty (Lazy.force f)
+  | Map (t, _f) -> clearly_empty t
+  | Bind (t, _f) -> clearly_empty t
+  | One_of arr -> arr = [| |]
+  | Sum li -> li = []
 
-let return x : 'a t = fun () -> Some x
+let return v = Return v
+let fail = Fail
+let delay f = Delay (Lazy.from_fun f)
+let map f t = Map (t, f)
+let bind t f = Bind (t, f)
+let sum ts =
+  Sum (List.filter (fun t -> not (clearly_empty t)) ts)
 
-let fail = fun () -> None
+let one_of arr = One_of arr
 
-let one_of (arr : 'a array) : 'a t =
-  fun () ->
-  if arr = [| |] then None
-  else Some arr.(Random.int (Array.length arr))
+(* let shuffle arr = *)
+(*   for i = Array.length arr - 1 downto 1 do *)
+(*     let j = Random.int (i + 1) in *)
+(*     let t = arr.(j) in *)
+(*     arr.(j) <- arr.(i); *)
+(*     arr.(i) <- t *)
+(*   done *)
 
+let rec next : type a . a t -> a option * a t = fun t -> match t with
+  | Return x -> Some x, t
+  | Fail -> None, t
+  | Delay f -> next (Lazy.force f)
+  | Map (t, f) ->
+    let o, t = next t in Option.map f o, Map (t, f)
+  | One_of arr ->
+    if arr = [| |] then None, Fail
+    else Some arr.(Random.int (Array.length arr)), t
+  | Sum ts ->
+    if ts = [] then None, Fail
+    else
+      let ts = List.filter (fun t -> not (clearly_empty t)) ts in
+      (* TODO *)
+      fst (next (List.nth ts (Random.int (List.length ts)))), Sum ts
+  | Bind (tt, f) ->
+    let (o, tt) = next tt in
+    match o with
+    | None -> None, Bind (tt, f)
+    | Some t -> fst (next (f t)), Bind (tt, f)
 
-let sum (li : 'a t list) : 'a t =
-  let choices = Array.of_list li in
-  fun () ->
-    shuffle choices;
-    Array.find_map (fun f -> f ()) choices
-
-let delay (f : unit -> 'a t) : 'a t =
-  fun () -> f () ()
-
-let bind v f =
-  fun () ->
-  match v () with
-  | None -> None
-  | Some a -> f a ()
-
-let run (gen : 'a t) : 'a Seq.t =
-  Seq.forever (fun () -> gen)
-  |> Seq.filter_map (fun f -> f ())
+let rec run (gen : 'a t) : 'a Seq.t = fun () ->
+  let o, gen = next gen in
+  match o with
+  | None -> run gen ()
+  | Some v -> Seq.Cons (v, run gen)
 (*/corrige*)

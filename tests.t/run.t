@@ -359,38 +359,31 @@ There are not many programs with depth 3, 4 and 5.
 An example of random sampling output at higher depth.
 
   $ minigen --seed 42 --depth 6 --count 10
-  lambda (w/8d : β/4c -> γ/4c). lambda (x/8e : β/4c). w/8d x/8e
+  (lambda (z/8 : γ/6). z/8, lambda (u/8 : β/6). u/8)
   
-  lambda (u/e4 : α/78). (lambda (v/e4 : α/78). v/e4) u/e4
+  (lambda (u/4 : β/7). u/4) (lambda (w/b1 : δ/c4). w/b1)
   
-  lambda (v/37d : δ/1a6). lambda (w/37d : δ/1a6 -> γ/1a6). w/37d v/37d
+  (lambda (y/1f6 : α/138). y/1f6, lambda (z/1f6 : δ/137). z/1f6)
   
-  lambda (z/3d7 : α/1c3). (lambda (u/3d7 : α/1c3). u/3d7) z/3d7
-  
-  (lambda (y/3e1 : α/1cb). y/3e1, lambda (z/3e1 : δ/1ca). z/3e1)
+  (lambda (u/4 : β/7). u/4) (lambda (w/b1 : β/191). w/b1)
   
   lambda
-  (u/3fa : β/1dd).
-    let (v/3fa : β/1dd) = u/3fa in lambda (w/3fa : α/1dd). u/3fa
-  
-  lambda (y/475 : γ/210). (lambda (z/475 : γ/210). y/475) y/475
+  (v/3 : γ/1d2).
+    let (w/11 : β/1d2 -> β/1d2) = lambda (v/fb : β/1d2). v/fb in v/3
   
   lambda
-  (x/48e : {γ/222 * β/222}).
-    let
-    ((y/48e : γ/222), (z/48e : β/222))
-    =
-    x/48e
-    in lambda (u/48e : α/222). u/48e
+  (v/3 : (β/288 -> β/288) -> γ/288).
+    v/3 (lambda (w/1b8 : β/288). w/1b8)
+  
+  lambda (v/3 : δ/35c). (v/3, lambda (y/5a9 : γ/35c). y/5a9)
   
   lambda
-  (z/51f : {β/262 * α/262}).
-    let
-    ((u/51f : β/262), (v/51f : α/262))
-    =
-    z/51f
-    in lambda (w/51f : δ/261). u/51f
+  (v/3 : β/3a9).
+    let (w/11 : γ/3a9 -> β/3a9) = lambda (v/fb : γ/3a9). v/3 in v/3
   
   lambda
-  (z/547 : γ/278).
-    let (u/547 : β/278 -> β/278) = lambda (v/547 : β/278). v/547 in z/547
+  (v/3 : δ/40a).
+    lambda
+    (u/22 : γ/40a). lambda (v/22 : β/40a). lambda (w/243 : α/40a). v/3
+  
+  (lambda (u/701 : α/422). u/701, lambda (v/701 : δ/421). v/701)
