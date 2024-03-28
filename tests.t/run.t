@@ -390,13 +390,33 @@ fine if your own implementation produces different (sensible) results.
 
 There are not many programs with depth 3, 4 and 5.
 
-  $ minigen --exhaustive --depth 3 --count 100
-  lambda (x : α/1). x
-
   $ minigen --exhaustive --depth 4 --count 100
   lambda (x : α/4). lambda (x/7 : δ/3). x/7
   
   lambda (x : δ/3). lambda (x/7 : β/4). x
+
+  $ minigen --exhaustive --depth 5 --count 100
+  lambda (x : δ/e). lambda (x/7 : γ/e). lambda (x/e8 : β/e). x/e8
+  
+  lambda (x : δ/e). lambda (x/7 : β/e). lambda (x/e8 : α/f). x/7
+  
+  lambda (x : β/e). lambda (x/7 : γ/e). lambda (x/e8 : α/f). x
+  
+  lambda (x : α/b). let (x/7 : α/b) = x in x/7
+  
+  lambda (x : α/b). let (x/7 : α/b) = x in x
+  
+  lambda
+  (x : {α/b * β/12}). let ((x/7 : α/b), (y/7 : β/12)) = x in x/7
+  
+  lambda
+  (x : {α/b * β/12}). let ((x/7 : γ/12), (y/7 : α/b)) = x in y/7
+  
+  lambda (x : α/b). let ((x/7 : γ/12), (y/7 : β/12)) = x in x
+  
+  lambda (x : α/15). (x, x)
+  
+  let (x : γ) = lambda (x/6 : α/1a). x/6 in x
 
 An example of random sampling output at higher depth.
 
