@@ -154,6 +154,9 @@ The `Let` case of `Infer` did not properly bind `final_type`, giving all
 
 Provides coverage for the `Arrow` and `Prod` cases of `Structure.( let-: )`.
 
+Nitpick: those cases below could move in the following sections, the
+one about products and the one about erroneous programs.
+
   $ minihell $FLAGS funannot.test
   Input term:
     (lambda x. (x, x) : i -> {i * i})
