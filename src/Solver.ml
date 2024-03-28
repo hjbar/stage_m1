@@ -37,18 +37,6 @@ module Make (T : Utils.Functor) = struct
         | NErr of 'e
         | NDo of ('a, 'e) Constraint.t T.t
 
-    (** Produces an effectful closure that returns false when given the same
-        value twice in a row.
-        This is is then used as [if delta x then log x] to log the value of `x`
-        exactly when it changes *)
-    let make_delta () : 'a -> bool =
-        let x = ref None in
-        let delta y =
-            let res = (!x <> Some y) in
-            x := Some y;
-            res
-        in delta
-
     let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t)
       : log * env * (a, e) normal_constraint
       =
@@ -56,17 +44,18 @@ module Make (T : Utils.Functor) = struct
             if log then make_logger c0
             else ignore, (fun _ -> [])
         in
-        let delta = make_delta () in
         let rec reduce : type a e . env -> (a, e) Constraint.t -> env * (a, e) normal_constraint =
             fun env c ->
-            if delta env then add_to_log env;
             let open Constraint in
             match c with
             (* Trivial base cases *)
             | Ret map -> env, NRet map
             | Err e -> env, NErr e
             (* [Exist] gets consumed with a side-effect of a new variable in the context *)
-            | Exist (x, ty, u) -> reduce (Unif.Env.add x ty env) u
+            | Exist (x, ty, u) ->
+              let env = Unif.Env.add x ty env in
+              add_to_log env;
+              reduce env u
             (* [Decode] is the "true" base case because the function that we construct here
                is the one that will end up inside an [NRet] eventually.
                Whatever final mapping we get, it will be instanciated by [x] *)
@@ -124,13 +113,16 @@ module Make (T : Utils.Functor) = struct
             | Eq (v1, v2) -> (
                 (* Add the equality to the context *)
                 match Unif.unify env v1 v2 with
-                | Ok env -> env, NRet (fun _ -> ())
+                | Ok env ->
+                  add_to_log env;
+                  env, NRet (fun _ -> ())
                 | Error (Unif.Clash (v1, v2)) ->
                     (* Turn a clash on variables into a clash on types *)
                     env, NErr (Clash (Decode.decode env v1, Decode.decode env v2))
                 | Error (Unif.Cycle c) -> env, NErr (Cycle c)
             )
         in
+        add_to_log env;
         let (env, res) = reduce env c0 in
         (get_log (), env, res)
         (* We recommend calling the function [add_to_log] above
