@@ -248,33 +248,8 @@ the inference variables.
         (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
         ∧ decode ?x
         ∧ ?final_type = ?warr)
-    ∃?final_type.
-      decode ?final_type
-      ∧ (∃?x ?wt (?warr = ?x -> ?wt).
-        (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-        ∧ decode ?x
-        ∧ ?final_type = ?warr)
-    ∃?x ?final_type.
-      decode ?final_type
-      ∧ (∃?wt (?warr = ?x -> ?wt).
-        (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-        ∧ decode ?x
-        ∧ ?final_type = ?warr)
-    ∃?x ?wt ?final_type.
-      decode ?final_type
-      ∧ (∃(?warr = ?x -> ?wt).
-        (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-        ∧ decode ?x
-        ∧ ?final_type = ?warr)
-    ∃?x ?wt (?warr = ?x -> ?wt) ?final_type.
-      decode ?final_type
-      ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-      ∧ decode ?x
-      ∧ ?final_type = ?warr
     ∃?x ?wt (?final_type = ?x -> ?wt).
       decode ?final_type ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x) ∧ decode ?x
-    ∃?x ?wt (?int = int) (?final_type = ?x -> ?wt).
-      decode ?final_type ∧ ?int = ?wt ∧ ?int = ?x ∧ decode ?x
     ∃?wt (?int = int) (?final_type = ?int -> ?wt).
       decode ?final_type ∧ ?int = ?wt ∧ decode ?int
     ∃(?int = int) (?final_type = ?int -> ?int).
@@ -394,39 +369,10 @@ a lot of those.)
         (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
         ∧ decode ?x
         ∧ ?final_type = ?warr)
-    ∃?final_type.
-      decode ?final_type
-      ∧ (∃?x ?wt (?warr = ?x -> ?wt).
-        (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-        ∧ decode ?x
-        ∧ ?final_type = ?warr)
-    ∃?x ?final_type.
-      decode ?final_type
-      ∧ (∃?wt (?warr = ?x -> ?wt).
-        (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-        ∧ decode ?x
-        ∧ ?final_type = ?warr)
-    ∃?x ?wt ?final_type.
-      decode ?final_type
-      ∧ (∃(?warr = ?x -> ?wt).
-        (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-        ∧ decode ?x
-        ∧ ?final_type = ?warr)
-    ∃?x ?wt (?warr = ?x -> ?wt) ?final_type.
-      decode ?final_type
-      ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-      ∧ decode ?x
-      ∧ ?final_type = ?warr
     ∃?x ?wt (?final_type = ?x -> ?wt).
       decode ?final_type
       ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
       ∧ decode ?x
-    ∃?x ?wu ?wt (?final_type = ?x -> ?wt).
-      decode ?final_type
-      ∧ (∃(?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-      ∧ decode ?x
-    ∃?x ?wu ?wt (?wt/1 = ?wu -> ?wt) ?wt (?final_type = ?x -> ?wt).
-      decode ?final_type ∧ ?wu = ?x ∧ ?wt/1 = ?x ∧ decode ?x
     ∃?wu ?wt (?wt/1 = ?wu -> ?wt) ?wt (?final_type = ?wt/1 -> ?wt).
       decode ?final_type ∧ ⊥ ∧ decode ?wt/1
   

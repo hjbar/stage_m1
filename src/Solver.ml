@@ -54,7 +54,6 @@ module Make (T : Utils.Functor) = struct
             (* [Exist] gets consumed with a side-effect of a new variable in the context *)
             | Exist (x, ty, u) ->
               let env = Unif.Env.add x ty env in
-              add_to_log env;
               reduce env u
             (* [Decode] is the "true" base case because the function that we construct here
                is the one that will end up inside an [NRet] eventually.
