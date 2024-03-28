@@ -442,52 +442,38 @@ fine if your own implementation produces different (sensible) results.
 There are not many programs with depth 3, 4 and 5.
 
   $ minigen --exhaustive --depth 3 --count 100
-  lambda (x/4 : α). x/4
+  lambda (x : α/1). x
 
   $ minigen --exhaustive --depth 4 --count 100
-  lambda (v/14 : β/1). lambda (u/19 : α/1). u/19
+  lambda (x : α/4). lambda (x/7 : δ/3). x/7
   
-  lambda (v/14 : α/1). lambda (u/19 : γ/1). v/14
+  lambda (x : δ/3). lambda (x/7 : β/4). x
 
 An example of random sampling output at higher depth.
 
   $ minigen --seed 42 --depth 6 --count 10
-  lambda (z/90 : β/21). (z/90, lambda (u/90 : α/21). u/90)
+  lambda (x : β/9). lambda (x/7 : β/9 -> α/9). x/7 x
   
-  lambda (v/3d4 : β/dc). (lambda (w/3d4 : β/dc). v/3d4) v/3d4
-  
-  lambda
-  (x/48b : {δ/110 * γ/110}).
-    let
-    ((y/48b : δ/110), (z/48b : γ/110))
-    =
-    x/48b
-    in lambda (u/48b : β/110). u/48b
+  (lambda (x/2 : γ/15). x/2, lambda (x/1 : β/15). x/1)
   
   lambda
-  (w/568 : γ/144).
-    lambda
-    (x/569 : {β/144 * α/144}).
-      let ((y/569 : β/144), (z/569 : α/144)) = x/569 in z/569
+  (x : β/54).
+    lambda (x/7 : γ/53). lambda (x/97 : δ/53). lambda (x/d6 : γ/54). x/7
+  
+  let (x : γ) = lambda (x/6 : α/5e). lambda (x/34 : δ/5d). x/34 in x
+  
+  lambda (x : β/9). lambda (x/7 : β/9 -> α/9). x/7 x
+  
+  lambda (x : β/9 -> α/9). lambda (x/7 : β/9). x x/7
+  
+  let (x : γ) = lambda (x/6 : δ/5d). lambda (x/34 : β/7c). x/6 in x
+  
+  lambda (x : β/80). (lambda (x/92 : β/4c). x/92, x)
   
   lambda
-  (y/58e : α/14c).
-    let (z/58e : δ/14b -> δ/14b) = lambda (u/58e : δ/14b). u/58e in y/58e
-  
-  (lambda (u/5f3 : γ/165). u/5f3, lambda (v/5f3 : β/165). v/5f3)
-  
-  (lambda (y/6b2 : α/187). y/6b2, lambda (z/6b2 : δ/186). z/6b2)
+  (x : γ/53).
+    lambda (x/7 : α/54). lambda (x/97 : δ/53). lambda (x/d6 : γ/54). x
   
   lambda
-  (u/722 : {δ/19c * γ/19c}).
-    let
-    ((v/722 : δ/19c), (w/722 : γ/19c))
-    =
-    u/722
-    in lambda (x/723 : β/19c). v/722
-  
-  lambda
-  (x/7fd : β/1c0).
-    lambda (y/7fd : α/1c0). let (z/7fd : α/1c0) = y/7fd in x/7fd
-  
-  lambda (x/b58 : δ/283). (lambda (y/b58 : γ/283). y/b58, x/b58)
+  (x : {γ/37 * δ/37}).
+    let ((x/7 : β/98), (y/7 : δ/37)) = x in lambda (x/93 : γ/98). x/7
