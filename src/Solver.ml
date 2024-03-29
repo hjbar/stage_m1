@@ -47,6 +47,7 @@ module Make (T : Utils.Functor) = struct
         let rec reduce : type a e . env -> (a, e) Constraint.t -> env * (a, e) normal_constraint =
             fun env c ->
             let open Constraint in
+            let (let+) nf f = T.map f nf in
             match c with
             (* Trivial base cases *)
             | Ret map -> env, NRet map
@@ -68,10 +69,7 @@ module Make (T : Utils.Functor) = struct
                 | NRet map -> NRet (fun x -> f (map x))
                 | NErr e -> NErr e
                 (* Transpose [NDo] with [Map] *)
-                | NDo ts -> NDo (
-                    ts |> T.map (fun t ->
-                    Map (t, f)
-                ))
+                | NDo ts -> NDo (let+ t = ts in Map (t, f))
             )
             (* Simplify [x] then apply [f] *)
             | MapErr (x, fe) -> (
@@ -80,10 +78,7 @@ module Make (T : Utils.Functor) = struct
                 | NErr e -> NErr (fe e)
                 | NRet map -> NRet map
                 (* Transpose [NDo] with [MapErr] *)
-                | NDo ts -> NDo (
-                    ts |> T.map (fun t ->
-                    MapErr (t, fe)
-                ))
+                | NDo ts -> NDo (let+ t = ts in MapErr (t, fe))
             )
             | Conj (c1, c2) -> (
                 let env, res1 = reduce env c1 in
@@ -97,17 +92,14 @@ module Make (T : Utils.Functor) = struct
                    In particular it is important that the [Do _, Do _] case doesn't
                    combine the two [Do] constructors into only one [NDo]. *)
                 | NRet map1, NDo ts2 -> NDo (
-                    ts2 |> T.map (fun t2 ->
-                    Conj (Ret map1, t2)
-                ))
+                    let+ t2 = ts2 in Conj (Ret map1, t2)
+                )
                 | NDo ts1, NRet map2 -> NDo (
-                    ts1 |> T.map (fun t1 ->
-                    Conj (t1, Ret map2)
-                ))
+                    let+ t1 = ts1 in Conj (t1, Ret map2)
+                )
                 | NDo ts1, NDo ts2 -> NDo (
-                    ts1 |> T.map (fun t1 ->
-                    Conj (t1, Do ts2)
-                ))
+                    let+ t1 = ts1 in Conj (t1, Do ts2)
+                )
             )
             | Eq (v1, v2) -> (
                 (* Add the equality to the context *)
