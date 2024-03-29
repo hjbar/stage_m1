@@ -89,7 +89,8 @@ let run (s : 'a t) : 'a Seq.t =
             let idx = Random.int len in
             if idx < sampler.len then (
                 (* Pick from the finished terms *)
-                Picked (List.nth sampler.finished idx), sampler
+                let x, rest = take_nth sampler.finished idx in
+                Picked x, { sampler with finished = rest }
             ) else (
                 let idx = idx - sampler.len in
                 let gen, trimmed = take_nth sampler.later idx in
