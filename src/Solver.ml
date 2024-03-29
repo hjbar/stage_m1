@@ -37,6 +37,16 @@ module Make (T : Utils.Functor) = struct
     | NErr of 'e
     | NDo of ('a, 'e) Constraint.t T.t
 
+  let normal_pair nc nd =
+    let open Constraint in
+    let (let+) nf f = T.map f nf in
+    match nc, nd with
+    | NErr e, _ | _, NErr e -> NErr e
+    | NDo p, NDo q -> NDo (let+ c = p in Conj (c, Do q))
+    | NDo p, NRet w -> NDo (let+ c = p in Conj (c, Ret w))
+    | NRet v, NDo q -> NDo (let+ d = q in Conj (Ret v, d))
+    | NRet v, NRet w -> NRet (fun sol -> (v sol, w sol))
+
   let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t)
     : log * env * (a, e) normal_constraint
   =
@@ -88,12 +98,7 @@ module Make (T : Utils.Functor) = struct
       | Conj (c, d) ->
         begin match eval c with
           | NErr e -> NErr e
-          | NDo p -> NDo (let+ c = p in Conj (c, d))
-          | NRet v ->
-          match eval d with
-          | NErr e -> NErr e
-          | NRet w -> NRet (fun sol -> (v sol, w sol))
-          | NDo p -> NDo (let+ d = p in Conj (Ret v, d))
+          | nc -> normal_pair nc (eval d)
         end
       | Eq (x1, x2) ->
         let result = Unif.unify !env x1 x2 in
