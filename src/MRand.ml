@@ -1,28 +1,16 @@
 type 'a t = {
-    (* WF invariant :
-        len = List.length finished
-        && len' = List.length later *)
-    len : int;
-    len' : int;
     finished : 'a list;
     later : (unit -> 'a t) list;
 }
 
-let wf (s : 'a t) : 'a t =
-    assert (s.len = List.length s.finished);
-    assert (s.len' = List.length s.later);
-    s
-
 let of_finished (a : 'a list) : 'a t =
-    wf { len = List.length a;
-      len' = 0;
+    {
       finished = a;
       later = [];
     }
 
 let of_later (a : (unit -> 'a t) list) : 'a t =
-    wf { len = 0;
-      len' = List.length a;
+    {
       finished = [];
       later = a;
     }
@@ -31,7 +19,7 @@ let empty : 'a t =
     of_finished []
 
 let rec map (f : 'a -> 'b) (s : 'a t) : 'b t =
-    { s with
+    {
       finished = s.finished |> List.map f;
       later = s.later |> List.map (fun gen () -> gen () |> map f);
     }
@@ -43,8 +31,7 @@ let delay (f : unit -> 'a t) : 'a t =
     of_later [f]
 
 let concat (s : 'a t) (s' : 'a t) : 'a t =
-    wf { len = s.len + s'.len;
-      len' = s.len' + s'.len';
+    {
       finished = s.finished @ s'.finished;
       later = s.later @ s'.later;
     }
@@ -53,6 +40,7 @@ let rec bind (sa : 'a t) (f : 'a -> 'b t) : 'b t =
     sa.finished
     |> List.map f
     |> List.fold_left concat (sa |> bind_later f)
+
 and bind_later (f : 'a -> 'b t) (s : 'a t) =
     of_later (s.later |> List.map (fun s () -> bind (s ()) f))
 
@@ -82,30 +70,31 @@ let rec take_nth (l : 'a list) (n : int) : 'a * 'a list =
 
 let run (s : 'a t) : 'a Seq.t =
     let rec try_pick (sampler : 'a t) : 'a chosen * 'a t =
-        let pick_finished idx =
+        let pick_finished () =
+            let idx = Random.int (List.length sampler.finished) in
             let x, rest = take_nth sampler.finished idx in
             Picked x, { sampler with finished = rest }
         in
-        let pick_later idx =
+        let pick_later () =
+            let idx = Random.int (List.length sampler.later) in
             let gen, trimmed = take_nth sampler.later idx in
             let res, gen = try_pick (gen ()) in
             match res with
-                | Picked x -> Picked x, wf { sampler with later = (fun () -> gen) :: trimmed }
-                | Retry -> Retry, wf { sampler with later = (fun () -> gen) :: trimmed }
-                | Empty -> Retry, wf { sampler with later = trimmed; len' = sampler.len' - 1 }
+                | Picked x -> Picked x, { sampler with later = (fun () -> gen) :: trimmed }
+                | Retry -> Retry, { sampler with later = (fun () -> gen) :: trimmed }
+                | Empty -> Retry, { sampler with later = trimmed }
         in
-        if sampler.len = 0 && sampler.len' = 0 then (
+        if sampler.finished = [] && sampler.later = [] then (
           Empty, sampler
-        ) else if sampler.len' = 0 then (
-          pick_finished (Random.int sampler.len)
-        ) else if sampler.len = 0 then (
-          pick_later (Random.int sampler.len')
+        ) else if sampler.later = [] then (
+          pick_finished ()
+        ) else if sampler.finished = [] then (
+          pick_later ()
         ) else (
-            let idx = Random.int (sampler.len + sampler.len') in
-            if idx < sampler.len then (
-              pick_finished idx
+            if Random.bool () then (
+              pick_finished ()
             ) else (
-              pick_later (idx - sampler.len)
+              pick_later ()
             )
         )
     in
