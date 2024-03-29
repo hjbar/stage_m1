@@ -82,23 +82,30 @@ let rec take_nth (l : 'a list) (n : int) : 'a * 'a list =
 
 let run (s : 'a t) : 'a Seq.t =
     let rec try_pick (sampler : 'a t) : 'a chosen * 'a t =
-        let len = sampler.len + sampler.len' in
-        if sampler.len + sampler.len' = 0 then (
-            Empty, sampler
+        let pick_finished idx =
+            let x, rest = take_nth sampler.finished idx in
+            Picked x, { sampler with finished = rest }
+        in
+        let pick_later idx =
+            let gen, trimmed = take_nth sampler.later idx in
+            let res, gen = try_pick (gen ()) in
+            match res with
+                | Picked x -> Picked x, wf { sampler with later = (fun () -> gen) :: trimmed }
+                | Retry -> Retry, wf { sampler with later = (fun () -> gen) :: trimmed }
+                | Empty -> Retry, wf { sampler with later = trimmed; len' = sampler.len' - 1 }
+        in
+        if sampler.len = 0 && sampler.len' = 0 then (
+          Empty, sampler
+        ) else if sampler.len' = 0 then (
+          pick_finished (Random.int sampler.len)
+        ) else if sampler.len = 0 then (
+          pick_later (Random.int sampler.len')
         ) else (
-            let idx = Random.int len in
+            let idx = Random.int (sampler.len + sampler.len') in
             if idx < sampler.len then (
-                (* Pick from the finished terms *)
-                let x, rest = take_nth sampler.finished idx in
-                Picked x, { sampler with finished = rest }
+              pick_finished idx
             ) else (
-                let idx = idx - sampler.len in
-                let gen, trimmed = take_nth sampler.later idx in
-                let res, gen = try_pick (gen ()) in
-                match res with
-                    | Picked x -> Picked x, wf { sampler with later = (fun () -> gen) :: trimmed }
-                    | Retry -> Retry, wf { sampler with later = (fun () -> gen) :: trimmed }
-                    | Empty -> Retry, wf { sampler with later = trimmed; len' = sampler.len' - 1 }
+              pick_later (idx - sampler.len)
             )
         )
     in
