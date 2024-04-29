@@ -332,7 +332,7 @@ a lot of those.)
       decode ?final_type
       ∧ (∃(?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
       ∧ decode ?x
-    ∃?x ?wu ?wt (?wt/1 = ?wu -> ?wt) ?wt (?final_type = ?x -> ?wt).
+    ∃?wu ?wt (?wt/1 = ?wu -> ?wt) ?x ?wu ?wt (?final_type = ?x -> ?wt).
       decode ?final_type ∧ ?wu = ?x ∧ ?wt/1 = ?x ∧ decode ?x
     ∃?wu ?wt (?wt/1 = ?wu -> ?wt) ?wt (?final_type = ?wt/1 -> ?wt).
       decode ?final_type ∧ ⊥ ∧ decode ?wt/1
@@ -352,9 +352,9 @@ There are not many programs with depth 3, 4 and 5.
   lambda (x/4 : α). x/4
 
   $ minigen --exhaustive --depth 4 --count 100
-  lambda (v/14 : β/1). lambda (u/19 : α/1). u/19
+  lambda (v/14 : β/1). lambda (u/19 : α/1). v/14
   
-  lambda (v/14 : α/1). lambda (u/19 : γ/1). v/14
+  lambda (v/14 : γ/1). lambda (u/19 : β/1). u/19
 
 An example of random sampling output at higher depth.
 

@@ -33,7 +33,11 @@ end = struct
 
   let name v = v.name
 
-  let compare = Stdlib.compare
+  let compare n1 n2 =
+    let c = Int.compare n1.stamp n2.stamp in
+    if c <> 0 then c else
+    String.compare n1.name n2.name
+
   let eq n1 n2 = (compare n1 n2 = 0)
 
   let stamps = Hashtbl.create 42
