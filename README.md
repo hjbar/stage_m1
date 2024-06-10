@@ -130,12 +130,12 @@ The other case of interest for this is when the parameter
 `T : Utils.Functor` is in fact a search monad `M : Utils.MonadPlus`.
 Then it is possible to define a function
 
-    val gen : depth:int -> ('a, 'e) constraint -> ('a, 'e) result M.t
+    val gen : size:int -> ('a, 'e) constraint -> ('a, 'e) result M.t
 
 on top of `eval`, that returns all the results that can be reached by
-expanding `Do` nodes using `M.bind`, recursively, exactly `depth`
+expanding `Do` nodes using `M.bind`, recursively, exactly `size`
 times. (Another natural choice would be to generate all the terms that
-can be reached by expanding `Do` nodes *at most* `depth` times, but
+can be reached by expanding `Do` nodes *at most* `size` times, but
 this typically gives a worse generator.)
 
 Finally, to get an actual program generator, we need to instantiate

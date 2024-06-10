@@ -346,19 +346,19 @@ a lot of those.)
 This gives example outputs for my implementation. It is completely
 fine if your own implementation produces different (sensible) results.
 
-There are not many programs with depth 3, 4 and 5.
+There are not many programs with size 3, 4 and 5.
 
-  $ minigen --exhaustive --depth 3 --count 100
+  $ minigen --exhaustive --size 3 --count 100
   lambda (z/3 : α/1). z/3
 
-  $ minigen --exhaustive --depth 4 --count 100
+  $ minigen --exhaustive --size 4 --count 100
   lambda (x/10 : α/4). lambda (y/14 : δ/3). x/10
   
   lambda (x/10 : β/4). lambda (y/14 : α/4). y/14
 
-An example of random sampling output at higher depth.
+An example of random sampling output at higher size.
 
-  $ minigen --seed 42 --depth 6 --count 10
+  $ minigen --seed 42 --size 6 --count 10
   (lambda (z/8 : γ/6). z/8, lambda (u/8 : β/6). u/8)
   
   (lambda (u/4 : β/7). u/4) (lambda (w/b1 : δ/c4). w/b1)

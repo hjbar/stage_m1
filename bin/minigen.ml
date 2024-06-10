@@ -1,13 +1,13 @@
 type config = {
   exhaustive : bool;
-  depth : int;
+  size : int;
   count : int;
   seed : int option;
 }
 
 let config =
   let exhaustive = ref false in
-  let depth = ref 10 in
+  let size = ref 10 in
   let count = ref 1 in
   let seed = ref None in
   let usage =
@@ -17,7 +17,7 @@ let config =
   let spec = Arg.align [
     "--exhaustive", Arg.Set exhaustive,
       " Exhaustive enumeration";
-    "--depth", Arg.Set_int depth,
+    "--size", Arg.Set_int size,
       "<int> Depth of generated terms";
     "--count", Arg.Set_int count,
       "<int> Number of terms to generate";
@@ -27,7 +27,7 @@ let config =
   Arg.parse spec (fun s -> raise (Arg.Bad s)) usage;
   {
     exhaustive = !exhaustive;
-    depth = !depth;
+    size = !size;
     count = !count;
     seed  = !seed;
   }
@@ -39,7 +39,7 @@ let () =
 
 let generate (module M : Utils.MonadPlus) =
   let module Gen = Generator.Make(M) in
-  M.run @@ Gen.typed ~depth:config.depth
+  M.run @@ Gen.typed ~size:config.size
 
 let () =
   generate

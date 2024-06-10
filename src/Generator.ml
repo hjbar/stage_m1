@@ -105,7 +105,7 @@ let constraint_ : (STLC.term, Infer.err) Constraint.t =
       w))
 
 (*sujet
-let typed ~depth =
+let typed ~size =
   (* This definition uses [constraint_] to generate well-typed terms.
      An informal description of a possible way to do this is described
      in the README, Section "Two or three effect instances", where
@@ -113,18 +113,18 @@ let typed ~depth =
 
      > it is possible to define a function
      >
-     >     val gen : depth:int -> ('a, 'e) constraint -> ('a, 'e) result M.t
+     >     val gen : size:int -> ('a, 'e) constraint -> ('a, 'e) result M.t
      >
      > on top of `eval`, that returns all the results that can be reached by
-     > expanding `Do` nodes using `M.bind`, recursively, exactly `depth`
+     > expanding `Do` nodes using `M.bind`, recursively, exactly `size`
      > times. (Another natural choice would be to generate all the terms that
-     > can be reached by expanding `Do` nodes *at most* `depth` times, but
+     > can be reached by expanding `Do` nodes *at most* `size` times, but
      > this typically gives a worse generator.)
   *)
-  Utils.not_yet "Generator.typed" depth
+  Utils.not_yet "Generator.typed" size
 /sujet*)
 (*corrige*)
-  let typed ~depth : STLC.term M.t =
+  let typed ~size : STLC.term M.t =
     let open struct
       type env = Solver.env
     end in
@@ -143,7 +143,7 @@ let typed ~depth =
           loop ~fuel:(fuel - 1) env cstr
         )
     in
-    loop ~fuel:depth Unif.Env.empty constraint_
+    loop ~fuel:size Unif.Env.empty constraint_
 (*/corrige*)
 
 end
