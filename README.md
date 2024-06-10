@@ -52,6 +52,9 @@ https://gitlab.inria.fr/fpottier/inferno ) for a small simply-typed
 lambda-calculus (no ML-style polymorphism), and then turn it into
 a random generator of well-typed programs.
 
+See the corresponding technical report at:
+<https://inria.hal.science/hal-04607309>
+
 
 ## High-level description
 
