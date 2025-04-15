@@ -136,7 +136,9 @@ let typed ~size =
       in
       match nf with
       | (NRet _ | NErr _) when fuel > 1 -> M.fail
-      | NRet v -> M.return (v (Decode.decode env))
+      | NRet v ->
+        let decoder = Decode.decode env () in
+        M.return (v decoder)
       | NErr _ -> M.fail
       | NDo p ->
         M.bind p (fun cstr ->

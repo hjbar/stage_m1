@@ -73,7 +73,7 @@ let call_typer ~config (term : Untyped.term) =
     in
     let result =
       match nf with
-      | NRet v -> Ok (v (Decode.decode env))
+      | NRet v -> Ok (v (Decode.decode env ()))
       | NErr e -> Error e
       | NDo _ -> .
     in

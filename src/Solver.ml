@@ -74,7 +74,6 @@ module Make (T : Utils.Functor) = struct
 /sujet*)
 (*corrige*)
     let env = ref env in
-    let decode v = Decode.decode !env v in
     let rec eval
       : type a e . (a, e) Constraint.t -> (a, e) normal_constraint
     =
@@ -110,7 +109,8 @@ module Make (T : Utils.Functor) = struct
           | Error (Cycle cy) ->
             NErr (Cycle cy)
           | Error (Clash (y1, y2)) ->
-            NErr (Clash (decode y1, decode y2))
+            let decoder = Decode.decode !env () in
+            NErr (Clash (decoder y1, decoder y2))
         end
       | Exist (x, s, c) ->
         (* Our solver may re-enter existentials

@@ -352,38 +352,38 @@ There are not many programs with size 3, 4 and 5.
   lambda (z/3 : α/1). z/3
 
   $ minigen --exhaustive --size 4 --count 100
-  lambda (x/10 : α/4). lambda (y/14 : δ/3). x/10
+  lambda (x/10 : γ/4). lambda (y/14 : β/4). x/10
   
-  lambda (x/10 : β/4). lambda (y/14 : α/4). y/14
+  lambda (x/10 : α/5). lambda (y/14 : δ/4). y/14
 
 An example of random sampling output at higher size.
 
   $ minigen --seed 42 --size 6 --count 10
   (lambda (z/8 : γ/6). z/8, lambda (u/8 : β/6). u/8)
   
-  (lambda (u/4 : β/7). u/4) (lambda (w/b1 : δ/c4). w/b1)
+  (lambda (u/4 : γ/cf -> γ/cf). u/4) (lambda (w/b1 : γ/cf). w/b1)
   
-  (lambda (y/1f6 : α/138). y/1f6, lambda (z/1f6 : δ/137). z/1f6)
+  (lambda (y/1f6 : δ/149). y/1f6, lambda (z/1f6 : γ/149). z/1f6)
   
-  (lambda (u/4 : β/7). u/4) (lambda (w/b1 : β/191). w/b1)
-  
-  lambda
-  (v/3 : γ/1d2).
-    let (w/11 : β/1d2 -> β/1d2) = lambda (v/fb : β/1d2). v/fb in v/3
+  (lambda (u/4 : δ/1a8 -> δ/1a8). u/4) (lambda (w/b1 : δ/1a8). w/b1)
   
   lambda
-  (v/3 : (β/288 -> β/288) -> γ/288).
-    v/3 (lambda (w/1b8 : β/288). w/1b8)
-  
-  lambda (v/3 : δ/35c). (v/3, lambda (y/5a9 : γ/35c). y/5a9)
+  (v/3 : β/1ed).
+    let (w/11 : α/1ed -> α/1ed) = lambda (v/fb : α/1ed). v/fb in v/3
   
   lambda
-  (v/3 : β/3a9).
-    let (w/11 : γ/3a9 -> β/3a9) = lambda (v/fb : γ/3a9). v/3 in v/3
+  (v/3 : (α/2aa -> α/2aa) -> β/2aa).
+    v/3 (lambda (w/1b8 : α/2aa). w/1b8)
+  
+  lambda (v/3 : γ/388). (v/3, lambda (y/5a9 : β/388). y/5a9)
   
   lambda
-  (v/3 : δ/40a).
+  (v/3 : γ/3d9).
+    let (w/11 : δ/3d9 -> γ/3d9) = lambda (v/fb : δ/3d9). v/3 in v/3
+  
+  lambda
+  (v/3 : γ/43f).
     lambda
-    (u/22 : γ/40a). lambda (v/22 : β/40a). lambda (w/243 : α/40a). v/3
+    (u/22 : β/43f). lambda (v/22 : α/43f). lambda (w/243 : δ/43e). v/3
   
-  (lambda (u/701 : α/422). u/701, lambda (v/701 : δ/421). v/701)
+  (lambda (u/701 : β/457). u/701, lambda (v/701 : α/457). v/701)
