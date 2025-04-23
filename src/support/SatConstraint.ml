@@ -18,7 +18,7 @@ module Make (T : Utils.Functor) = struct
     | MapErr (c, _) -> erase c
     | Ret _v -> Conj []
     | Err _e -> False
-    | Conj (_, _) as conj ->
+    | Conj (_, _) as conj -> begin
       let rec peel : type a e. (a, e) Constraint.t -> sat_constraint list =
         function
         | Map (c, _) -> peel c
@@ -31,9 +31,9 @@ module Make (T : Utils.Functor) = struct
         | Decode _ as c -> [ erase c ]
         | Do _ as c -> [ erase c ]
       in
-      begin
-        match peel conj with [ c ] -> c | cases -> Conj cases
-      end
+
+      match peel conj with [ c ] -> c | cases -> Conj cases
+    end
     | Eq (v1, v2) -> Eq (v1, v2)
     | Decode v -> Decode v
     | Do c -> Do (T.map erase c)

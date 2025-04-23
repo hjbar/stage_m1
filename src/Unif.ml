@@ -1,10 +1,3 @@
-(*sujet
-(* There is nothing that you have to implement in this file/module,
-   and no particular need to read its implementation. On the other hand,
-   you want to understand the interface exposed in [Unif.mli], as it
-   is important to implement a constraint solver in Solver.ml. *)
-/sujet*)
-
 module UF = UnionFind.Make (UnionFind.StoreMap)
 
 type var = Constraint.variable
@@ -83,53 +76,62 @@ let check_no_cycle env v =
       | Visited
   end in
   let table = Hashtbl.create 42 in
+
   let rec loop v =
     let n = UF.get env.Env.store v in
     match Hashtbl.find table n.var with
     | Visited -> ()
-    | Visiting -> raise (Cycle (Utils.Cycle n.var))
+    | Visiting -> raise @@ Cycle (Utils.Cycle n.var)
     | exception Not_found ->
       Hashtbl.replace table n.var Visiting;
       Option.iter (Structure.iter loop) n.data;
       Hashtbl.replace table n.var Visited
   in
+
   loop v
 
 let rec unify orig_env v1 v2 : (Env.t, err) result =
   let env = { orig_env with Env.store = UF.copy orig_env.Env.store } in
   let queue = Queue.create () in
   Queue.add (Env.uvar v1 env, Env.uvar v2 env) queue;
+
   match unify_uvars env.Env.store queue with
   | exception Clash clash -> Error (Clash clash)
-  | () -> (
+  | () -> begin
     match check_no_cycle env (Env.uvar v1 env) with
     | exception Cycle v -> Error (Cycle v)
-    | () -> Ok env )
+    | () -> Ok env
+  end
 
 and unify_uvars store (queue : (uvar * uvar) Queue.t) =
   match Queue.take_opt queue with
   | None -> ()
   | Some (u1, u2) ->
-    ignore (UF.merge store (merge queue) u1 u2);
+    UF.merge store (merge queue) u1 u2 |> ignore;
     unify_uvars store queue
 
 and merge queue (n1 : unode) (n2 : unode) : unode =
   let clash () = raise (Clash (n1.var, n2.var)) in
+
   let data =
     match (n1.data, n2.data) with
     | None, None -> None
     | None, (Some _ as d) | (Some _ as d), None -> d
-    | Some st1, Some st2 -> (
+    | Some st1, Some st2 -> begin
       match
         Structure.merge
-          (fun v1 v2 ->
-            Queue.add (v1, v2) queue;
-            v1 )
+          begin
+            fun v1 v2 ->
+              Queue.add (v1, v2) queue;
+              v1
+          end
           st1 st2
       with
       | None -> clash ()
-      | Some d -> Some d )
+      | Some d -> Some d
+    end
   in
+
   { n1 with data }
 
 let unifiable env v1 v2 =

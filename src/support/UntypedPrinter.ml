@@ -6,6 +6,7 @@ module Make (T : Utils.Functor) = struct
     and print_left_open t =
       let print_self = print_left_open
       and print_next = print_app in
+
       PPrint.group
       @@
       match t with
@@ -20,6 +21,7 @@ module Make (T : Utils.Functor) = struct
     and print_app t =
       let print_self = print_app
       and print_next = print_atom in
+
       PPrint.group
       @@
       match t with
@@ -36,5 +38,6 @@ module Make (T : Utils.Functor) = struct
         PPrint.parens (print_top other)
       | Do _p -> Printer.do_
     in
+
     print_top
 end

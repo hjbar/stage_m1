@@ -1,31 +1,5 @@
-(*sujet
-type 'a t = MRand_not_implemented_yet
+(* Types *)
 
-let map (f : 'a -> 'b) (s : 'a t) : 'b t =
-  Utils.not_yet "MRand.map" (f, s)
-
-let return (x : 'a) : 'a t =
-  Utils.not_yet "MRand.return" x
-
-let bind (sa : 'a t) (f : 'a -> 'b t) : 'b t =
-  Utils.not_yet "MRand.bind" (sa, f)
-
-let delay (f : unit -> 'a t) : 'a t =
-  Utils.not_yet "MRand.delay" (f ())
-
-let sum (li : 'a t list) : 'a t =
-  Utils.not_yet "MRand.sum" li
-
-let fail : 'a t =
-  MRand_not_implemented_yet
-
-let one_of (vs : 'a array) : 'a t =
-  Utils.not_yet "MRand.one_of" vs
-
-let run (s : 'a t) : 'a Seq.t =
-  Utils.not_yet "MRand.run" s
-/sujet*)
-(*corrige*)
 type 'a t =
   | Return : 'a -> 'a t
   | Fail : 'a t
@@ -35,6 +9,8 @@ type 'a t =
   | Sum : 'a t list -> 'a t
   | One_of : 'a array -> 'a t
 
+(* Helpers *)
+
 let rec clearly_empty : type a. a t -> bool = function
   | Return _ -> false
   | Fail -> true
@@ -43,6 +19,10 @@ let rec clearly_empty : type a. a t -> bool = function
   | Bind (t, _f) -> clearly_empty t
   | One_of arr -> arr = [||]
   | Sum li -> li = []
+
+let not_clearly_empty t = not @@ clearly_empty t
+
+(* Constructors *)
 
 let return v = Return v
 
@@ -54,44 +34,41 @@ let map f t = Map (t, f)
 
 let bind t f = Bind (t, f)
 
-let sum ts = Sum (List.filter (fun t -> not (clearly_empty t)) ts)
+let sum ts = Sum (List.filter not_clearly_empty ts)
 
 let one_of arr = One_of arr
 
-(* let shuffle arr = *)
-(*   for i = Array.length arr - 1 downto 1 do *)
-(*     let j = Random.int (i + 1) in *)
-(*     let t = arr.(j) in *)
-(*     arr.(j) <- arr.(i); *)
-(*     arr.(i) <- t *)
-(*   done *)
+(* Run *)
 
 let rec next : type a. a t -> a option * a t =
  fun t ->
   match t with
   | Return x -> (Some x, t)
   | Fail -> (None, t)
-  | Delay f -> next (Lazy.force f)
+  | Delay f -> next @@ Lazy.force f
   | Map (t, f) ->
     let o, t = next t in
     (Option.map f o, Map (t, f))
+  | One_of [||] -> (None, Fail)
   | One_of arr ->
-    if arr = [||] then (None, Fail)
-    else (Some arr.(Random.int (Array.length arr)), t)
+    let res = arr.(Random.int @@ Array.length arr) in
+    (Some res, t)
+  | Sum [] -> (None, Fail)
   | Sum ts ->
-    if ts = [] then (None, Fail)
-    else
-      let ts = List.filter (fun t -> not (clearly_empty t)) ts in
-      (* TODO *)
-      (fst (next (List.nth ts (Random.int (List.length ts)))), Sum ts)
-  | Bind (tt, f) -> (
+    let ts = List.filter not_clearly_empty ts in
+    let o = List.nth ts (Random.int @@ List.length ts) |> next |> fst in
+    (o, Sum ts)
+  | Bind (tt, f) -> begin
     let o, tt = next tt in
+
     match o with
     | None -> (None, Bind (tt, f))
-    | Some t -> (fst (next (f t)), Bind (tt, f)) )
+    | Some t ->
+      let o = t |> f |> next |> fst in
+      (o, Bind (tt, f))
+  end
 
 let rec run (gen : 'a t) : 'a Seq.t =
  fun () ->
   let o, gen = next gen in
   match o with None -> run gen () | Some v -> Seq.Cons (v, run gen)
-(*/corrige*)

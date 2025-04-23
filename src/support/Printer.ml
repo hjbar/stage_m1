@@ -31,12 +31,14 @@ let tuple p ts =
   | [] -> lparen ^^ rparen
   | _ ->
     surround 2 0 lparen
-      ( match ts with
-      | [ t ] ->
-        (* For arity-1 tuples we print (foo,)
+      begin
+        match ts with
+        | [ t ] ->
+          (* For arity-1 tuples we print (foo,)
              instead of (foo) which would be ambiguous. *)
-        p t ^^ comma
-      | _ -> separate_map (comma ^^ break 1) p ts )
+          p t ^^ comma
+        | _ -> separate_map (comma ^^ break 1) p ts
+      end
       rparen
 
 (** ∃$w1 $w2 ($w3 = $s) $w4... $wn. $c *)
@@ -48,10 +50,14 @@ let exist bindings body =
     | None -> w
     | Some s -> group @@ surround 2 0 lparen (w ^/^ string "=" ^/^ s) rparen
   in
+
   let bindings = group (flow_map (break 1) print_binding bindings) in
+
   group
-    ( utf8string "∃" ^^ ifflat empty space ^^ nest 2 bindings ^^ break 0
-    ^^ string "." )
+    begin
+      utf8string "∃" ^^ ifflat empty space ^^ nest 2 bindings ^^ break 0
+      ^^ string "."
+    end
   ^^ prefix 2 1 empty body
 
 let true_ = utf8string "⊤"
@@ -83,4 +89,4 @@ let incompatible ty1 ty2 =
 let cycle v = string "cycle on constraint variable" ^/^ v
 
 let with_header header doc =
-  string header ^^ colon ^^ nest 2 (group (hardline ^^ doc))
+  string header ^^ colon ^^ nest 2 @@ group (hardline ^^ doc)

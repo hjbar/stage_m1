@@ -10,6 +10,7 @@ module Make (T : Utils.Functor) = struct
     and print_left_open =
       let _print_self = print_left_open
       and print_next = print_conj in
+
       fun ac ->
         let rec peel = function
           | Exist (v, s, c) ->
@@ -17,23 +18,26 @@ module Make (T : Utils.Functor) = struct
               (print_var v, Option.map (Structure.print print_var) s)
             in
             let bindings, body = peel c in
+
             (binding :: bindings, body)
           | other -> ([], print_next other)
         in
+
         let bindings, body = peel ac in
         Printer.exist bindings body
     and print_conj =
       let _print_self = print_conj
       and print_next = print_atom in
+
       function
-      | Conj cs -> Printer.conjunction (List.map print_next cs)
+      | Conj cs -> Printer.conjunction @@ List.map print_next cs
       | other -> print_next other
     and print_atom = function
-      | Decode v -> Printer.decode (print_var v)
+      | Decode v -> Printer.decode @@ print_var v
       | False -> Printer.false_
       | Eq (v1, v2) -> Printer.eq (print_var v1) (print_var v2)
       | Do _ -> Printer.do_
-      | (Exist _ | Conj _) as other -> PPrint.parens (print_top other)
+      | (Exist _ | Conj _) as other -> PPrint.parens @@ print_top other
     in
     print_top c
 

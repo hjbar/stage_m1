@@ -10,6 +10,7 @@
 (* We found it convenient to include some type definitions both inside
    and outside the Make functor. Please don't let this small quirk
    distract you. *)
+
 module Types = struct
   module Var = Utils.Variables ()
 
