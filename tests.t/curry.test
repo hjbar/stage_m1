@@ -1,0 +1,1 @@
+lambda f. lambda x y. f (x, y)

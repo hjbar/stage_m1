@@ -1,0 +1,3 @@
+lambda f. lambda p.
+  let (x, y) = p in
+  f x y
