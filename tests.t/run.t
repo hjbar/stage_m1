@@ -40,7 +40,7 @@ the output corresponds to the output recorded in the file.
 To run the tests, just run `dune runtest` at the root of the
 project. This will show you a diff between the observed
 output and the recorded output of the test -- we consider
-that the test 'passes' if the diff is empty.  
+that the test 'passes' if the diff is empty.
 In particular, if you run `dune runtest` and you see no
 output, this is good! It means there was no change in the
 test output.
@@ -104,6 +104,8 @@ to the bin/dune content.)
     lambda (x : α). x
   
 
+
+
 `id_int` is the monomorphic identity on the type `int`. Note
 that we have not implemented support for a built-in `int`
 type, this is just an abstract/rigid type variable: `Constr
@@ -125,8 +127,10 @@ type, this is just an abstract/rigid type variable: `Constr
     int -> int
   
   Elaborated term:
-    lambda (x : int). x
+    lambda (x : int). (x : int)
   
+
+
 
 ## Logging the constraint-solving process
 
@@ -189,8 +193,10 @@ the inference variables.
     int -> int
   
   Elaborated term:
-    lambda (x : int). x
+    lambda (x : int). (x : int)
   
+
+
 
 ## An erroneous program
 
@@ -212,6 +218,8 @@ the inference variables.
     incompatible with
       β -> α
   
+
+
 
 ## Examples with products
 
@@ -244,6 +252,8 @@ the inference variables.
     lambda (f : {γ * β} -> α). lambda (x : γ). lambda (y : β). f (x, y)
   
 
+
+
   $ minihell $FLAGS uncurry.test
   Input term:
     lambda f. lambda p. let (x, y) = p in f x y
@@ -273,6 +283,8 @@ the inference variables.
     (f : β -> γ -> α).
       lambda (p : {β * γ}). let ((x : β), (y : γ)) = p in f x y
   
+
+
 ## Cyclic types
 
 Unification can sometimes create cyclic types. We decide to reject
@@ -341,6 +353,8 @@ a lot of those.)
     cycle on constraint variable
     ?wu
   
+
+
 ## Generator tests
 
 This gives example outputs for my implementation. It is completely
@@ -348,42 +362,103 @@ fine if your own implementation produces different (sensible) results.
 
 There are not many programs with size 3, 4 and 5.
 
+  $ minigen --exhaustive --size 2 --count 100
+  lambda (v : α/1). v
+
   $ minigen --exhaustive --size 3 --count 100
-  lambda (z/3 : α/1). z/3
+  lambda (z/3 : γ/4). lambda (y/4 : β/4). z/3
+  
+  lambda (z/3 : α/5). lambda (y/4 : δ/4). y/4
 
   $ minigen --exhaustive --size 4 --count 100
-  lambda (x/10 : γ/4). lambda (y/14 : β/4). x/10
+  lambda
+  (x/10 : δ/11). lambda (y/14 : γ/11). lambda (x/15 : β/11). x/10
   
-  lambda (x/10 : α/5). lambda (y/14 : δ/4). y/14
+  lambda
+  (x/10 : γ/12). lambda (y/14 : β/12). lambda (x/15 : α/12). y/14
+  
+  lambda
+  (x/10 : β/13). lambda (y/14 : α/13). lambda (x/15 : δ/12). x/15
+  
+  lambda (x/10 : γ/14). let (z/18 : γ/14) = x/10 in x/10
+  
+  lambda (x/10 : δ/14). let (z/18 : δ/14) = x/10 in z/18
+  
+  lambda (x/10 : α/17). (x/10, x/10)
+  
+  lambda
+  (x/10 : {γ/19 * β/19}).
+    let ((w/21 : γ/19), (x/22 : β/19)) = x/10 in x/10
+  
+  lambda
+  (x/10 : {α/1a * δ/19}).
+    let ((w/21 : α/1a), (x/22 : δ/19)) = x/10 in w/21
+  
+  lambda
+  (x/10 : {γ/1a * β/1a}).
+    let ((w/21 : γ/1a), (x/22 : β/1a)) = x/10 in x/22
+  
+  let (y/26 : β/21 -> β/21) = lambda (v/29 : β/21). v/29 in y/26
 
 An example of random sampling output at higher size.
 
   $ minigen --seed 42 --size 6 --count 10
-  (lambda (z/8 : γ/6). z/8, lambda (u/8 : β/6). u/8)
-  
-  (lambda (u/4 : γ/cf -> γ/cf). u/4) (lambda (w/b1 : γ/cf). w/b1)
-  
-  (lambda (y/1f6 : δ/149). y/1f6, lambda (z/1f6 : γ/149). z/1f6)
-  
-  (lambda (u/4 : δ/1a8 -> δ/1a8). u/4) (lambda (w/b1 : δ/1a8). w/b1)
+  lambda
+  (v/3 : δ/27a).
+    (lambda (y/34f : γ/27a). v/3, lambda (z/34f : β/27a). z/34f)
   
   lambda
-  (v/3 : β/1ed).
-    let (w/11 : α/1ed -> α/1ed) = lambda (v/fb : α/1ed). v/fb in v/3
+  (v/3 : α/298).
+    (lambda (y/65 : α/298). lambda (x/8f : δ/297). x/8f) v/3
   
   lambda
-  (v/3 : (α/2aa -> α/2aa) -> β/2aa).
-    v/3 (lambda (w/1b8 : α/2aa). w/1b8)
-  
-  lambda (v/3 : γ/388). (v/3, lambda (y/5a9 : β/388). y/5a9)
-  
-  lambda
-  (v/3 : γ/3d9).
-    let (w/11 : δ/3d9 -> γ/3d9) = lambda (v/fb : δ/3d9). v/3 in v/3
+  (v/3 : {β/3cc * α/3cc}).
+    let
+    ((z/533 : β/3cc), (u/533 : α/3cc))
+    =
+    let ((v/533 : β/3cc), (w/533 : α/3cc)) = v/3 in v/3
+    in u/533
   
   lambda
-  (v/3 : γ/43f).
-    lambda
-    (u/22 : β/43f). lambda (v/22 : α/43f). lambda (w/243 : δ/43e). v/3
+  (v/3 : (γ/3de -> δ/3de) -> α/3df).
+    lambda (u/22 : δ/3de). v/3 (lambda (w/473 : γ/3de). u/22)
   
-  (lambda (u/701 : β/457). u/701, lambda (v/701 : α/457). v/701)
+  let
+  (w/2 : β/419 -> {β/419 * β/419})
+  =
+  lambda (u/d : β/419). (u/d, u/d)
+  in w/2
+  
+  lambda
+  (v/3 : {γ/4f0 * δ/4f0}).
+    let
+    ((x/6c6 : γ/4f0), (y/6c6 : δ/4f0))
+    =
+    v/3
+    in let (z/6c6 : {γ/4f0 * δ/4f0}) = v/3 in z/6c6
+  
+  lambda
+  (v/3 : {α/74f * β/74f}).
+    let
+    (w/11 : {α/74f * β/74f})
+    =
+    let ((y/a19 : α/74f), (z/a19 : β/74f)) = v/3 in v/3
+    in w/11
+  
+  lambda
+  (v/3 : γ/839).
+    lambda (u/22 : β/839). (lambda (y/b57 : α/839). v/3, u/22)
+  
+  let
+  (w/2 : β/b56 -> α/b56 -> α/b56)
+  =
+  lambda (u/d : β/b56). lambda (v/58 : α/b56). v/58
+  in lambda (u/75 : δ/b55). u/75
+  
+  lambda
+  (v/3 : {γ/bfe * β/bfe}).
+    let
+    ((v/109c : γ/bfe), (w/109c : β/bfe))
+    =
+    v/3
+    in let (x/109d : β/bfe) = w/109c in x/109d
