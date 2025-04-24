@@ -27,6 +27,8 @@ module Make (T : Utils.Functor) = struct
 
   let decode v = MapErr (Decode v, fun e -> Cycle e)
 
+  let exist v s c = Exist (v, s, c)
+
   let fresh_name = Constraint.Var.fresh
 
   let fresh_var x = fresh_name @@ Untyped.Var.name x
@@ -48,12 +50,12 @@ module Make (T : Utils.Functor) = struct
     match ty with
     | Var v ->
       let w = fresh_name v.name in
-      Exist (w, Some (Var v), k w)
+      exist w (Some (Var v)) @@ k w
     | Arrow (ty1, ty2) ->
       let warr = fresh_name "arr" in
 
       bind ty1 @@ fun w1 ->
-      bind ty2 @@ fun w2 -> Exist (warr, Some (Arrow (w1, w2)), k warr)
+      bind ty2 @@ fun w2 -> exist warr (Some (Arrow (w1, w2))) @@ k warr
     | Prod tys ->
       let wprod = fresh_name "prod" in
 
@@ -65,7 +67,7 @@ module Make (T : Utils.Functor) = struct
           loop tys @@ fun ws -> k (w :: ws)
       in
 
-      loop tys @@ fun ws -> Exist (wprod, Some (Prod ws), k wprod)
+      loop tys @@ fun ws -> exist wprod (Some (Prod ws)) @@ k wprod
 
   (** This function generates a typing constraint from an untyped term:
       [has_type env t w] generates a constraint [C] which contains [w] as a free
@@ -103,45 +105,32 @@ module Make (T : Utils.Functor) = struct
       let wu = fresh_name "wu" in
       let wt = fresh_name "wt" in
 
-      Exist
-        ( wu
-        , None
-        , Exist
-            ( wt
-            , Some (Arrow (wu, w))
-            , let+ t' = has_type env t wt
-              and+ u' = has_type env u wu in
-              STLC.App (t', u') ) )
+      exist wu None
+      @@ exist wt (Some (Arrow (wu, w)))
+      @@ let+ t' = has_type env t wt
+         and+ u' = has_type env u wu in
+         STLC.App (t', u')
     | Untyped.Abs (x, t) ->
       (* [[fun x -> t : w]] := ∃wx wt. w = wx -> wt ∧ [[t : wt]](E,x↦wx) *)
       let wx = fresh_var x in
       let wt = fresh_name "wt" in
       let warr = fresh_name "warr" in
 
-      Exist
-        ( wx
-        , None
-        , Exist
-            ( wt
-            , None
-            , Exist
-                ( warr
-                , Some (Arrow (wx, wt))
-                , let+ () = eq w warr
-                  and+ tyx = decode wx
-                  and+ t' = has_type (Env.add x wx env) t wt in
-                  STLC.Abs (x, tyx, t') ) ) )
+      exist wx None @@ exist wt None
+      @@ exist warr (Some (Arrow (wx, wt)))
+      @@ let+ () = eq w warr
+         and+ tyx = decode wx
+         and+ t' = has_type (Env.add x wx env) t wt in
+         STLC.Abs (x, tyx, t')
     | Untyped.Let (x, t, u) ->
       (* [[let x = t in u : w]] := ∃wt. [[t : wt]] ∧ [[u : w]](E,x↦wt) *)
       let wt = fresh_var x in
 
-      Exist
-        ( wt
-        , None
-        , let+ t' = has_type env t wt
-          and+ tyx = decode wt
-          and+ u' = has_type (Env.add x wt env) u w in
-          STLC.Let (x, tyx, t', u') )
+      exist wt None
+      @@ let+ t' = has_type env t wt
+         and+ tyx = decode wt
+         and+ u' = has_type (Env.add x wt env) u w in
+         STLC.Let (x, tyx, t', u')
     | Untyped.Annot (t, ty) ->
       (* [[(t : ty) : w]] := ∃(wt = ty). [[t : wt]] /\ [[wt = w]] *)
       bind ty @@ fun wt ->
@@ -166,23 +155,19 @@ module Make (T : Utils.Functor) = struct
         | t :: ts ->
           let w = Printf.ksprintf fresh_name "w%d" (i + 1) in
 
-          Exist
-            ( w
-            , None
-            , let+ t' = has_type env t w
-              and+ ts' = loop (i + 1) ts @@ fun ws -> k (w :: ws) in
-              t' :: ts' )
+          exist w None
+          @@ let+ t' = has_type env t w
+             and+ ts' = loop (i + 1) ts @@ fun ws -> k (w :: ws) in
+             t' :: ts'
       in
 
       let+ ts =
         loop 0 ts @@ fun ws ->
         let wprod = fresh_name "wprod" in
 
-        Exist
-          ( wprod
-          , Some (Prod ws)
-          , let+ () = eq w wprod in
-            [] )
+        exist wprod (Some (Prod ws))
+        @@ let+ () = eq w wprod in
+           []
       in
 
       STLC.Tuple ts
@@ -197,31 +182,30 @@ module Make (T : Utils.Functor) = struct
         | [] -> k []
         | x :: xs ->
           let wx = fresh_var x in
-          Exist (wx, None, loop xs @@ fun ws -> k (wx :: ws))
+          exist wx None @@ loop xs @@ fun ws -> k (wx :: ws)
       in
 
       loop xs @@ fun ws ->
       let wt = fresh_name "wt" in
 
-      Exist
-        ( wt
-        , Some (Prod ws)
-        , let+ bindings =
-            let rec loop = function
-              | [] -> Ret (fun _sol -> [])
-              | (x, w) :: ws ->
-                let+ ty = decode w
-                and+ bindings = loop ws in
-                (x, ty) :: bindings
-            in
+      exist wt (Some (Prod ws))
+      @@
+      let+ bindings =
+        let rec loop = function
+          | [] -> Ret (fun _sol -> [])
+          | (x, w) :: ws ->
+            let+ ty = decode w
+            and+ bindings = loop ws in
+            (x, ty) :: bindings
+        in
 
-            loop @@ List.combine xs ws
-          and+ t' = has_type env t wt
-          and+ u' =
-            let env = List.fold_right2 Env.add xs ws env in
-            has_type env u w
-          in
+        loop @@ List.combine xs ws
+      and+ t' = has_type env t wt
+      and+ u' =
+        let env = List.fold_right2 Env.add xs ws env in
+        has_type env u w
+      in
 
-          STLC.LetTuple (bindings, t', u') )
+      STLC.LetTuple (bindings, t', u')
     | Do p -> Do (T.map (fun t -> has_type env t w) p)
 end
