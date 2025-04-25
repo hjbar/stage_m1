@@ -30,6 +30,7 @@ module Make (T : Utils.Functor) = struct
         | Eq _ as c -> [ erase c ]
         | Decode _ as c -> [ erase c ]
         | Do _ as c -> [ erase c ]
+        | _ -> failwith "SatConstraint.erase todo"
       in
 
       match peel conj with [ c ] -> c | cases -> Conj cases
@@ -37,4 +38,5 @@ module Make (T : Utils.Functor) = struct
     | Eq (v1, v2) -> Eq (v1, v2)
     | Decode v -> Decode v
     | Do c -> Do (T.map erase c)
+    | _ -> failwith "SatConstraint.erase todo"
 end

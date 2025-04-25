@@ -151,6 +151,7 @@ module Make (T : Utils.Functor) = struct
       end
       | Decode v -> nret @@ fun sol -> sol v
       | Do p -> NDo p
+      | _ -> failwith "Solver.eval todo"
     in
 
     add_to_log !env;

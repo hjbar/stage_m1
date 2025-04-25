@@ -7,6 +7,8 @@ module Make (T : Utils.Functor) = struct
   open Constraint
   module Untyped = Untyped.Make (T)
 
+  (* Type definitions *)
+
   (** The "environment" of the constraint generator maps each program variable
       to an inference variable representing its (monomorphic) type.
 
@@ -15,13 +17,19 @@ module Make (T : Utils.Functor) = struct
       local inference variable representing its type. *)
   module Env = Untyped.Var.Map
 
-  type env = variable Env.t
+  type mono = variable Env.t
+
+  type poly = scheme Env.t
+
+  type env = mono * poly
 
   type err = eq_error =
     | Clash of STLC.ty Utils.clash
     | Cycle of Constraint.variable Utils.cycle
 
   type 'a constraint_ = ('a, err) Constraint.t
+
+  (* Helper functions *)
 
   let eq v1 v2 = Eq (v1, v2)
 
@@ -32,6 +40,16 @@ module Make (T : Utils.Functor) = struct
   let fresh_name = Constraint.Var.fresh
 
   let fresh_var x = fresh_name @@ Untyped.Var.name x
+
+  let find_mono x (mono_env, _poly_env) = Env.find x mono_env
+
+  let add_mono x v (mono_env, poly_env) = (Env.add x v mono_env, poly_env)
+
+  (*
+  let find_poly x (_mono_env, poly_env) = Env.find x poly_env
+
+  let add_poly x v (mono_env, poly_env) = (mono_env, Env.add x v poly_env)
+  *)
 
   (** This is a helper function to implement constraint generation for the
       [Annot] construct.
@@ -97,7 +115,7 @@ module Make (T : Utils.Functor) = struct
     match t with
     | Untyped.Var x ->
       (* [[x : w]] := (E(x) = w) *)
-      let+ () = eq w (Env.find x env) in
+      let+ () = eq w (find_mono x env) in
 
       STLC.Var x
     | Untyped.App (t, u) ->
@@ -120,7 +138,7 @@ module Make (T : Utils.Functor) = struct
       @@ exist warr (Some (Arrow (wx, wt)))
       @@ let+ () = eq w warr
          and+ tyx = decode wx
-         and+ t' = has_type (Env.add x wx env) t wt in
+         and+ t' = has_type (add_mono x wx env) t wt in
          STLC.Abs (x, tyx, t')
     | Untyped.Let (x, t, u) ->
       (* [[let x = t in u : w]] := ∃wt. [[t : wt]] ∧ [[u : w]](E,x↦wt) *)
@@ -129,7 +147,7 @@ module Make (T : Utils.Functor) = struct
       exist wt None
       @@ let+ t' = has_type env t wt
          and+ tyx = decode wt
-         and+ u' = has_type (Env.add x wt env) u w in
+         and+ u' = has_type (add_mono x wt env) u w in
          STLC.Let (x, tyx, t', u')
     | Untyped.Annot (t, ty) ->
       (* [[(t : ty) : w]] := ∃(wt = ty). [[t : wt]] /\ [[wt = w]] *)
@@ -202,7 +220,7 @@ module Make (T : Utils.Functor) = struct
         loop @@ List.combine xs ws
       and+ t' = has_type env t wt
       and+ u' =
-        let env = List.fold_right2 Env.add xs ws env in
+        let env = List.fold_right2 add_mono xs ws env in
         has_type env u w
       in
 

@@ -83,7 +83,13 @@ module Make (M : Utils.MonadPlus) = struct
 
   let constraint_ : (STLC.term, Infer.err) Constraint.t =
     let w = Constraint.Var.fresh "final_type" in
-    Constraint.(Exist (w, None, Infer.has_type Untyped.Var.Map.empty untyped w))
+    Constraint.(
+      Exist
+        ( w
+        , None
+        , Infer.has_type
+            (Untyped.Var.Map.empty, Untyped.Var.Map.empty)
+            untyped w ) )
 
   (* This definition uses [constraint_] to generate well-typed terms.
      An informal description of a possible way to do this is described

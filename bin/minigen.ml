@@ -52,7 +52,9 @@ let get_type (t : STLC.term) : STLC.ty =
       Exist
         ( w
         , None
-        , Conj (Infer.has_type Untyped.Var.Map.empty t w, Infer.decode w) ) )
+        , Conj
+            ( Infer.has_type (Untyped.Var.Map.empty, Untyped.Var.Map.empty) t w
+            , Infer.decode w ) ) )
   in
 
   let _, env, nf = Solver.eval ~log:false Unif.Env.empty cst in

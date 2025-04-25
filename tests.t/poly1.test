@@ -1,0 +1,5 @@
+let id = lambda x. x in
+  lambda a. lambda b.
+    let l = (id a ) in
+    let r = (id b ) in
+    (l, r)

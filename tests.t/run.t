@@ -91,18 +91,18 @@ to the bin/dune content.)
   $ minihell $FLAGS id_poly.test
   Input term:
     lambda x. x
-  
+
   Generated constraint:
     ∃?final_type.
       (∃?x ?wt (?warr = ?x -> ?wt). ?final_type = ?warr ∧ decode ?x ∧ ?wt = ?x)
       ∧ decode ?final_type
-  
+
   Inferred type:
     α -> α
-  
+
   Elaborated term:
     lambda (x : α). x
-  
+
 
 
 
@@ -114,7 +114,7 @@ type, this is just an abstract/rigid type variable: `Constr
   $ minihell $FLAGS id_int.test
   Input term:
     lambda x. (x : int)
-  
+
   Generated constraint:
     ∃?final_type.
       (∃?x ?wt (?warr = ?x -> ?wt).
@@ -122,13 +122,13 @@ type, this is just an abstract/rigid type variable: `Constr
         ∧ decode ?x
         ∧ (∃(?int = int). ?int = ?x ∧ ?int = ?wt))
       ∧ decode ?final_type
-  
+
   Inferred type:
     int -> int
-  
+
   Elaborated term:
     lambda (x : int). (x : int)
-  
+
 
 
 
@@ -141,7 +141,7 @@ the inference variables.
   $ minihell $FLAGS --log-solver id_int.test
   Input term:
     lambda x. (x : int)
-  
+
   Generated constraint:
     ∃?final_type.
       (∃?x ?wt (?warr = ?x -> ?wt).
@@ -149,7 +149,7 @@ the inference variables.
         ∧ decode ?x
         ∧ (∃(?int = int). ?int = ?x ∧ ?int = ?wt))
       ∧ decode ?final_type
-  
+
   Constraint solving log:
     ∃?final_type.
       decode ?final_type
@@ -188,13 +188,13 @@ the inference variables.
       decode ?final_type ∧ ?int = ?wt ∧ decode ?int
     ∃(?int = int) (?final_type = ?int -> ?int).
       decode ?final_type ∧ decode ?int
-  
+
   Inferred type:
     int -> int
-  
+
   Elaborated term:
     lambda (x : int). (x : int)
-  
+
 
 
 
@@ -203,7 +203,7 @@ the inference variables.
   $ minihell $FLAGS error.test
   Input term:
     (lambda x. (x : int)) (lambda y. y)
-  
+
   Generated constraint:
     ∃?final_type.
       (∃?wu (?wt = ?wu -> ?final_type).
@@ -212,12 +212,12 @@ the inference variables.
         ∧ (∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
           ?wu = ?warr/1 ∧ decode ?y ∧ ?wt/2 = ?y))
       ∧ decode ?final_type
-  
+
   Error:
       int
     incompatible with
       β -> α
-  
+
 
 
 
@@ -226,7 +226,7 @@ the inference variables.
   $ minihell $FLAGS curry.test
   Input term:
     lambda f. lambda x. lambda y. f (x, y)
-  
+
   Generated constraint:
     ∃?final_type.
       (∃?f ?wt (?warr = ?f -> ?wt).
@@ -244,20 +244,20 @@ the inference variables.
                 ?w1 = ?x
                 ∧ (∃?w2. ?w2 = ?y ∧ (∃(?wprod = {?w1 * ?w2}). ?wu = ?wprod)))))))
       ∧ decode ?final_type
-  
+
   Inferred type:
     ({γ * β} -> α) -> γ -> β -> α
-  
+
   Elaborated term:
     lambda (f : {γ * β} -> α). lambda (x : γ). lambda (y : β). f (x, y)
-  
+
 
 
 
   $ minihell $FLAGS uncurry.test
   Input term:
     lambda f. lambda p. let (x, y) = p in f x y
-  
+
   Generated constraint:
     ∃?final_type.
       (∃?f ?wt (?warr = ?f -> ?wt).
@@ -274,15 +274,15 @@ the inference variables.
               (∃?wu/1 (?wt/4 = ?wu/1 -> ?wt/3). ?wt/4 = ?f ∧ ?wu/1 = ?x)
               ∧ ?wu = ?y))))
       ∧ decode ?final_type
-  
+
   Inferred type:
     (β -> γ -> α) -> {β * γ} -> α
-  
+
   Elaborated term:
     lambda
     (f : β -> γ -> α).
       lambda (p : {β * γ}). let ((x : β), (y : γ)) = p in f x y
-  
+
 
 
 ## Cyclic types
@@ -297,7 +297,7 @@ a lot of those.)
   $ minihell $FLAGS --log-solver selfapp.test
   Input term:
     lambda x. x x
-  
+
   Generated constraint:
     ∃?final_type.
       (∃?x ?wt (?warr = ?x -> ?wt).
@@ -305,7 +305,7 @@ a lot of those.)
         ∧ decode ?x
         ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x))
       ∧ decode ?final_type
-  
+
   Constraint solving log:
     ∃?final_type.
       decode ?final_type
@@ -348,11 +348,11 @@ a lot of those.)
       decode ?final_type ∧ ?wu = ?x ∧ ?wt/1 = ?x ∧ decode ?x
     ∃?wu ?wt (?wt/1 = ?wu -> ?wt) ?wt (?final_type = ?wt/1 -> ?wt).
       decode ?final_type ∧ ⊥ ∧ decode ?wt/1
-  
+
   Error:
     cycle on constraint variable
     ?wu
-  
+
 
 
 ## Generator tests
@@ -367,37 +367,37 @@ There are not many programs with size 3, 4 and 5.
 
   $ minigen --exhaustive --size 3 --count 100
   lambda (z/3 : γ/4). lambda (y/4 : β/4). z/3
-  
+
   lambda (z/3 : α/5). lambda (y/4 : δ/4). y/4
 
   $ minigen --exhaustive --size 4 --count 100
   lambda
   (x/10 : δ/11). lambda (y/14 : γ/11). lambda (x/15 : β/11). x/10
-  
+
   lambda
   (x/10 : γ/12). lambda (y/14 : β/12). lambda (x/15 : α/12). y/14
-  
+
   lambda
   (x/10 : β/13). lambda (y/14 : α/13). lambda (x/15 : δ/12). x/15
-  
+
   lambda (x/10 : γ/14). let (z/18 : γ/14) = x/10 in x/10
-  
+
   lambda (x/10 : δ/14). let (z/18 : δ/14) = x/10 in z/18
-  
+
   lambda (x/10 : α/17). (x/10, x/10)
-  
+
   lambda
   (x/10 : {γ/19 * β/19}).
     let ((w/21 : γ/19), (x/22 : β/19)) = x/10 in x/10
-  
+
   lambda
   (x/10 : {α/1a * δ/19}).
     let ((w/21 : α/1a), (x/22 : δ/19)) = x/10 in w/21
-  
+
   lambda
   (x/10 : {γ/1a * β/1a}).
     let ((w/21 : γ/1a), (x/22 : β/1a)) = x/10 in x/22
-  
+
   let (y/26 : β/21 -> β/21) = lambda (v/29 : β/21). v/29 in y/26
 
 An example of random sampling output at higher size.
@@ -406,11 +406,11 @@ An example of random sampling output at higher size.
   lambda
   (v/3 : δ/27a).
     (lambda (y/34f : γ/27a). v/3, lambda (z/34f : β/27a). z/34f)
-  
+
   lambda
   (v/3 : α/298).
     (lambda (y/65 : α/298). lambda (x/8f : δ/297). x/8f) v/3
-  
+
   lambda
   (v/3 : {β/3cc * α/3cc}).
     let
@@ -418,17 +418,17 @@ An example of random sampling output at higher size.
     =
     let ((v/533 : β/3cc), (w/533 : α/3cc)) = v/3 in v/3
     in u/533
-  
+
   lambda
   (v/3 : (γ/3de -> δ/3de) -> α/3df).
     lambda (u/22 : δ/3de). v/3 (lambda (w/473 : γ/3de). u/22)
-  
+
   let
   (w/2 : β/419 -> {β/419 * β/419})
   =
   lambda (u/d : β/419). (u/d, u/d)
   in w/2
-  
+
   lambda
   (v/3 : {γ/4f0 * δ/4f0}).
     let
@@ -436,7 +436,7 @@ An example of random sampling output at higher size.
     =
     v/3
     in let (z/6c6 : {γ/4f0 * δ/4f0}) = v/3 in z/6c6
-  
+
   lambda
   (v/3 : {α/74f * β/74f}).
     let
@@ -444,17 +444,17 @@ An example of random sampling output at higher size.
     =
     let ((y/a19 : α/74f), (z/a19 : β/74f)) = v/3 in v/3
     in w/11
-  
+
   lambda
   (v/3 : γ/839).
     lambda (u/22 : β/839). (lambda (y/b57 : α/839). v/3, u/22)
-  
+
   let
   (w/2 : β/b56 -> α/b56 -> α/b56)
   =
   lambda (u/d : β/b56). lambda (v/58 : α/b56). v/58
   in lambda (u/75 : δ/b55). u/75
-  
+
   lambda
   (v/3 : {γ/bfe * β/bfe}).
     let
@@ -462,3 +462,26 @@ An example of random sampling output at higher size.
     =
     v/3
     in let (x/109d : β/bfe) = w/109c in x/109d
+
+## Polymorhpism
+
+  $ minihell $FLAGS poly1.test
+
+  Input term:
+    let
+    id
+    =
+    lambda x. x
+    in lambda a. lambda b. let l = id a in let r = id b in (l, r)
+
+  Inferred type:
+    α -> β -> {α * β}
+
+  Elaborated term:
+    let
+    (id : α -> α)
+    =
+    lambda (x : α). x
+    in
+      lambda (a : α).
+        lambda (b : β). let (l : α) = id a in let (r : β) = id b in (l, r)

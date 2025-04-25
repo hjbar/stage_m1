@@ -64,7 +64,11 @@ let call_typer ~config (term : Untyped.term) =
       Exist
         ( w
         , None
-        , Conj (Infer.has_type Untyped.Var.Map.empty term w, Infer.decode w) ) )
+        , Conj
+            ( Infer.has_type
+                (Untyped.Var.Map.empty, Untyped.Var.Map.empty)
+                term w
+            , Infer.decode w ) ) )
   in
 
   if config.show_constraint then
