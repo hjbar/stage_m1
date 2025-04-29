@@ -1,5 +1,6 @@
 type config = {
   exhaustive : bool;
+  vanille : bool;
   size : int;
   count : int;
   seed : int option;
@@ -16,12 +17,14 @@ let pp_config ppf config =
   let pp_string ppf = Printf.fprintf ppf "%S" in
   Printf.fprintf ppf 
     "{ exhaustive = %b;\n\
+    \  vanille = %b;\n\
     \  size = %d;\n\
     \  count = %d;\n\
     \  seed = %a;\n\
     \  benchmark = %a;\n\
     \  msg = %a; }\n"
     config.exhaustive
+    config.vanille
     config.size
     config.count
     (pp_opt pp_int) config.seed
@@ -30,6 +33,7 @@ let pp_config ppf config =
 
 let config =
   let exhaustive = ref false in
+  let vanille = ref false in
   let size = ref 10 in
   let count = ref 1 in
   let seed = ref None in
@@ -42,6 +46,8 @@ let config =
   let spec = Arg.align [
     "--exhaustive", Arg.Set exhaustive,
       " Exhaustive enumeration";
+    "--vanille", Arg.Set vanille,
+      " Use Néven's MRand implementation";
     "--size", Arg.Set_int size,
       "<int> Depth of generated terms";
     "--count", Arg.Set_int count,
@@ -56,6 +62,7 @@ let config =
   Arg.parse spec (fun s -> raise (Arg.Bad s)) usage;
   {
     exhaustive = !exhaustive;
+    vanille = !vanille;
     size = !size;
     count = !count;
     seed  = !seed;
@@ -76,6 +83,8 @@ let produce_terms config =
   generate
     (if config.exhaustive
      then (module MSeq)
+     else if config.vanille
+     then (module VanilleRand)
      else (module MRand))
   |> Seq.take config.count
   |> Seq.map STLCPrinter.print_term
