@@ -7,23 +7,24 @@ type 'a t =
   | Sum : 'a t list -> 'a t
   | One_of : 'a array -> 'a t
 
-let rec clearly_empty : type a . a t -> bool = function
-  | Return _ -> false
+let is_empty = function
   | Fail -> true
-  | Delay f ->
-    Lazy.is_val f && clearly_empty (Lazy.force f)
-  | Map (t, _f) -> clearly_empty t
-  | Bind (t, _f) -> clearly_empty t
-  | One_of arr -> arr = [| |]
-  | Sum li -> li = []
+  | _ -> false
 
 let return v = Return v
 let fail = Fail
 let delay f = Delay (Lazy.from_fun f)
-let map f t = Map (t, f)
-let bind t f = Bind (t, f)
+let map f t =
+  if is_empty t then Fail
+  else Map (t, f)
+let bind t f =
+  if is_empty t then Fail
+  else Bind (t, f)
+
 let sum ts =
-  Sum (List.filter (fun t -> not (clearly_empty t)) ts)
+  match List.filter (fun t -> not (is_empty t)) ts with
+  | [] -> Fail
+  | ts -> Sum ts
 
 let one_of arr = One_of arr
 
@@ -32,16 +33,19 @@ let rec next : type a . a t -> a option * a t = fun t -> match t with
   | Fail -> None, t
   | Delay f -> next (Lazy.force f)
   | Map (t, f) ->
-    let o, t = next t in Option.map f o, Map (t, f)
+    let o, t = next t in Option.map f o, map f t
   | One_of arr ->
     if arr = [| |] then None, Fail
     else Some arr.(Random.int (Array.length arr)), t
   | Sum ts ->
     if ts = [] then None, Fail
-    else
-      let ts = List.filter (fun t -> not (clearly_empty t)) ts in
-      (* TODO *)
-      fst (next (List.nth ts (Random.int (List.length ts)))), Sum ts
+    else begin
+      let arr = Array.of_list ts in
+      let i = Random.int (Array.length arr) in
+      let (o, t) = next arr.(i) in
+      arr.(i) <- t;
+      o, sum (Array.to_list arr)
+    end
   | Bind (tt, f) ->
     let (o, tt) = next tt in
     match o with
