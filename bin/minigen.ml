@@ -4,6 +4,7 @@ type config = {
   count : int;
   seed : int option;
   benchmark : int option;
+  msg : string option;
 }
 
 let pp_config ppf config =
@@ -12,17 +13,20 @@ let pp_config ppf config =
     | Some v -> Printf.fprintf ppf "Some %a" pp v
   in
   let pp_int ppf = Printf.fprintf ppf "%d" in
+  let pp_string ppf = Printf.fprintf ppf "%S" in
   Printf.fprintf ppf 
     "{ exhaustive = %b;\n\
     \  size = %d;\n\
     \  count = %d;\n\
     \  seed = %a;\n\
-    \  benchmark = %a; }\n"
+    \  benchmark = %a;\n\
+    \  msg = %a; }\n"
     config.exhaustive
     config.size
     config.count
     (pp_opt pp_int) config.seed
     (pp_opt pp_int) config.benchmark
+    (pp_opt pp_string) config.msg
 
 let config =
   let exhaustive = ref false in
@@ -30,6 +34,7 @@ let config =
   let count = ref 1 in
   let seed = ref None in
   let benchmark = ref None in
+  let msg = ref None in
   let usage =
     Printf.sprintf
       "Usage: %s [options]"
@@ -45,6 +50,8 @@ let config =
       "<int> Fixed seed for the random number generator";
     "--benchmark", Arg.Int (fun s -> benchmark := Some s),
       "<int> Run several times and provide performance metrics.";
+    "--msg", Arg.String (fun s -> msg := Some s),
+      "<string> Describe the benchmark to get a self-describing log file.";
   ] in
   Arg.parse spec (fun s -> raise (Arg.Bad s)) usage;
   {
@@ -53,6 +60,7 @@ let config =
     count = !count;
     seed  = !seed;
     benchmark = !benchmark;
+    msg = !msg;
   }
 
 let () =
