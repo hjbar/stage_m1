@@ -6,6 +6,6 @@
 
 (executable
   (public_name minigen)
-  (libraries constrained_generation)
+  (libraries unix constrained_generation)
   (modules minigen)
 )
