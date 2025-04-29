@@ -98,36 +98,53 @@ let run_display config =
 
 let pp_s ppf s = Printf.fprintf ppf "%.2fs" s
 
-let run_benchmark config ~nb_iters =
-  pp_config stdout config;
-  let times = ref [] in
-  for i = 1 to nb_iters do
-    Printf.eprintf "Iteration % 3d/%-3d: %!" i nb_iters;
-    let before = Unix.gettimeofday () in
-    ignore (produce_terms config);
-    let after = Unix.gettimeofday () in
-    let duration = after -. before in
-    Printf.eprintf "%a\n%!" pp_s duration;
-    times := duration :: !times;
-  done;
-  let times = !times in
-  let minv = List.fold_left min infinity times in
-  let maxv = List.fold_left max neg_infinity times in
+let get_tries config =
+  if config.exhaustive then failwith "tries"
+  else if config.vanille then !VanilleRand.tries
+  else !MRand.tries
+
+let print_stats pp_val series =
+  let minv = List.fold_left min infinity series in
+  let maxv = List.fold_left max neg_infinity series in
+  let len = List.length series in
   let arith_average =
-    List.fold_left (+.) 0. times /. float nb_iters
+    List.fold_left (+.) 0. series /. float len
   in
   let geom_average =
-    List.fold_left ( *.) 1. times ** (1. /. float nb_iters)
+    List.fold_left ( *.) 1. series ** (1. /. float len)
   in
   Printf.printf "\
     Min: %a\n\
     Max: %a\n\
     Arithmetic average: %a\n\
     Geometric  average: %a\n%!"
-    pp_s minv
-    pp_s maxv
-    pp_s arith_average
-    pp_s geom_average
+    pp_val minv
+    pp_val maxv
+    pp_val arith_average
+    pp_val geom_average
+
+let run_benchmark config ~nb_iters =
+  pp_config stdout config;
+  let time_series = ref [] in
+  let tries_series = ref [] in
+  for i = 1 to nb_iters do
+    Printf.eprintf "Iteration % 3d/%-3d: %!" i nb_iters;
+    let time_before = Unix.gettimeofday () in
+    let tries_before = get_tries config in
+    ignore (produce_terms config);
+    let time_after = Unix.gettimeofday () in
+    let tries_after = get_tries config in
+    let time = time_after -. time_before in
+    let tries = tries_after - tries_before in
+    Printf.eprintf "%a\n%!" pp_s time;
+    time_series := time :: !time_series;
+    tries_series := float tries :: !tries_series;
+  done;
+  Printf.printf "## Times\n%!";
+  print_stats pp_s !time_series;
+  Printf.printf "## Tries\n%!";
+  print_stats (fun ppf v -> Printf.fprintf ppf "%.2f" v) !tries_series;
+  ()
 
 let () =
   match config.benchmark with

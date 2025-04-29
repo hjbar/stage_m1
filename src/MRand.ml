@@ -52,7 +52,10 @@ let rec next : type a . a t -> a option * a t = fun t -> match t with
     | None -> None, Bind (tt, f)
     | Some t -> fst (next (f t)), Bind (tt, f)
 
+let tries = ref 1
+
 let rec run (gen : 'a t) : 'a Seq.t = fun () ->
+  incr tries;
   let o, gen = next gen in
   match o with
   | None -> run gen ()

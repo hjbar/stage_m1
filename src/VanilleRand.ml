@@ -80,6 +80,8 @@ let rec take_nth (l : 'a list) (n : int) : 'a * 'a list =
     | h::t, i -> let out, rem = take_nth t (i - 1) in out, h::rem
     | [], _ -> raise Not_found
 
+let tries = ref 0
+
 let run (s : 'a t) : 'a Seq.t =
     let rec try_pick (sampler : 'a t) : 'a chosen * 'a t =
         (* Attempt to pick an element.
@@ -124,6 +126,7 @@ let run (s : 'a t) : 'a Seq.t =
         )
     in
     let rec pick (miss : int) (sampler : 'a t) : 'a * 'a t =
+        incr tries;
         let res, trimmed = try_pick sampler in
         match res with
         | Picked t -> t, trimmed
