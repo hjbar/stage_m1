@@ -111,7 +111,9 @@ let print_stats pp_val series =
     List.fold_left (+.) 0. series /. float len
   in
   let geom_average =
-    List.fold_left ( *.) 1. series ** (1. /. float len)
+    series
+    |> List.map (fun x -> x ** (1. /. float len))
+    |> List.fold_left ( *. ) 1.
   in
   Printf.printf "\
     Min: %a\n\
