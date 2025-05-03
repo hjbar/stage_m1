@@ -4,7 +4,8 @@ module Make(M : Utils.MonadPlus) = struct
   module Infer = Infer.Make(M)
   module Solver = Solver.Make(M)
 
-  module TeVarSet = Untyped.Var.Set
+  module TeVar = Untyped.Var
+  module TeVarSet = TeVar.Set
   module TyVarSet = STLC.TyVar.Set
 
   let ret = M.return
@@ -24,7 +25,7 @@ module Make(M : Utils.MonadPlus) = struct
       { env with tevars = TeVarSet.add x env.tevars }
   end
 
-  let untyped : Untyped.term =
+  let untyped_gasche : Untyped.term =
     let open Untyped in
     let new_var =
       Var.namegen [|"x"; "y"; "z"; "u"; "v"; "w"|]
@@ -75,7 +76,30 @@ module Make(M : Utils.MonadPlus) = struct
           ])
     in gen (Env.empty ())
 
-  let constraint_ : (STLC.term, Infer.err) Constraint.t =
+  let untyped_vanille : Untyped.term =
+    let rec gen (fv : TeVar.t list) : Untyped.term =
+      (* The partial terms constructed at this iteration will occur in distinct
+         complete terms. Thus it's fine if we generate fresh variables once and
+         use them several times in different terms, it cannot produce collisions. *)
+      let x = TeVar.fresh "x" in
+      let y = TeVar.fresh "y" in
+      Untyped.(Do (M.delay @@ fun () ->
+        M.sum [
+          (* One of the existing available variables *)
+          M.sum (fv |> List.map (fun v -> M.return (Var v)));
+          (* or any term constructor recursively filled in. *)
+          M.one_of [|
+              App (gen fv, gen fv);
+              Abs (x, gen (x::fv));
+              Let (x, gen fv, gen (x::fv));
+              LetTuple ([x; y], gen fv, gen (x::y::fv));
+              Tuple [gen fv; gen fv]
+          |]
+        ]
+      ))
+    in gen []
+
+  let constraint_ untyped : (STLC.term, Infer.err) Constraint.t =
     let w = Constraint.Var.fresh "final_type" in
     Constraint.(Exist (w, None,
       Infer.has_type
@@ -83,7 +107,7 @@ module Make(M : Utils.MonadPlus) = struct
         untyped
         w))
 
-  let typed ~size : STLC.term M.t =
+  let typed ~size untyped : STLC.term M.t =
     let open struct
       type env = Solver.env
     end in
@@ -104,5 +128,6 @@ module Make(M : Utils.MonadPlus) = struct
           loop ~fuel:(fuel - 1) env cstr
         )
     in
-    loop ~fuel:size Unif.Env.empty constraint_
+    loop ~fuel:size Unif.Env.empty
+      (constraint_ untyped)
 end

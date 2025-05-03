@@ -1,3 +1,12 @@
+type untyped_impl =
+  | Gasche
+  | Vanille
+
+let untyped_impl_dict = [
+  ("gasche", Gasche);
+  ("vanille", Vanille);
+]
+
 type search_impl =
   | Exhaustive
   | Naive
@@ -26,11 +35,12 @@ let pp_dict_val dict ppf v =
     (Dict.find_key dict v)
 
 type config = {
-  search_impl : search_impl;
+  untyped_impl : untyped_impl;
   size : int;
+  search_impl : search_impl;
   count : int;
-  seed : int option;
   benchmark : int option;
+  seed : int option;
   msg : string option;
 }
 
@@ -42,12 +52,14 @@ let pp_config ppf config =
   let pp_int ppf = Printf.fprintf ppf "%d" in
   let pp_string ppf = Printf.fprintf ppf "%S" in
   Printf.fprintf ppf 
-    "{ search_impl = %a;\n\
+    "{ untyped_impl = %a;\n\
+    \  search_impl = %a;\n\
     \  size = %a;\n\
     \  count = %a;\n\
     \  seed = %a;\n\
     \  benchmark = %a;\n\
     \  msg = %a; }\n"
+    (pp_dict_val untyped_impl_dict) config.untyped_impl
     (pp_dict_val search_impl_dict) config.search_impl
     pp_int config.size
     pp_int config.count
@@ -73,8 +85,9 @@ let arg_from_dict ~option ~doc dict ref : Arg.(key * spec * doc) =
      doc (Dict.find_key dict !ref) valid_keys)
 
 let config =
-  let search_impl = ref Naive in
+  let untyped_impl = ref Gasche in
   let size = ref 10 in
+  let search_impl = ref Naive in
   let count = ref 1 in
   let seed = ref None in
   let benchmark = ref None in
@@ -82,6 +95,13 @@ let config =
   let fmt fmt_str = Printf.sprintf fmt_str in
   let usage = fmt "Usage: %s [options]" Sys.argv.(0) in
   let spec = Arg.align [
+    arg_from_dict
+      ~option:"--untyped"
+      ~doc:"untyped generator implementation"
+      untyped_impl_dict
+      untyped_impl;
+    "--size", Arg.Set_int size,
+      fmt "<int> Size of generated terms (default %d)" !size;
     arg_from_dict
       ~option:"--search"
       ~doc:"search implementation"
@@ -98,8 +118,9 @@ let config =
   ] in
   Arg.parse spec (fun s -> raise (Arg.Bad s)) usage;
   {
-    search_impl = !search_impl;
+    untyped_impl = !untyped_impl;
     size = !size;
+    search_impl = !search_impl;
     count = !count;
     seed  = !seed;
     benchmark = !benchmark;
@@ -130,13 +151,20 @@ let get_search_impl config : (module SearchImpl) =
   | Vanille ->
     (module VanilleRand)
 
-let generate (module M : SearchImpl) =
+let generate config (module M : SearchImpl) =
   let module Gen = Generator.Make(M) in
-  M.run @@ Gen.typed ~size:config.size
+  let untyped =
+    match config.untyped_impl with
+    | Gasche -> Gen.untyped_gasche
+    | Vanille -> Gen.untyped_vanille
+  in
+  untyped
+  |> Gen.typed ~size:config.size
+  |> M.run
 
 let produce_terms config =
   get_search_impl config
-  |> generate
+  |> generate config
   |> Seq.take config.count
   |> Seq.map STLCPrinter.print_term
   |> List.of_seq
