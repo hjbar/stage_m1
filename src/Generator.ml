@@ -89,12 +89,12 @@ module Make(M : Utils.MonadPlus) = struct
     end in
     let rec loop : type a e r . fuel:int -> env -> (a, e) Constraint.t -> a M.t =
     fun ~fuel env cstr ->
-      if fuel = 0 then M.fail else
+      if fuel < 0 then M.fail else
       let _logs, env, nf =
         Solver.eval ~log:false env cstr
       in
       match nf with
-      | (NRet _ | NErr _) when fuel > 1 -> M.fail
+      | (NRet _ | NErr _) when fuel > 0 -> M.fail
       | NRet v ->
         let decoder = Decode.decode env () in
         M.return (v decoder)
