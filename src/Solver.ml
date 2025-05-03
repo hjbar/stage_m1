@@ -54,25 +54,6 @@ module Make (T : Utils.Functor) = struct
       if log then make_logger c0
       else ignore, (fun _ -> [])
     in
-(*sujet
-    (* We recommend calling the function [add_to_log] above
-       whenever you get an updated environment. Then call
-       [get_log] at the end to get a list of log message.
-
-       $ dune exec -- minihell --log-solver foo.test
-
-       will show a log that will let you see the evolution
-       of your input constraint (after simplification) as
-       the solver progresses, which is useful for debugging.
-
-       (You can also tweak this code temporarily to print stuff on
-       stderr right away if you need dirtier ways to debug.)
-    *)
-/sujet*)
-(*sujet
-    Utils.not_yet "Solver.eval" (env, c0, add_to_log, get_log)
-/sujet*)
-(*corrige*)
     let env = ref env in
     let rec eval
       : type a e . (a, e) Constraint.t -> (a, e) normal_constraint
@@ -132,6 +113,5 @@ module Make (T : Utils.Functor) = struct
     add_to_log !env;
     let result = eval c0 in
     get_log (), !env, result
-(*/corrige*)
 
 end

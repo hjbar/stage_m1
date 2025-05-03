@@ -1,10 +1,3 @@
-(*sujet
-(* There is nothing that you have to implement in this file/module,
-   and no particular need to read its implementation. On the other hand,
-   you want to understand the interface exposed in [Unif.mli], as it
-   is important to implement a constraint solver in Solver.ml. *)
-/sujet*)
-
 module UF = UnionFind.Make(UnionFind.StoreMap)
 
 type var = Constraint.variable

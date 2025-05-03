@@ -122,7 +122,3 @@ module Empty = struct
     | _ -> .
 end
 module _ = (Empty : Functor)
-
-(*sujet
-let not_yet fname = fun _ -> failwith (fname ^ ": not implemented yet")
-/sujet*)

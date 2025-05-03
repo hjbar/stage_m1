@@ -2,11 +2,6 @@
     an untyped term, that will elaborate to an explicitly-typed term
     or fail with a type error. *)
 
-(*sujet
-(* You have to implement the [has_type] function below,
-   which is the constraint-generation function. *)
-/sujet*)
-
 module Make(T : Utils.Functor) = struct
   module Constraint = Constraint.Make(T)
   open Constraint
@@ -32,16 +27,6 @@ module Make(T : Utils.Functor) = struct
   let eq v1 v2 = Eq(v1, v2)
   let decode v = MapErr(Decode v, fun e -> Cycle e)
 
-(*sujet
-  let assume_pair = function
-    | [v1; v2] -> (v1, v2)
-    | other ->
-      Printf.ksprintf failwith
-        "Error: this implementation currently only supports pairs,
-         not tuples of size %d."
-        (List.length other)
-/sujet*)
-
   (** This is a helper function to implement constraint generation for
       the [Annot] construct.
      
@@ -56,12 +41,6 @@ module Make(T : Utils.Functor) = struct
         [∃?w3 ?w4. ?w3 = ?v1 -> ?w4 ∧ ?w4 = ?v2 -> ?v3 ∧ k ?w3].
   *)
   let rec bind (ty : STLC.ty) (k : Constraint.variable -> ('a, 'e) t) : ('a, 'e) t =
-(* sujet
-    (* Feel free to postpone implementing this function
-       until you implement the Annot case below. *)
-    Utils.not_yet "Infer.bind" (ty, k, fun () -> bind)
-/sujet *)
-(*corrige*)
     match ty with
     | Constr s ->
       match s with
@@ -85,7 +64,6 @@ module Make(T : Utils.Functor) = struct
         loop tys (fun ws ->
           Exist (wprod, Some (Prod ws), k wprod)
         )
-(*/corrige*)  
 
   (** This function generates a typing constraint from an untyped term:
       [has_type env t w] generates a constraint [C] which contains [w] as
@@ -114,19 +92,10 @@ module Make(T : Utils.Functor) = struct
   let rec has_type (env : env) (t : Untyped.term) (w : variable) : (STLC.term, err) t =
     match t with
     | Untyped.Var x ->
-(*sujet
-      Utils.not_yet "Infer.has_type: Var case" (env, t, w, x)
-/sujet*)
-(*corrige*)
       (* [[x : w]] := (E(x) = w) *)
       let+ () = eq w (Env.find x env)
       in STLC.Var x
-(*/corrige*)
     | Untyped.App (t, u) ->
-(*sujet
-      Utils.not_yet "Infer.has_type: App case" (env, t, u, fun () -> has_type)
-/sujet*)
-(*corrige*)
        (* [[t u : w]] := ∃wu. [[t : wu -> w]] ∧ [[u : wu]] *)
       let wu, wt = Constraint.Var.fresh "wu", Constraint.Var.fresh "wt" in
       Exist (wu, None,
@@ -135,12 +104,7 @@ module Make(T : Utils.Functor) = struct
           and+ u' = has_type env u wu
           in STLC.App(t', u')
         ))
-(*/corrige*)
     | Untyped.Abs (x, t) ->
-(*sujet
-      Utils.not_yet "Infer.has_type: Abs case" (env, x, t, fun () -> has_type)
-/sujet*)
-(*corrige*)
       (* [[fun x -> t : w]] := ∃wx wt. w = wx -> wt ∧ [[t : wt]](E,x↦wx) *)
       let wx, wt, warr =
         Constraint.Var.fresh (Untyped.Var.name x),
@@ -152,12 +116,7 @@ module Make(T : Utils.Functor) = struct
         and+ t' = has_type (Env.add x wx env) t wt
         in STLC.Abs(x, tyx, t')
       )))
-(*/corrige*)
     | Untyped.Let (x, t, u) ->
-(*sujet
-      Utils.not_yet "Infer.has_type: Let case" (env, x, t, u, fun () -> has_type)
-/sujet*)
-(*corrige*)
       (* [[let x = t in u : w]] := ∃wt. [[t : wt]] ∧ [[u : w]](E,x↦wt) *)
       let wt = Constraint.Var.fresh (Untyped.Var.name x) in
       Exist (wt, None,
@@ -166,24 +125,13 @@ module Make(T : Utils.Functor) = struct
         and+ u' = has_type (Env.add x wt env) u w
         in STLC.Let(x, tyx, t', u')
      )
-(*/corrige*)
     | Untyped.Annot (t, ty) ->
-(*sujet
-      Utils.not_yet "Infer.has_type: Let case" (env, t, ty, bind, fun () -> has_type)
-/sujet*)
-(*corrige*)
       (* [[(t : ty) : w]] := ∃(wt = ty). [[t : wt]] /\ [[wt = w]] *)
       bind ty @@ fun wt ->
       let+ t' = has_type env t wt
       and+ () = eq wt w
       in t'
-(*/corrige*)
     | Untyped.Tuple ts ->
-(*sujet
-      let (t1, t2) = assume_pair ts in
-      Utils.not_yet "Infer.has_type: Let case" (env, t1, t2, fun () -> has_type)
-/sujet*)
-(*corrige*)
       (* [[(t₁, t₂ ... tₙ) : w]] :=
            ∃w₁.
              [[t₁ : w₁]] /\
@@ -212,13 +160,7 @@ module Make(T : Utils.Functor) = struct
                  let+ () = eq w wprod in [])
         )
       in STLC.Tuple ts
-(*/corrige*)
     | Untyped.LetTuple (xs, t, u) ->
-(*sujet
-      let (x1, x2) = assume_pair xs in
-      Utils.not_yet "Infer.has_type: Let case" (env, x1, x2, t, u, fun () -> has_type)
-/sujet*)
-(*corrige*)
       (* [[let (x₁, x₂ ... xₙ) = t in u : w]] :=
          ∃w₁, w₂... wₙ.
            ∃(wt = (w₁ * w₂ ... wₙ)).
@@ -249,15 +191,6 @@ module Make(T : Utils.Functor) = struct
           in STLC.LetTuple (bindings, t', u')
         )
       )
-(*/corrige*)
     | Do p ->
-(*sujet
-      (* Feel free to postone this until you start looking
-         at random generation. Getting type inference to
-         work on all the other cases is a good first step. *)
-      Utils.not_yet "Infer.has_type: Let case" (env, p, fun () -> has_type)
-/sujet*)
-(*corrige*)
       Do (T.map (fun t -> has_type env t w) p)
-(*/corrige*)
 end
