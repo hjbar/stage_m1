@@ -1,6 +1,32 @@
+type search_impl =
+  | Exhaustive
+  | Naive
+  | Vanille
+
+let search_impl_dict = [
+  ("exhaustive", Exhaustive);
+  ("naive", Naive);
+  ("vanille", Vanille);
+]
+
+module Dict = struct
+  type ('k, 'v) t = ('k * 'v) list
+
+  let keys dict = List.map fst dict
+
+  let find_val dict k =
+    List.assoc k dict
+
+  let find_key (dict : ('k, 'v) t) (v : 'v) : 'k =
+    List.assoc v (List.map (fun (k, v) -> (v, k)) dict)
+end
+
+let pp_dict_val dict ppf v =
+  Printf.fprintf ppf "%s"
+    (Dict.find_key dict v)
+
 type config = {
-  exhaustive : bool;
-  vanille : bool;
+  search_impl : search_impl;
   size : int;
   count : int;
   seed : int option;
@@ -16,53 +42,63 @@ let pp_config ppf config =
   let pp_int ppf = Printf.fprintf ppf "%d" in
   let pp_string ppf = Printf.fprintf ppf "%S" in
   Printf.fprintf ppf 
-    "{ exhaustive = %b;\n\
-    \  vanille = %b;\n\
-    \  size = %d;\n\
-    \  count = %d;\n\
+    "{ search_impl = %a;\n\
+    \  size = %a;\n\
+    \  count = %a;\n\
     \  seed = %a;\n\
     \  benchmark = %a;\n\
     \  msg = %a; }\n"
-    config.exhaustive
-    config.vanille
-    config.size
-    config.count
+    (pp_dict_val search_impl_dict) config.search_impl
+    pp_int config.size
+    pp_int config.count
     (pp_opt pp_int) config.seed
     (pp_opt pp_int) config.benchmark
     (pp_opt pp_string) config.msg
 
+let arg_from_dict ~option ~doc dict ref : Arg.(key * spec * doc) =
+  let valid_keys =
+    Dict.keys dict |> String.concat " | "
+  in
+  let on_string s =
+    match Dict.find_val dict s with
+    | v -> ref := v
+    | exception Not_found -> 
+      Printf.ksprintf (fun msg -> raise (Arg.Bad msg))
+        "%s: invalid value '%s', expected one of [%s]"
+        option s valid_keys
+  in
+  (option,
+   Arg.String on_string,
+   Printf.sprintf "<name> %s (default '%s', available [%s])"
+     doc (Dict.find_key dict !ref) valid_keys)
+
 let config =
-  let exhaustive = ref false in
-  let vanille = ref false in
+  let search_impl = ref Naive in
   let size = ref 10 in
   let count = ref 1 in
   let seed = ref None in
   let benchmark = ref None in
   let msg = ref None in
-  let usage =
-    Printf.sprintf
-      "Usage: %s [options]"
-      Sys.argv.(0) in
+  let fmt fmt_str = Printf.sprintf fmt_str in
+  let usage = fmt "Usage: %s [options]" Sys.argv.(0) in
   let spec = Arg.align [
-    "--exhaustive", Arg.Set exhaustive,
-      " Exhaustive enumeration";
-    "--vanille", Arg.Set vanille,
-      " Use Néven's MRand implementation";
-    "--size", Arg.Set_int size,
-      "<int> Depth of generated terms";
+    arg_from_dict
+      ~option:"--search"
+      ~doc:"search implementation"
+      search_impl_dict
+      search_impl;
     "--count", Arg.Set_int count,
-      "<int> Number of terms to generate";
-    "--seed", Arg.Int (fun s -> seed := Some s),
-      "<int> Fixed seed for the random number generator";
+      fmt "<int> Number of terms to generate. (default '%d')" !count;
     "--benchmark", Arg.Int (fun s -> benchmark := Some s),
-      "<int> Run several times and provide performance metrics.";
+      "<int> Run several times and provide performance metrics. (optional)";
+    "--seed", Arg.Int (fun s -> seed := Some s),
+      "<int> Fixed seed for the random number generator. (optional)";
     "--msg", Arg.String (fun s -> msg := Some s),
-      "<string> Describe the benchmark to get a self-describing log file.";
+      "<string> Describe the benchmark to get a self-describing log file. (optional)";
   ] in
   Arg.parse spec (fun s -> raise (Arg.Bad s)) usage;
   {
-    exhaustive = !exhaustive;
-    vanille = !vanille;
+    search_impl = !search_impl;
     size = !size;
     count = !count;
     seed  = !seed;
@@ -75,23 +111,38 @@ let () =
   | None -> Random.self_init ()
   | Some s -> Random.init s
 
-let generate (module M : Utils.MonadPlus) =
+module type SearchImpl = sig
+  include Utils.MonadPlus
+  val tries : int ref
+end
+
+module ExhaustiveSearch = struct
+  include MSeq
+  let tries = ref 1
+end
+
+let get_search_impl config : (module SearchImpl) =
+  match config.search_impl with
+  | Exhaustive ->
+    (module ExhaustiveSearch)
+  | Naive ->
+    (module MRand)
+  | Vanille ->
+    (module VanilleRand)
+
+let generate (module M : SearchImpl) =
   let module Gen = Generator.Make(M) in
   M.run @@ Gen.typed ~size:config.size
 
 let produce_terms config =
-  generate
-    (if config.exhaustive
-     then (module MSeq)
-     else if config.vanille
-     then (module VanilleRand)
-     else (module MRand))
+  get_search_impl config
+  |> generate
   |> Seq.take config.count
   |> Seq.map STLCPrinter.print_term
   |> List.of_seq
 
-let run_display config =
-  produce_terms config
+let run_display config =  
+  produce_terms config 
   |> PPrint.(separate (hardline ^^ hardline))
   |> Utils.string_of_doc
   |> print_endline
@@ -99,9 +150,8 @@ let run_display config =
 let pp_s ppf s = Printf.fprintf ppf "%.2fs" s
 
 let get_tries config =
-  if config.exhaustive then failwith "tries"
-  else if config.vanille then !VanilleRand.tries
-  else !MRand.tries
+  let module M = (val (get_search_impl config)) in
+  !M.tries
 
 let print_stats pp_val series =
   let minv = List.fold_left min infinity series in
