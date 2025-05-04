@@ -11,12 +11,14 @@ type search_impl =
   | Exhaustive
   | Naive
   | Full_removal
+  | Local_retries
   | Vanille
 
 let search_impl_dict = [
   ("exhaustive", Exhaustive);
   ("naive", Naive);
   ("full-removal", Full_removal);
+  ("local-retries", Local_retries);
   ("vanille", Vanille);
 ]
 
@@ -152,6 +154,8 @@ let get_search_impl config : (module SearchImpl) =
     (module MRand)
   | Full_removal ->
     (module MRand_full_removal)
+  | Local_retries ->
+    (module MRand_local_retries)
   | Vanille ->
     (module VanilleRand)
 
