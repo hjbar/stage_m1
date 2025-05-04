@@ -7,6 +7,15 @@ let untyped_impl_dict = [
   ("vanille", Vanille);
 ]
 
+type size_impl =
+  | Early
+  | Late
+
+let size_impl_dict = [
+  ("early", Early);
+  ("late", Late);
+]
+
 type search_impl =
   | Exhaustive
   | Naive
@@ -43,6 +52,7 @@ let pp_dict_val dict ppf v =
 type config = {
   untyped_impl : untyped_impl;
   size : int;
+  size_impl : size_impl;
   search_impl : search_impl;
   count : int;
   benchmark : int option;
@@ -59,15 +69,17 @@ let pp_config ppf config =
   let pp_string ppf = Printf.fprintf ppf "%S" in
   Printf.fprintf ppf 
     "{ untyped_impl = %a;\n\
-    \  search_impl = %a;\n\
     \  size = %a;\n\
+    \  size_impl = %a;\n\
+    \  search_impl = %a;\n\
     \  count = %a;\n\
     \  seed = %a;\n\
     \  benchmark = %a;\n\
     \  msg = %a; }\n"
     (pp_dict_val untyped_impl_dict) config.untyped_impl
-    (pp_dict_val search_impl_dict) config.search_impl
     pp_int config.size
+    (pp_dict_val size_impl_dict) config.size_impl
+    (pp_dict_val search_impl_dict) config.search_impl
     pp_int config.count
     (pp_opt pp_int) config.seed
     (pp_opt pp_int) config.benchmark
@@ -94,6 +106,7 @@ let config =
   let untyped_impl = ref Gasche in
   let size = ref 10 in
   let search_impl = ref Naive in
+  let size_impl = ref Late in
   let count = ref 1 in
   let seed = ref None in
   let benchmark = ref None in
@@ -108,6 +121,11 @@ let config =
       untyped_impl;
     "--size", Arg.Set_int size,
       fmt "<int> Size of generated terms (default %d)" !size;
+    arg_from_dict
+      ~option:"--size-cut"
+      ~doc:"size-cut implementation"
+      size_impl_dict
+      size_impl;
     arg_from_dict
       ~option:"--search"
       ~doc:"search implementation"
@@ -126,6 +144,7 @@ let config =
   {
     untyped_impl = !untyped_impl;
     size = !size;
+    size_impl = !size_impl;
     search_impl = !search_impl;
     count = !count;
     seed  = !seed;
@@ -170,8 +189,13 @@ let generate config (module M : SearchImpl) =
     | Gasche -> Gen.untyped_gasche
     | Vanille -> Gen.untyped_vanille
   in
+  let typed =
+    match config.size_impl with
+    | Early -> Gen.typed_cut_early
+    | Late -> Gen.typed_cut_late
+  in
   untyped
-  |> Gen.typed ~size:config.size
+  |> typed ~size:config.size
   |> M.run
 
 let produce_terms config =

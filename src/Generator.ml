@@ -99,6 +99,42 @@ module Make(M : Utils.MonadPlus) = struct
       ))
     in gen []
 
+  let rec cut_size ~size (term : Untyped.term) : Untyped.term =
+    let un ~size t f : Untyped.term =
+      let size = size - 1 in
+      if size < 1 then Do M.fail
+      else f (cut_size ~size t)
+    in
+    let bin ~size ta tb f : Untyped.term =
+      let size = size - 1 in
+      if size < 2 then Do M.fail
+      else Do (M.sum @@ List.init (size - 1) (fun idx ->
+        (* { i, j | i > 0, j > 0, i+j = size } *)
+        let i = idx + 1 in
+        let j = size - i in
+        let ta' = cut_size ~size:i ta in
+        let tb' = cut_size ~size:j tb in
+        M.return (f ta' tb')
+      ))
+    in
+    if size <= 0 then Do M.fail
+    else match term with
+    | Var _ -> if size = 1 then term else Do M.fail
+    | App (t, u) ->
+      bin ~size t u (fun t' u' -> App (t', u'))
+    | Abs (x, t) ->
+      un ~size t (fun t' -> Abs (x, t'))
+    | Let (x, t, u) ->
+      bin ~size t u (fun t' u' -> Let (x, t', u'))
+    | Tuple ts ->
+      let t, u = match ts with [t; u] -> t, u | _ -> assert false in
+      bin ~size t u (fun t' u' -> Tuple [t'; u'])
+    | LetTuple (xs, t, u) ->
+      bin ~size t u (fun t' u' -> LetTuple (xs, t', u'))
+    | Annot (t, ty) ->
+      un ~size t (fun t' -> Annot (t', ty))
+    | Do m -> Do (M.map (cut_size ~size) m)
+
   let constraint_ untyped : (STLC.term, Infer.err) Constraint.t =
     let w = Constraint.Var.fresh "final_type" in
     Constraint.(Exist (w, None,
@@ -107,7 +143,29 @@ module Make(M : Utils.MonadPlus) = struct
         untyped
         w))
 
-  let typed ~size untyped : STLC.term M.t =
+  let typed_cut_early ~size untyped : STLC.term M.t =
+    let open struct
+      type env = Solver.env
+    end in
+    let rec loop : type a e r . env -> (a, e) Constraint.t -> a M.t =
+    fun env cstr ->
+      let _logs, env, nf =
+        Solver.eval ~log:false env cstr
+      in
+      match nf with
+      | NRet v ->
+        let decoder = Decode.decode env () in
+        M.return (v decoder)
+      | NErr _ -> M.fail
+      | NDo p ->
+        M.bind p (fun cstr -> loop env cstr)
+    in
+    untyped
+    |> cut_size ~size
+    |> constraint_
+    |> loop Unif.Env.empty
+
+  let typed_cut_late ~size untyped : STLC.term M.t =
     let open struct
       type env = Solver.env
     end in
@@ -130,4 +188,6 @@ module Make(M : Utils.MonadPlus) = struct
     in
     loop ~fuel:size Unif.Env.empty
       (constraint_ untyped)
+
+
 end
