@@ -12,6 +12,7 @@ type search_impl =
   | Naive
   | Full_removal
   | Local_retries
+  | Reset
   | Vanille
 
 let search_impl_dict = [
@@ -19,6 +20,7 @@ let search_impl_dict = [
   ("naive", Naive);
   ("full-removal", Full_removal);
   ("local-retries", Local_retries);
+  ("reset", Reset);
   ("vanille", Vanille);
 ]
 
@@ -156,6 +158,8 @@ let get_search_impl config : (module SearchImpl) =
     (module MRand_full_removal)
   | Local_retries ->
     (module MRand_local_retries)
+  | Reset ->
+    (module MRand_local_retries_with_reset)
   | Vanille ->
     (module VanilleRand)
 
