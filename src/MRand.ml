@@ -1,3 +1,5 @@
+(* A fairly naive implementation of the MonadPlus interface. *)
+
 type 'a t =
   | Return : 'a -> 'a t
   | Fail : 'a t

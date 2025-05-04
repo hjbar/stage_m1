@@ -10,11 +10,13 @@ let untyped_impl_dict = [
 type search_impl =
   | Exhaustive
   | Naive
+  | Full_removal
   | Vanille
 
 let search_impl_dict = [
   ("exhaustive", Exhaustive);
   ("naive", Naive);
+  ("full-removal", Full_removal);
   ("vanille", Vanille);
 ]
 
@@ -148,6 +150,8 @@ let get_search_impl config : (module SearchImpl) =
     (module ExhaustiveSearch)
   | Naive ->
     (module MRand)
+  | Full_removal ->
+    (module MRand_full_removal)
   | Vanille ->
     (module VanilleRand)
 
