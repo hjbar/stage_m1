@@ -11,6 +11,9 @@ module Make (T : Utils.Functor) = struct
     | Decode of variable
     | False
     | Do of sat_constraint T.t
+    | DecodeScheme of scheme_variable
+    | Instance of scheme_variable * variable
+    | Let of scheme_variable * variable * sat_constraint * sat_constraint
 
   let rec erase : type a e. (a, e) Constraint.t -> sat_constraint = function
     | Exist (v, c, s) -> Exist (v, c, erase s)
@@ -30,7 +33,9 @@ module Make (T : Utils.Functor) = struct
         | Eq _ as c -> [ erase c ]
         | Decode _ as c -> [ erase c ]
         | Do _ as c -> [ erase c ]
-        | _ -> failwith "SatConstraint.erase todo"
+        | DecodeScheme _ as c -> [ erase c ]
+        | Instance _ as c -> [ erase c ]
+        | Let _ as c -> [ erase c ]
       in
 
       match peel conj with [ c ] -> c | cases -> Conj cases
@@ -38,5 +43,7 @@ module Make (T : Utils.Functor) = struct
     | Eq (v1, v2) -> Eq (v1, v2)
     | Decode v -> Decode v
     | Do c -> Do (T.map erase c)
-    | _ -> failwith "SatConstraint.erase todo"
+    | DecodeScheme sch_var -> DecodeScheme sch_var
+    | Instance (sch_var, var) -> Instance (sch_var, var)
+    | Let (sch_var, var, c1, c2) -> Let (sch_var, var, erase c1, erase c2)
 end

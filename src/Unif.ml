@@ -48,12 +48,12 @@ end = struct
   let mem var env = Constraint.Var.Map.mem var env.map
 
   let add var structure env =
-    let data = Option.map (Structure.map (fun v -> uvar v env)) structure in
+    let data = Option.map (Structure.map @@ fun v -> uvar v env) structure in
     let uvar = UF.make env.store { var; data } in
     { env with map = Constraint.Var.Map.add var uvar env.map }
 
   let repr var env =
-    let { var; data } = UF.get env.store (uvar var env) in
+    let { var; data } = UF.get env.store @@ uvar var env in
     let var_of_uvar uv = (UF.get env.store uv).var in
     let structure = Option.map (Structure.map var_of_uvar) data in
     { var; structure }

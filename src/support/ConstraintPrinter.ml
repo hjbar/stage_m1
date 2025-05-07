@@ -5,6 +5,9 @@ module Make (T : Utils.Functor) = struct
 
   let print_var v = Printer.inference_variable (Constraint.Var.print v)
 
+  let print_sch_var sch_var =
+    Printer.scheme_variable (Constraint.SVar.print sch_var)
+
   let print_sat_constraint (c : sat_constraint) : PPrint.document =
     let rec print_top = fun c -> print_left_open c
     and print_left_open =
@@ -31,13 +34,19 @@ module Make (T : Utils.Functor) = struct
 
       function
       | Conj cs -> Printer.conjunction @@ List.map print_next cs
+      | Let (sch_var, var, c1, c2) ->
+        Printer.let_sch (print_sch_var sch_var) (print_var var) (print_next c1)
+          (print_next c2)
       | other -> print_next other
     and print_atom = function
       | Decode v -> Printer.decode @@ print_var v
       | False -> Printer.false_
       | Eq (v1, v2) -> Printer.eq (print_var v1) (print_var v2)
       | Do _ -> Printer.do_
-      | (Exist _ | Conj _) as other -> PPrint.parens @@ print_top other
+      | DecodeScheme sch_var -> Printer.decode_scheme (print_sch_var sch_var)
+      | Instance (sch_var, var) ->
+        Printer.instance (print_sch_var sch_var) (print_var var)
+      | (Exist _ | Conj _ | Let _) as other -> PPrint.parens @@ print_top other
     in
     print_top c
 

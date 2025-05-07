@@ -13,6 +13,7 @@
 
 module Types = struct
   module Var = Utils.Variables ()
+  module SVar = Utils.Variables ()
 
   type variable = Var.t
 
@@ -22,7 +23,7 @@ module Types = struct
     | Var of variable
     | Constr of structure
 
-  type scheme = variable * ty
+  type scheme_variable = SVar.t
 end
 
 include Types
@@ -34,7 +35,7 @@ module Make (T : Utils.Functor) = struct
     | Clash of STLC.ty Utils.clash
     | Cycle of variable Utils.cycle
 
-  (** A value of type [('a, 'e) t] is a constraint whose resolution will either
+  (** A value of type [('a, 'e)) t] is a constraint whose resolution will either
       succeed, and produce a witness of type ['a], or fail and produce error
       information at type ['e].
 
@@ -56,10 +57,13 @@ module Make (T : Utils.Functor) = struct
     | Exist : variable * structure option * ('a, 'e) t -> ('a, 'e) t
     | Decode : variable -> (STLC.ty, variable Utils.cycle) t
     | Do : ('a, 'e) t T.t -> ('a, 'e) t
-    | Instance : scheme * variable -> (STLC.ty list, eq_error) t
+    | DecodeScheme :
+        scheme_variable
+        -> (variable list * STLC.ty, variable Utils.cycle) t
+    | Instance : scheme_variable * variable -> (STLC.ty list, eq_error) t
     | Let :
-        variable * ('a, 'e) t * (scheme -> ('b, 'e) t)
-        -> (scheme * 'a * 'b, 'e) t
+        scheme_variable * variable * ('a, 'e) t * ('b, 'e) t
+        -> ('a * 'b, 'e) t
 
   (** ['a on_sol] represents an elaborated witness of type ['a] that depends on
       the solution to the whole constraint -- represented by a mapping from

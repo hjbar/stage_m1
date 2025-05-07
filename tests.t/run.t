@@ -485,3 +485,5 @@ An example of random sampling output at higher size.
     in
       lambda (a : α).
         lambda (b : β). let (l : α) = id a in let (r : β) = id b in (l, r)
+
+  $ minihell $FLAGS id_poly2.test

@@ -78,6 +78,24 @@ module Make (T : Utils.Functor) = struct
         let v = normalize v in
         (VarSet.singleton v, Decode v)
       | Do p -> (bvs, Do p)
+      | DecodeScheme sch_var ->
+        (* TODO: normalize sch_var *)
+        (VarSet.empty, DecodeScheme sch_var)
+      | Instance (sch_var, var) ->
+        (* TODO: normalize sch_var *)
+        let var = normalize var in
+        (VarSet.singleton var, Instance (sch_var, var))
+      | Let (sch_var, var, c1, c2) ->
+        (* TODO: normalize sch_var *)
+        let var = normalize var in
+
+        let bvs', c1 = simpl bvs c1 in
+        let bvs_inner = bvs |> VarSet.add var |> VarSet.union bvs' in
+
+        let bvs_inner', c2 = simpl bvs_inner c2 in
+        let bvs_inner_union = VarSet.union bvs_inner bvs_inner' in
+
+        (bvs_inner_union, Let (sch_var, var, c1, c2))
     in
 
     let rec add_exist (fvs, c) =

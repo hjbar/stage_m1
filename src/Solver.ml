@@ -130,11 +130,13 @@ module Make (T : Utils.Functor) = struct
           nerr @@ Clash (decoder y1, decoder y2)
       end
       | Exist (x, s, c) -> begin
-        (* Our solver may re-enter existentials
-           that it has already traversed. In this
-           case we do not want to re-bind them in the
-           environment, but reuse the previous binding
-           which accumulated information through unifications. *)
+        (*
+          Our solver may re-enter existentials that
+          it has already traversed. In this case we
+          do not want to re-bind them in the environment,
+          but reuse the previous binding which accumulated
+          information through unifications.
+        *)
         if not @@ Unif.Env.mem x !env then begin
           env := Unif.Env.add x s !env;
           add_to_log !env
@@ -151,7 +153,15 @@ module Make (T : Utils.Functor) = struct
       end
       | Decode v -> nret @@ fun sol -> sol v
       | Do p -> NDo p
-      | _ -> failwith "Solver.eval todo"
+      | DecodeScheme sch_var ->
+        ignore sch_var;
+        failwith "Solver.eval.DecodeScheme TODO"
+      | Instance (sch_var, var) ->
+        ignore (sch_var, var);
+        failwith "Solver.eval.Instance TODO"
+      | Let (sch_var, var, c1, c2) ->
+        ignore (sch_var, var, c1, c2);
+        failwith "Solver.eval.Let TODO"
     in
 
     add_to_log !env;

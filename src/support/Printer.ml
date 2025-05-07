@@ -3,6 +3,9 @@ open PPrint
 (** ?w *)
 let inference_variable w = string "?" ^^ w
 
+(** ?s *)
+let scheme_variable s = string "?scheme_" ^^ s
+
 (** $t -> $u *)
 let arrow t u = group @@ t ^/^ string "->" ^/^ u
 
@@ -79,6 +82,16 @@ let eq v1 v2 = group @@ v1 ^/^ string "=" ^/^ v2
 let decode v = group @@ string "decode" ^^ break 1 ^^ v
 
 let do_ = string "do?"
+
+let decode_scheme sch_var =
+  group @@ string "decode_scheme" ^^ break 1 ^^ sch_var
+
+let instance sch_var var =
+  group @@ sch_var ^^ break 1 ^^ utf8string "≤" ^^ break 1 ^^ var
+
+let let_sch sch_var var c1 c2 =
+  group @@ string "let " ^^ sch_var ^^ string " : " ^^ var ^^ string " ="
+  ^^ break 1 ^^ c1 ^^ break 1 ^^ string "in" ^^ break 1 ^^ c2
 
 (** $ty1 incompatible with $ty2 *)
 let incompatible ty1 ty2 =

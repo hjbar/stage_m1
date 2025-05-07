@@ -9,17 +9,19 @@ module Make (T : Utils.Functor) = struct
 
   (* Type definitions *)
 
-  (** The "environment" of the constraint generator maps each program variable
-      to an inference variable representing its (monomorphic) type.
+  (** OLD : The "environment" of the constraint generator maps each program
+      variable to an inference variable representing its (monomorphic) type.
 
       For example, to infer the type of the term [lambda x. t], we will
       eventually call [has_type env t] with an environment mapping [x] to a
-      local inference variable representing its type. *)
+      local inference variable representing its type.
+
+      TODO : new doc *)
   module Env = Untyped.Var.Map
 
   type mono = variable Env.t
 
-  type poly = scheme Env.t
+  type poly = scheme_variable Env.t
 
   type env = mono * poly
 
@@ -35,21 +37,29 @@ module Make (T : Utils.Functor) = struct
 
   let decode v = MapErr (Decode v, fun e -> Cycle e)
 
+  let decode_scheme s = MapErr (DecodeScheme s, fun e -> Cycle e)
+
   let exist v s c = Exist (v, s, c)
+
+  let make_let s v c1 c2 = Let (s, v, c1, c2)
 
   let fresh_name = Constraint.Var.fresh
 
   let fresh_var x = fresh_name @@ Untyped.Var.name x
 
-  let find_mono x (mono_env, _poly_env) = Env.find x mono_env
+  let fresh_scheme = Constraint.SVar.fresh
+
+  let _find_mono x (mono_env, _poly_env) = Env.find x mono_env
+
+  let findopt_mono x (mono_env, _poly_env) = Env.find_opt x mono_env
 
   let add_mono x v (mono_env, poly_env) = (Env.add x v mono_env, poly_env)
 
-  (*
   let find_poly x (_mono_env, poly_env) = Env.find x poly_env
 
+  let _findopt_poly x (_mono_env, poly_env) = Env.find_opt x poly_env
+
   let add_poly x v (mono_env, poly_env) = (mono_env, Env.add x v poly_env)
-  *)
 
   (** This is a helper function to implement constraint generation for the
       [Annot] construct.
@@ -113,11 +123,19 @@ module Make (T : Utils.Functor) = struct
   let rec has_type (env : env) (t : Untyped.term) (w : variable) :
     (STLC.term, err) t =
     match t with
-    | Untyped.Var x ->
-      (* [[x : w]] := (E(x) = w) *)
-      let+ () = eq w (find_mono x env) in
+    | Untyped.Var x -> begin
+      (* OLD : [[x : w]] := (E(x) = w)
+                   TODO : new doc *)
+      match findopt_mono x env with
+      | Some wx ->
+        let+ () = eq w wx in
+        STLC.Var x
+      | None ->
+        let sch = find_poly x env in
 
-      STLC.Var x
+        let+ _tys = Instance (sch, w) in
+        STLC.Var x
+    end
     | Untyped.App (t, u) ->
       (* [[t u : w]] := ∃wu. [[t : wu -> w]] ∧ [[u : wu]] *)
       let wu = fresh_name "wu" in
@@ -133,39 +151,41 @@ module Make (T : Utils.Functor) = struct
       let wx = fresh_var x in
       let wt = fresh_name "wt" in
       let warr = fresh_name "warr" in
+      let env = add_mono x wx env in
 
       exist wx None @@ exist wt None
       @@ exist warr (Some (Arrow (wx, wt)))
       @@ let+ () = eq w warr
          and+ tyx = decode wx
-         and+ t' = has_type (add_mono x wx env) t wt in
+         and+ t' = has_type env t wt in
          STLC.Abs (x, tyx, t')
     | Untyped.Let (x, t, u) ->
-      (* [[let x = t in u : w]] := ∃wt. [[t : wt]] ∧ [[u : w]](E,x↦wt) *)
+      (* OLD : [[let x = t in u : w]] := ∃wt. [[t : wt]] ∧ [[u : w]](E,x↦wt)
+         TODO : new doc *)
       let wt = fresh_var x in
+      let s = fresh_scheme "s" in
 
-      exist wt None
-      @@ let+ t' = has_type env t wt
-         and+ tyx = decode wt
-         and+ u' = has_type (add_mono x wt env) u w in
-         STLC.Let (x, tyx, t', u')
+      let inner_env = add_poly x s env in
+
+      let+ t', u' = make_let s wt (has_type env t wt) (has_type inner_env u w)
+      and+ _sl, ty = decode_scheme s in
+      STLC.Let (x, ty, t', u')
     | Untyped.Annot (t, ty) ->
       (* [[(t : ty) : w]] := ∃(wt = ty). [[t : wt]] /\ [[wt = w]] *)
       bind ty @@ fun wt ->
       let+ t' = has_type env t wt
       and+ () = eq wt w in
-
       STLC.Annot (t', ty)
     | Untyped.Tuple ts ->
       (* [[(t₁, t₂ ... tₙ) : w]] :=
-           ∃w₁.
-             [[t₁ : w₁]] /\
-             ∃w₂.
-               [[t₂ : w₂]] /\
-               ...
-               ∃wₙ.
-                 [[tₙ : wₙ]] /\
-                 w = (w₁ * w₂ * ... * wₙ)
+         ∃w₁.
+         [[t₁ : w₁]] /\
+         ∃w₂.
+           [[t₂ : w₂]] /\
+           ...
+           ∃wₙ.
+             [[tₙ : wₙ]] /\
+             w = (w₁ * w₂ * ... * wₙ)
       *)
       let rec loop i ts k =
         match ts with
@@ -192,9 +212,9 @@ module Make (T : Utils.Functor) = struct
     | Untyped.LetTuple (xs, t, u) ->
       (* [[let (x₁, x₂ ... xₙ) = t in u : w]] :=
          ∃w₁, w₂... wₙ.
-           ∃(wt = (w₁ * w₂ ... wₙ)).
-             [[t : wt]](E)
-             [[u : w]](E, x₁↦x₁, x₂↦w₂... xₙ↦wₙ) *)
+         ∃(wt = (w₁ * w₂ ... wₙ)).
+         [[t : wt]](E)
+         [[u : w]](E, x₁↦x₁, x₂↦w₂... xₙ↦wₙ) *)
       let rec loop xs k =
         match xs with
         | [] -> k []
