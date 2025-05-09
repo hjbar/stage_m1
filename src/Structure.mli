@@ -13,6 +13,8 @@ val iter : ('a -> unit) -> ('v, 'a) t_ -> unit
 
 val map : ('a -> 'b) -> ('v, 'a) t_ -> ('v, 'b) t_
 
+val fold : ('acc -> 'a -> 'acc) -> 'acc -> ('v, 'a) t_ -> 'acc
+
 val merge : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t option
 
 val freshen : ('a -> 'b) -> 'a raw -> 'b t

@@ -138,7 +138,7 @@ module Make (T : Utils.Functor) = struct
           information through unifications.
         *)
         if not @@ Unif.Env.mem x !env then begin
-          env := Unif.Env.add x s !env;
+          env := Unif.Env.add x s Flexible ~rank:Unif.base_rank !env;
           add_to_log !env
         end;
 

@@ -6,7 +6,33 @@
     - which inference variables are equal to each other
     - for each inference variable, its known structure (if any) *)
 
+(* Type of variable *)
+
 type var = Constraint.variable
+
+(* Type of structure *)
+
+type structure = var Structure.t option
+
+(* Type of status *)
+
+type status =
+  | Flexible
+  | Generic
+
+(* Type of rank *)
+
+type rank = int
+
+val base_rank : int
+
+(* Type du pool *)
+
+module IntMap : Map.S with type key = int
+
+type pool = content_pool IntMap.t
+
+and content_pool = var list
 
 (** [repr] represents all the knowledge so far about an inference variable, or
     rather an equivalence class of inference variables that are equal to each
@@ -15,7 +41,9 @@ type var = Constraint.variable
     - [structure] is the known structure (if any) of these variables *)
 type repr =
   { var : var
-  ; structure : Constraint.structure option
+  ; structure : structure
+  ; status : status
+  ; rank : rank
   }
 
 module Env : sig
@@ -23,9 +51,23 @@ module Env : sig
 
   val empty : t
 
+  val get_young : t -> rank
+
+  val set_young : rank -> t -> t
+
+  val pool_is_empty : rank -> t -> bool
+
+  val clean_pool : rank -> t -> t
+
+  val get_pool : rank -> t -> content_pool
+
   val mem : var -> t -> bool
 
-  val add : var -> Constraint.structure option -> t -> t
+  val add : var -> structure -> status -> rank:int -> t -> t
+
+  val add_data : repr -> t -> t
+
+  val register : var -> rank:int -> t -> t
 
   (** [repr x env] gets the representant of [x] in [env].
 

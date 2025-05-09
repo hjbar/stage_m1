@@ -40,6 +40,13 @@ let map f = function
   | Arrow (t1, t2) -> Arrow (f t1, f t2)
   | Prod ts -> Prod (List.map f ts)
 
+let fold f acc = function
+  | Var _alpha -> acc
+  | Arrow (t1, t2) ->
+    let acc = f acc t1 in
+    f acc t2
+  | Prod ts -> List.fold_left f acc ts
+
 let merge f s1 s2 =
   match (s1, s2) with
   | Var alpha, Var beta when TyVar.eq alpha beta -> Some (Var alpha)
