@@ -30,7 +30,7 @@ val trivial : variable -> scheme
 
 (* Functions on generalization *)
 
-val flexible : structure -> env -> env * data
+val flexible : structure -> env -> env * variable
 
 val enter : env -> env
 

@@ -37,22 +37,20 @@ let register (var : variable) ~(rank : int) (env : env) : env =
 
 (* *)
 
-let flexible (structure : structure) (env : env) : env * data =
+let flexible (structure : structure) (env : env) : env * variable =
   let var = Var.fresh "v" in
-  let status = Flexible in
   let rank = Env.get_young env in
 
-  let data = Unif.{ var; structure; status; rank } in
-  let env = Env.add_data data env in
+  let env = Env.add var structure env in
   let env = register var ~rank env in
 
-  (env, data)
+  (env, var)
 
 (* Call this function before enter in a new level *)
 
 let enter (env : env) : env =
-  let young = Env.get_young env + 1 in
-  let env = Env.set_young young env in
+  let env = Env.incr_young env in
+  let young = Env.get_young env in
 
   assert (Env.pool_is_empty young env);
   env
@@ -90,7 +88,7 @@ let discover_young_generation (env : env) : generation =
 
           let r = data.rank in
 
-          assert (data.status <> Flexible);
+          assert (data.status <> Generic);
           assert (base_rank <= r && r <= state_young);
 
           let l = Option.value ~default:[] @@ IntMap.find_opt r by_rank in
@@ -111,72 +109,79 @@ let discover_young_generation (env : env) : generation =
 (* updates the rank of every variables in the young generation *)
 
 let update_ranks (generation : generation) (env : env) : env =
-  (* The young of the environment *)
-  let state_young = Env.get_young env in
+  (* To mark visited variable *)
+  let cache = Hashtbl.create 16 in
 
-  (* Returns the new rank of var -- postcond : rank var <= k *)
-  let rec traverse (var : variable) (k : rank) (env : env) : env * rank =
-    let data = Env.repr var env in
+  (* Final env *)
+  let final_env = ref env in
 
-    (* Update the rank *)
-    assert (data.status <> Generic);
-    let data = adjust_rank data k in
-    let env = Env.add_data data env in
+  (* We compute the new env for each rank *)
+  for k = base_rank to Env.get_young env do
+    (* Function that compute the new rank *)
+    let rec traverse (var : variable) (env : env) : env * rank =
+      (* To get the repr of the variable & check its status *)
+      let data = Env.repr var env in
+      assert (data.status <> Generic);
 
-    (* If var is young, we update ranks of its children *)
-    if not @@ generation.is_young var then (env, data.rank)
-    else begin
-      assert (data.rank = k);
-
-      (* No structure = nothing to update *)
-      if data.structure = None then (env, data.rank)
-      else begin
-        (* Compute the max of the ranks to re-update var *)
-        let env, rank =
-          Structure.fold
-            begin
-              fun (env, max_) v ->
-                (* Update the rank v by side-effects *)
-                let env, rank = traverse v k env in
-                (env, max max_ rank)
-            end
-            (env, base_rank)
-          @@ Option.get data.structure
-        in
-
-        (* Re-update var with a new rank *)
-        let data = adjust_rank data rank in
-        (Env.add_data data env, rank)
+      (* If we already this variable, stop *)
+      if Hashtbl.find_opt cache var <> None then begin
+        assert (data.rank <= k);
+        (env, data.rank)
       end
-    end
-  in
+      else begin
+        (* Push the information that we visited this variable *)
+        Hashtbl.replace cache var ();
 
-  (* Compute traverse for var and propagate result *)
-  let rec loop_for i last_i env =
-    if i > last_i then env
-    else begin
-      let env =
-        List.fold_left
-          begin
-            fun env var ->
-              let env, _rank = traverse var i env in
-              env
+        (* Update the rank of the variable and push the update in env *)
+        let data = adjust_rank data k in
+        let env = Env.add_data data env in
+
+        (* If the variable is not young, stop *)
+        if not @@ generation.is_young var then (env, data.rank)
+        else begin
+          (* The variable is not visited yet, so its rank must be k *)
+          assert (data.rank = k);
+
+          (* If the variable has no structure, stop *)
+          if data.structure = None then (env, data.rank)
+          else begin
+            (* Traverse all the children of var and compute the max rank and the new env *)
+            let env, max_rank =
+              Structure.fold
+                begin
+                  fun (env, acc) child ->
+                    let env, cur_rank = traverse child env in
+                    (env, max cur_rank acc)
+                end
+                (env, base_rank)
+                (Option.get data.structure)
+            in
+
+            (* Adjust the rank of var with the max rank of its children *)
+            let data = adjust_rank data max_rank in
+            let env = Env.add_data data env in
+
+            (* Return the new env *)
+            (env, max_rank)
           end
-          env
-        @@ IntMap.find i generation.by_rank
-      in
+        end
+      end
+    in
 
-      loop_for (i + 1) last_i env
-    end
-  in
+    (* Compute the new env *)
+    final_env :=
+      List.fold_left
+        (fun env var -> fst @@ traverse var env)
+        !final_env
+        (IntMap.find k generation.by_rank)
+  done;
 
-  loop_for base_rank state_young env
+  (* Return the updated env *)
+  !final_env
 
 (* Returns a list of the variables that have become generic *)
 
 let generalize (generation : generation) (env : env) : env * variable list =
-  let is_representative (_v : variable) : bool = failwith "TODO" in
-
   let state_young = Env.get_young env in
   let env = ref env in
 
@@ -184,8 +189,9 @@ let generalize (generation : generation) (env : env) : env * variable list =
     List.filter
       begin
         fun var ->
-          (* If var is not the representative element of its equivalence class, we ignore and drop it *)
-          is_representative var
+          (* If var is not the representative element of its equivalence class,
+             we ignore and drop it *)
+          Env.is_representative var !env
           && begin
                let data = Env.repr var !env in
                let rank = data.rank in
@@ -295,7 +301,7 @@ let exit (roots : roots) (env : env) : env * quantifiers * schemes =
 
   (* Clean the environment *)
   let env = Env.clean_pool state_young env in
-  let env = Env.set_young (state_young - 1) env in
+  let env = Env.decr_young env in
 
   (* Result *)
   (env, quantifiers, schemes)
@@ -308,18 +314,27 @@ let instantiate ({ root; generics; quantifiers } : scheme) (env : env) :
   let table = Hashtbl.create 16 in
 
   (* Create flexible copy of generic variables *)
-  let ((env : env), (_idx : int)), (mapping : variable list) =
-    List.fold_left_map
-      begin
-        fun (env, i) var ->
-          let data = Env.repr var env in
-          assert (data.status = Generic);
+  let (env : env), (mapping : variable list) =
+    let env = ref env in
 
-          Hashtbl.replace table var i;
-          let env, data = flexible None env in
-          ((env, i + 1), data.var)
-      end
-      (env, 0) generics
+    let mapping =
+      List.mapi
+        begin
+          fun i var ->
+            let data = Env.repr var !env in
+            assert (data.status = Generic);
+
+            Hashtbl.replace table var i;
+
+            let cur_env, var = flexible None !env in
+            env := cur_env;
+
+            var
+        end
+        generics
+    in
+
+    (!env, mapping)
   in
 
   (* Maps every variable to its copy *)
@@ -332,19 +347,21 @@ let instantiate ({ root; generics; quantifiers } : scheme) (env : env) :
       List.nth mapping i
   in
 
-  (* *)
+  (* For every pair of var and var_copy, equip var_copy with structure of var *)
   let env =
     List.fold_left2
       begin
         fun env var var_copy ->
           let structure_copy =
-            Option.get (Env.repr var env).structure
-            |> Structure.map (Fun.flip copy @@ env)
-            |> Option.some
+            Option.map
+              (Structure.map (Fun.flip copy @@ env))
+              (Env.repr var env).structure
           in
+
           let data =
             { (Env.repr var_copy env) with structure = structure_copy }
           in
+
           Env.add_data data env
       end
       env generics mapping

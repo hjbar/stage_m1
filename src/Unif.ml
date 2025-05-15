@@ -69,9 +69,14 @@ module Env = struct
 
   let get_young env = env.young
 
-  let set_young rank env = { env with young = rank }
+  let incr_young env = { env with young = env.young + 1 }
 
-  let pool_is_empty rank env = IntMap.find rank env.pool = []
+  let decr_young env = { env with young = env.young - 1 }
+
+  let pool_is_empty rank env =
+    match IntMap.find_opt rank env.pool with
+    | None | Some [] -> true
+    | Some _ -> false
 
   let clean_pool rank env = { env with pool = IntMap.remove rank env.pool }
 
@@ -81,13 +86,24 @@ module Env = struct
 
   let mem var env = Constraint.Var.Map.mem var env.map
 
-  let add var structure status ~rank env =
-    let data = Option.map (Structure.map @@ fun v -> uvar v env) structure in
+  let is_representative (var : var) env =
+    UF.is_representative env.store @@ Constraint.Var.Map.find var env.map
+
+  let add_data data env =
+    let var = data.var in
+    let status = data.status in
+    let rank = data.rank in
+    let data =
+      Option.map (Structure.map @@ fun v -> uvar v env) data.structure
+    in
+
     let uvar = UF.make env.store { var; data; status; rank } in
     { env with map = Constraint.Var.Map.add var uvar env.map }
 
-  let add_data data env =
-    add data.var data.structure data.status ~rank:data.rank env
+  let add var structure env =
+    let status = Flexible in
+    let rank = env.young in
+    add_data { var; structure; status; rank } env
 
   let register var ~rank env =
     let l =

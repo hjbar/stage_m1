@@ -108,7 +108,7 @@ module Make (M : Utils.MonadPlus) = struct
   *)
   let typed ~size : STLC.term M.t =
     let open struct
-      type env = Solver.env
+      type env = Solver.unif_env
     end in
     let rec loop : type a e r. fuel:int -> env -> (a, e) Constraint.t -> a M.t =
      fun ~fuel env cstr ->

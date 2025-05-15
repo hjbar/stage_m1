@@ -53,7 +53,9 @@ module Env : sig
 
   val get_young : t -> rank
 
-  val set_young : rank -> t -> t
+  val incr_young : t -> t
+
+  val decr_young : t -> t
 
   val pool_is_empty : rank -> t -> bool
 
@@ -63,7 +65,9 @@ module Env : sig
 
   val mem : var -> t -> bool
 
-  val add : var -> structure -> status -> rank:int -> t -> t
+  val is_representative : var -> t -> bool
+
+  val add : var -> structure -> t -> t
 
   val add_data : repr -> t -> t
 

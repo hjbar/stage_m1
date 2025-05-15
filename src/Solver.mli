@@ -1,7 +1,7 @@
 module Make (T : Utils.Functor) : sig
   module Constraint := Constraint.Make(T)
 
-  type env = Unif.Env.t
+  type unif_env = Unif.Env.t
 
   type log = PPrint.document list
 
@@ -29,7 +29,7 @@ module Make (T : Utils.Functor) : sig
       the returned [log] will not be used and could be returned empty. *)
   val eval :
        log:bool
-    -> env
+    -> unif_env
     -> ('a, 'e) Constraint.t
-    -> log * env * ('a, 'e) normal_constraint
+    -> log * unif_env * ('a, 'e) normal_constraint
 end

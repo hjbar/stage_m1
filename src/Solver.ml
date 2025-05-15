@@ -10,7 +10,11 @@ module Make (T : Utils.Functor) = struct
   module ConstraintSimplifier = ConstraintSimplifier.Make (T)
   module ConstraintPrinter = ConstraintPrinter.Make (T)
 
-  type env = Unif.Env.t
+  type unif_env = Unif.Env.t
+
+  module SEnv = Map.Make (Constraint.SVar)
+
+  type solver_env = Generalization.scheme SEnv.t
 
   type log = PPrint.document list
 
@@ -44,49 +48,28 @@ module Make (T : Utils.Functor) = struct
 
   let ndo t = NDo t
 
-  let normal_pair nc nd =
-    let open Constraint in
-    let ( let+ ) nf f = T.map f nf in
-
-    match (nc, nd) with
-    | NErr e, _ | _, NErr e -> NErr e
-    | NDo p, NDo q ->
-      ndo
-      @@
-      let+ c = p in
-      Conj (c, Do q)
-    | NDo p, NRet w ->
-      ndo
-      @@
-      let+ c = p in
-      Conj (c, Ret w)
-    | NRet v, NDo q ->
-      ndo
-      @@
-      let+ d = q in
-      Conj (Ret v, d)
-    | NRet v, NRet w -> nret @@ fun sol -> (v sol, w sol)
-
-  let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t) :
-    log * env * (a, e) normal_constraint =
+  let eval (type a e) ~log (unif_env : unif_env) (c0 : (a, e) Constraint.t) :
+    log * unif_env * (a, e) normal_constraint =
     (* We recommend calling the function [add_to_log] above
-       whenever you get an updated environment. Then call
-       [get_log] at the end to get a list of log message.
+         whenever you get an updated environment. Then call
+         [get_log] at the end to get a list of log message.
 
-       $ dune exec -- minihell --log-solver foo.test
+         $ dune exec -- minihell --log-solver foo.test
 
-       will show a log that will let you see the evolution
-       of your input constraint (after simplification) as
-       the solver progresses, which is useful for debugging.
+         will show a log that will let you see the evolution
+         of your input constraint (after simplification) as
+         the solver progresses, which is useful for debugging.
 
-       (You can also tweak this code temporarily to print stuff on
-       stderr right away if you need dirtier ways to debug.)
-    *)
+         (You can also tweak this code temporarily to print stuff on
+         stderr right away if you need dirtier ways to debug.)
+      *)
     let add_to_log, get_log =
       if log then make_logger c0 else (ignore, fun _ -> [])
     in
 
-    let env = ref env in
+    let solver_env : solver_env ref = ref SEnv.empty in
+    let unif_env : unif_env ref = ref unif_env in
+
     let rec eval : type a e. (a, e) Constraint.t -> (a, e) normal_constraint =
       let open Constraint in
       let ( let+ ) nf f = T.map f nf in
@@ -115,18 +98,35 @@ module Make (T : Utils.Functor) = struct
           MapErr (c, f)
       end
       | Conj (c, d) -> begin
-        match eval c with NErr e -> NErr e | nc -> normal_pair nc (eval d)
+        match (eval c, eval d) with
+        | NRet v, NRet w -> nret @@ fun sol -> (v sol, w sol)
+        | NErr e, _ | _, NErr e -> NErr e
+        | NDo p, NDo q ->
+          ndo
+          @@
+          let+ c = p in
+          Conj (c, Do q)
+        | NDo p, NRet w ->
+          ndo
+          @@
+          let+ c = p in
+          Conj (c, Ret w)
+        | NRet v, NDo q ->
+          ndo
+          @@
+          let+ d = q in
+          Conj (Ret v, d)
       end
       | Eq (x1, x2) -> begin
-        match Unif.unify !env x1 x2 with
+        match Unif.unify !unif_env x1 x2 with
         | Ok new_env ->
-          env := new_env;
-          add_to_log !env;
+          unif_env := new_env;
+          add_to_log !unif_env;
 
           nret @@ fun _sol -> ()
         | Error (Cycle cy) -> nerr @@ Cycle cy
         | Error (Clash (y1, y2)) ->
-          let decoder = Decode.decode !env () in
+          let decoder = Decode.decode !unif_env () in
           nerr @@ Clash (decoder y1, decoder y2)
       end
       | Exist (x, s, c) -> begin
@@ -137,9 +137,9 @@ module Make (T : Utils.Functor) = struct
           but reuse the previous binding which accumulated
           information through unifications.
         *)
-        if not @@ Unif.Env.mem x !env then begin
-          env := Unif.Env.add x s Flexible ~rank:Unif.base_rank !env;
-          add_to_log !env
+        if not @@ Unif.Env.mem x !unif_env then begin
+          unif_env := Unif.Env.add x s !unif_env;
+          add_to_log !unif_env
         end;
 
         match eval c with
@@ -156,15 +156,64 @@ module Make (T : Utils.Functor) = struct
       | DecodeScheme sch_var ->
         ignore sch_var;
         failwith "Solver.eval.DecodeScheme TODO"
-      | Instance (sch_var, var) ->
-        ignore (sch_var, var);
-        failwith "Solver.eval.Instance TODO"
-      | Let (sch_var, var, c1, c2) ->
-        ignore (sch_var, var, c1, c2);
-        failwith "Solver.eval.Let TODO"
+      | Instance (sch_var, w) -> begin
+        let sch = SEnv.find sch_var !solver_env in
+        let witnesses, var = Generalization.instantiate sch !unif_env in
+
+        match Unif.unify !unif_env w var with
+        | Ok new_env ->
+          unif_env := new_env;
+          add_to_log !unif_env;
+
+          nret @@ fun sol -> List.map sol witnesses
+        | Error (Cycle cy) -> nerr @@ Cycle cy
+        | Error (Clash (y1, y2)) ->
+          let decoder = Decode.decode !unif_env () in
+          nerr @@ Clash (decoder y1, decoder y2)
+      end
+      | Let (sch_var, var, c1, c2) -> begin
+        unif_env := Generalization.enter !unif_env;
+
+        let new_unif_env, uvar = Generalization.flexible None !unif_env in
+        unif_env := new_unif_env;
+        add_to_log !unif_env;
+
+        if not @@ Unif.Env.mem var !unif_env then begin
+          unif_env := Unif.Env.add var None !unif_env;
+          add_to_log !unif_env
+        end;
+
+        match eval c1 with
+        | NRet r1 -> begin
+          let new_unif_env, gammas, schemes =
+            Generalization.exit [ uvar ] !unif_env
+          in
+          unif_env := new_unif_env;
+
+          assert (List.length gammas = 1);
+          assert (List.length schemes = 1);
+
+          solver_env := SEnv.add sch_var (List.hd schemes) !solver_env;
+
+          match eval c2 with
+          | NRet r2 -> nret @@ fun on_sol -> (r1 on_sol, r2 on_sol)
+          | NErr e -> NErr e
+          | NDo p ->
+            ndo
+            @@
+            let+ c2 = p in
+            Let (sch_var, var, Ret r1, c2)
+        end
+        | NErr e -> NErr e
+        | NDo p ->
+          ndo
+          @@
+          let+ c1 = p in
+          Let (sch_var, var, c1, c2)
+      end
     in
 
-    add_to_log !env;
+    add_to_log !unif_env;
     let result = eval c0 in
-    (get_log (), !env, result)
+    (get_log (), !unif_env, result)
 end
