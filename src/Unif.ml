@@ -162,7 +162,14 @@ let rec unify orig_env v1 v2 : (Env.t, err) result =
   let env = { orig_env with Env.store = UF.copy orig_env.Env.store } in
 
   let queue = Queue.create () in
-  Queue.add (Env.uvar v1 env, Env.uvar v2 env) queue;
+  let find v =
+    try Env.uvar v env
+    with Not_found ->
+      Printf.ksprintf invalid_arg
+        "Constraint variable '%s' is unbound at this point"
+        (Constraint.Var.name v)
+  in
+  Queue.add (find v1, find v2) queue;
 
   match unify_uvars env.Env.store queue with
   | exception Clash clash -> Error (Clash clash)
