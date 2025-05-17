@@ -123,6 +123,7 @@ module Make (T : Utils.Functor) = struct
   let rec has_type (env : env) (t : Untyped.term) (w : variable) :
     (STLC.term, err) t =
     match t with
+    | Untyped.Loc (loc, t) -> Constraint.Loc (loc, has_type env t w)
     | Untyped.Var x -> begin
       (* OLD : [[x : w]] := (E(x) = w)
                    TODO : new doc *)

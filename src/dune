@@ -6,5 +6,5 @@
  (name constrained_generation)
  (public_name constrained_generation)
  (synopsis "A random program generator based on constraint solving")
- (libraries unionFind pprint)
+ (libraries unionFind pprint menhirLib)
  (wrapped false))

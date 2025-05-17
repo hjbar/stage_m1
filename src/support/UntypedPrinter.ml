@@ -37,6 +37,7 @@ module Make (T : Utils.Functor) = struct
       | (App _ | Abs _ | Let _ | LetTuple _) as other ->
         PPrint.parens (print_top other)
       | Do _p -> Printer.do_
+      | Loc (_loc, t) -> print_top t
     in
 
     print_top

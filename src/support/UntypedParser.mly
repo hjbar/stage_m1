@@ -34,7 +34,7 @@ let term_eof :=
 (***************** TERMS ***************)
 
 let term :=
-  | ~ = term_abs ; <>
+  | t = term_abs ; { Loc ($sloc, t) }
 
 let term_abs :=
   | "lambda" ; xs = list (tevar) ; "." ; t = term_abs ;
