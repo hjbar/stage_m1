@@ -154,8 +154,10 @@ module Make (T : Utils.Functor) = struct
       | Decode v -> nret @@ fun sol -> sol v
       | Do p -> NDo p
       | DecodeScheme sch_var ->
-        ignore sch_var;
-        failwith "Solver.eval.DecodeScheme TODO"
+        let scheme = SEnv.find sch_var !solver_env in
+        let body = Generalization.body scheme in
+        let quantifiers = Generalization.quantifiers scheme in
+        nret @@ fun sol -> (quantifiers, sol body)
       | Instance (sch_var, w) -> begin
         let sch = SEnv.find sch_var !solver_env in
         let witnesses, var = Generalization.instantiate sch !unif_env in
