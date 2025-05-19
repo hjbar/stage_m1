@@ -39,6 +39,7 @@ module Make (T : Utils.Functor) = struct
           (print_next c2)
       | other -> print_next other
     and print_atom = function
+      | Loc (_loc, c) -> print_top c
       | Decode v -> Printer.decode @@ print_var v
       | False -> Printer.false_
       | Eq (v1, v2) -> Printer.eq (print_var v1) (print_var v2)

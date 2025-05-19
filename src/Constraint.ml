@@ -48,6 +48,7 @@ module Make (T : Utils.Functor) = struct
       chapter of the OCaml manual:
       https://v2.ocaml.org/releases/5.1/htmlman/gadts-tutorial.html *)
   type ('ok, 'err) t =
+    | Loc : Utils.loc * ('a, 'e) t -> ('a, 'e) t
     | Ret : 'a on_sol -> ('a, 'e) t
     | Err : 'e -> ('a, 'e) t
     | Map : ('a, 'e) t * ('a -> 'b) -> ('b, 'e) t

@@ -75,11 +75,20 @@ module Make (T : Utils.Functor) = struct
     let unif_env : unif_env ref = ref unif_env in
     let assoc_env : assoc_env ref = ref Assoc.empty in
 
+    let exception Located of Utils.loc * exn * Printexc.raw_backtrace in
+    let locate_exn loc exn =
+      match exn with
+      | Located (_, _, _) as exn -> raise exn
+      | base_exn ->
+        let bt = Printexc.get_raw_backtrace () in
+        raise (Located (loc, base_exn, bt))
+    in
+
     let rec eval : type a e. (a, e) Constraint.t -> (a, e) normal_constraint =
       let open Constraint in
       let ( let+ ) nf f = T.map f nf in
-
       function
+      | Loc (loc, c) -> begin try eval c with exn -> locate_exn loc exn end
       | Ret v -> NRet v
       | Err e -> NErr e
       | Map (c, f) -> begin
@@ -231,6 +240,10 @@ module Make (T : Utils.Functor) = struct
     in
 
     add_to_log !unif_env;
-    let result = eval c0 in
-    (get_log (), !unif_env, result)
+    match eval c0 with
+    | exception Located (loc, exn, bt) ->
+      Printf.eprintf "Error at %s" (MenhirLib.LexerUtil.range loc);
+      Printexc.raise_with_backtrace exn bt
+    | exception exn -> raise exn
+    | result -> (get_log (), !unif_env, result)
 end

@@ -110,7 +110,7 @@ module Make (M : Utils.MonadPlus) = struct
     let open struct
       type env = Solver.unif_env
     end in
-    let rec loop : type a e r. fuel:int -> env -> (a, e) Constraint.t -> a M.t =
+    let rec loop : type a e. fuel:int -> env -> (a, e) Constraint.t -> a M.t =
      fun ~fuel env cstr ->
       if fuel = -1 then M.fail
       else
