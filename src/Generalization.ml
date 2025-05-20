@@ -35,7 +35,7 @@ let adjust_rank (data : data) (k : rank) : data =
 let register (var : variable) ~(rank : int) (env : env) : env =
   Env.register var ~rank env
 
-(* *)
+(* Create a new flexible variable in this environment *)
 
 let flexible (structure : structure) (env : env) : env * variable =
   let var = Var.fresh "v" in
@@ -173,7 +173,7 @@ let update_ranks (generation : generation) (env : env) : env =
       List.fold_left
         (fun env var -> fst @@ traverse var env)
         !final_env
-        (IntMap.find k generation.by_rank)
+        (Option.value ~default:[] @@ IntMap.find_opt k generation.by_rank)
   done;
 
   (* Return the updated env *)
@@ -308,8 +308,8 @@ let exit (roots : roots) (env : env) : env * quantifiers * schemes =
 
 (* Instantiation of a scheme *)
 
-let instantiate ({ root; generics; quantifiers } : scheme) (env : env) :
-  quantifiers * root =
+let instantiate ({ root; generics; quantifiers } : scheme) (var : variable)
+  (env : env) : env * quantifiers =
   (* To mark variables *)
   let table = Hashtbl.create 16 in
 
@@ -368,4 +368,8 @@ let instantiate ({ root; generics; quantifiers } : scheme) (env : env) :
   in
 
   (* Result *)
-  (List.map (Fun.flip copy @@ env) quantifiers, copy root env)
+  let copy_root = copy root env in
+
+  match Unif.unify env copy_root var with
+  | Ok new_env -> (new_env, List.map (Fun.flip copy @@ env) quantifiers)
+  | _ -> failwith "Cycle or Clash during Unify in Instantiate"

@@ -16,10 +16,6 @@ module Make (T : Utils.Functor) = struct
 
   type solver_env = Generalization.scheme SEnv.t
 
-  module Assoc = Map.Make (Constraint.Var)
-
-  type assoc_env = Constraint.Var.t Assoc.t
-
   type log = PPrint.document list
 
   let make_logger c0 =
@@ -71,10 +67,6 @@ module Make (T : Utils.Functor) = struct
       if log then make_logger c0 else (ignore, fun _ -> [])
     in
 
-    let solver_env : solver_env ref = ref SEnv.empty in
-    let unif_env : unif_env ref = ref unif_env in
-    let assoc_env : assoc_env ref = ref Assoc.empty in
-
     let exception Located of Utils.loc * exn * Printexc.raw_backtrace in
     let locate_exn loc exn =
       match exn with
@@ -84,9 +76,13 @@ module Make (T : Utils.Functor) = struct
         raise (Located (loc, base_exn, bt))
     in
 
+    let solver_env : solver_env ref = ref SEnv.empty in
+    let unif_env : unif_env ref = ref unif_env in
+
     let rec eval : type a e. (a, e) Constraint.t -> (a, e) normal_constraint =
       let open Constraint in
       let ( let+ ) nf f = T.map f nf in
+
       function
       | Loc (loc, c) -> begin try eval c with exn -> locate_exn loc exn end
       | Ret v -> NRet v
@@ -136,10 +132,7 @@ module Make (T : Utils.Functor) = struct
         end
       end
       | Eq (x1, x2) -> begin
-        match
-          Unif.unify !unif_env (Assoc.find x1 !assoc_env)
-            (Assoc.find x2 !assoc_env)
-        with
+        match Unif.unify !unif_env x1 x2 with
         | Ok new_env ->
           unif_env := new_env;
           add_to_log !unif_env;
@@ -158,12 +151,9 @@ module Make (T : Utils.Functor) = struct
           but reuse the previous binding which accumulated
           information through unifications.
         *)
-        if not @@ Assoc.mem x !assoc_env then begin
-          let new_unif_env, uvar = Generalization.flexible None !unif_env in
-          unif_env := new_unif_env;
-          add_to_log !unif_env;
-
-          assoc_env := Assoc.add x uvar !assoc_env
+        if not @@ Unif.Env.mem x !unif_env then begin
+          unif_env := Unif.Env.add x s !unif_env;
+          add_to_log !unif_env
         end;
 
         match eval c with
@@ -184,38 +174,32 @@ module Make (T : Utils.Functor) = struct
         let quantifiers = Generalization.quantifiers scheme in
 
         nret @@ fun sol -> (quantifiers, sol body)
-      | Instance (sch_var, w) -> begin
+      | Instance (sch_var, w) ->
         let sch = SEnv.find sch_var !solver_env in
-        let witnesses, var = Generalization.instantiate sch !unif_env in
 
-        match Unif.unify !unif_env (Assoc.find w !assoc_env) var with
-        | Ok new_env ->
-          unif_env := new_env;
-          add_to_log !unif_env;
+        let new_unif_env, witnesses =
+          Generalization.instantiate sch w !unif_env
+        in
+        unif_env := new_unif_env;
+        add_to_log !unif_env;
 
-          nret @@ fun sol -> List.map sol witnesses
-        | Error (Cycle cy) -> nerr @@ Cycle cy
-        | Error (Clash (y1, y2)) ->
-          let decoder = Decode.decode !unif_env () in
-          nerr @@ Clash (decoder y1, decoder y2)
-      end
+        nret @@ fun sol -> List.map sol witnesses
       | Let (sch_var, var, c1, c2) -> begin
         unif_env := Generalization.enter !unif_env;
+        add_to_log !unif_env;
 
-        if not @@ Assoc.mem var !assoc_env then begin
-          let new_unif_env, uvar = Generalization.flexible None !unif_env in
-          unif_env := new_unif_env;
-          add_to_log !unif_env;
-
-          assoc_env := Assoc.add var uvar !assoc_env
+        if not @@ Unif.Env.mem var !unif_env then begin
+          unif_env := Unif.Env.add var None !unif_env;
+          add_to_log !unif_env
         end;
 
         match eval c1 with
         | NRet r1 -> begin
           let new_unif_env, _gammas, schemes =
-            Generalization.exit [ Assoc.find var !assoc_env ] !unif_env
+            Generalization.exit [ var ] !unif_env
           in
           unif_env := new_unif_env;
+          add_to_log !unif_env;
 
           assert (List.length schemes = 1);
 

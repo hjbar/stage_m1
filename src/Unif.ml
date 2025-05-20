@@ -80,7 +80,8 @@ module Env = struct
 
   let clean_pool rank env = { env with pool = IntMap.remove rank env.pool }
 
-  let get_pool rank env = IntMap.find rank env.pool
+  let get_pool rank env =
+    match IntMap.find_opt rank env.pool with None -> [] | Some l -> l
 
   let uvar var env : uvar = Constraint.Var.Map.find var env.map
 
@@ -161,7 +162,6 @@ let check_no_cycle env v =
 let rec unify orig_env v1 v2 : (Env.t, err) result =
   let env = { orig_env with Env.store = UF.copy orig_env.Env.store } in
 
-  let queue = Queue.create () in
   let find v =
     try Env.uvar v env
     with Not_found ->
@@ -169,6 +169,8 @@ let rec unify orig_env v1 v2 : (Env.t, err) result =
         "Constraint variable '%s' is unbound at this point"
         (Constraint.Var.name v)
   in
+
+  let queue = Queue.create () in
   Queue.add (find v1, find v2) queue;
 
   match unify_uvars env.Env.store queue with

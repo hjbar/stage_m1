@@ -37,7 +37,7 @@ module Make (T : Utils.Functor) = struct
       VarSet.t * sat_constraint =
       match c with
       | Loc (loc, c) ->
-        let (vs, c) = simpl bvs c in
+        let vs, c = simpl bvs c in
         (vs, Loc (loc, c))
       | False ->
         (* Note: we do not attempt to normalize (⊥ ∧ C) into ⊥, (∃w. ⊥)
