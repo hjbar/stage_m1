@@ -63,33 +63,33 @@ module Make (T : Utils.Functor) = struct
       | Eq (v1, v2) -> begin
         let v1, v2 = (normalize v1, normalize v2) in
 
-        if Constraint.Var.eq v1 v2 then (VarSet.empty, Conj [] (* True *))
-        else
-          match Unif.unifiable env v1 v2 with
-          | false -> (VarSet.empty, False)
-          | true | (exception Not_found) ->
-            (VarSet.of_list [ v1; v2 ], Eq (v1, v2))
+        let res =
+          if Constraint.Var.eq v1 v2 then (VarSet.empty, Conj [] (* True *))
+          else if
+            Unif.Env.mem v1 env && Unif.Env.mem v2 env
+            && Unif.unifiable env v1 v2
+          then (VarSet.empty, False)
+          else (VarSet.of_list [ v1; v2 ], Eq (v1, v2))
+        in
+
+        res
       end
       | Exist (v, s, c) ->
         let v = normalize v in
         let fvs, c = simpl (VarSet.add v bvs) c in
 
         if is_in_env v then (fvs, c)
-        else if not (VarSet.mem v fvs) then (fvs, c)
+        else if not @@ VarSet.mem v fvs then (fvs, c)
         else exist v s (fvs, c)
       | Decode v ->
         let v = normalize v in
         (VarSet.singleton v, Decode v)
       | Do p -> (bvs, Do p)
-      | DecodeScheme sch_var ->
-        (* TODO: normalize sch_var *)
-        (VarSet.empty, DecodeScheme sch_var)
+      | DecodeScheme sch_var -> (VarSet.empty, DecodeScheme sch_var)
       | Instance (sch_var, var) ->
-        (* TODO: normalize sch_var *)
         let var = normalize var in
         (VarSet.singleton var, Instance (sch_var, var))
       | Let (sch_var, var, c1, c2) ->
-        (* TODO: normalize sch_var *)
         let var = normalize var in
 
         let bvs', c1 = simpl bvs c1 in
@@ -104,8 +104,8 @@ module Make (T : Utils.Functor) = struct
     let rec add_exist (fvs, c) =
       match VarSet.choose_opt fvs with
       | None -> c
-      | Some v -> add_exist (exist v None (fvs, c))
+      | Some v -> add_exist @@ exist v None (fvs, c)
     in
 
-    add_exist (simpl VarSet.empty c)
+    add_exist @@ simpl VarSet.empty c
 end

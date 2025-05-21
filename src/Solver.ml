@@ -30,6 +30,7 @@ module Make (T : Utils.Functor) = struct
       in
       Queue.add doc logs
     in
+
     let get_log () = logs |> Queue.to_seq |> List.of_seq in
 
     (add_to_log, get_log)
@@ -73,7 +74,7 @@ module Make (T : Utils.Functor) = struct
       | Located (_, _, _) as exn -> raise exn
       | base_exn ->
         let bt = Printexc.get_raw_backtrace () in
-        raise (Located (loc, base_exn, bt))
+        raise @@ Located (loc, base_exn, bt)
     in
 
     let solver_env : solver_env ref = ref SEnv.empty in

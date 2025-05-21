@@ -167,7 +167,7 @@ let rec unify orig_env v1 v2 : (Env.t, err) result =
     with Not_found ->
       Printf.ksprintf invalid_arg
         "Constraint variable '%s' is unbound at this point"
-        (Constraint.Var.name v)
+      @@ Constraint.Var.name v
   in
 
   let queue = Queue.create () in

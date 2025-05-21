@@ -95,7 +95,8 @@ type err =
 (** [unify env v1 v2] takes the current equation environment [env], and tries to
     update it with the knowledge that [v1], [v2] must be equal. If this equality
     would introduce an error, we fail with the error report, otherwise we return
-    the updated equation environment. *)
+    the updated equation environment. Can raise Invalid_argument if v1 or v2 are
+    not is the original environment. *)
 val unify : Env.t -> var -> var -> (Env.t, err) result
 
 (** [unifiable env v1 v2] tests if unifying [v1] and [v2] in the equation
