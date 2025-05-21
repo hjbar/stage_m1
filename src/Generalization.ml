@@ -20,6 +20,8 @@ type data = Unif.repr
 
 type env = Unif.Env.t
 
+type err = Unif.err
+
 (* Import some values *)
 
 let base_rank = Unif.base_rank
@@ -309,7 +311,7 @@ let exit (roots : roots) (env : env) : env * quantifiers * schemes =
 (* Instantiation of a scheme *)
 
 let instantiate ({ root; generics; quantifiers } : scheme) (var : variable)
-  (env : env) : env * quantifiers =
+  (env : env) : (env * quantifiers, err) result =
   (* To mark variables *)
   let table = Hashtbl.create 16 in
 
@@ -371,5 +373,5 @@ let instantiate ({ root; generics; quantifiers } : scheme) (var : variable)
   let copy_root = copy root env in
 
   match Unif.unify env copy_root var with
-  | Ok new_env -> (new_env, List.map (Fun.flip copy @@ env) quantifiers)
-  | _ -> failwith "Cycle or Clash during Unify in Instantiate"
+  | Ok new_env -> Ok (new_env, List.map (Fun.flip copy @@ env) quantifiers)
+  | Error err -> Error err

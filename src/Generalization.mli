@@ -8,6 +8,8 @@ type data = Unif.repr
 
 type env = Unif.Env.t
 
+type err = Unif.err
+
 (* Type of scheme *)
 
 type scheme
@@ -36,4 +38,4 @@ val enter : env -> env
 
 val exit : roots -> env -> env * quantifiers * schemes
 
-val instantiate : scheme -> variable -> env -> env * quantifiers
+val instantiate : scheme -> variable -> env -> (env * quantifiers, err) result

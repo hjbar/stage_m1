@@ -174,16 +174,20 @@ module Make (T : Utils.Functor) = struct
         let quantifiers = Generalization.quantifiers scheme in
 
         nret @@ fun sol -> (quantifiers, sol body)
-      | Instance (sch_var, w) ->
+      | Instance (sch_var, w) -> begin
         let sch = SEnv.find sch_var !solver_env in
 
-        let new_unif_env, witnesses =
-          Generalization.instantiate sch w !unif_env
-        in
-        unif_env := new_unif_env;
-        add_to_log !unif_env;
+        match Generalization.instantiate sch w !unif_env with
+        | Ok (new_unif_env, witnesses) ->
+          unif_env := new_unif_env;
+          add_to_log !unif_env;
 
-        nret @@ fun sol -> List.map sol witnesses
+          nret @@ fun sol -> List.map sol witnesses
+        | Error (Cycle cy) -> nerr @@ Cycle cy
+        | Error (Clash (y1, y2)) ->
+          let decoder = Decode.decode !unif_env () in
+          nerr @@ Clash (decoder y1, decoder y2)
+      end
       | Let (sch_var, var, c1, c2) -> begin
         unif_env := Generalization.enter !unif_env;
         add_to_log !unif_env;
