@@ -157,8 +157,8 @@ module Make (T : Utils.Functor) = struct
       exist wx None @@ exist wt None
       @@ exist warr (Some (Arrow (wx, wt)))
       @@ let+ () = eq w warr
-         and+ tyx = decode wx
-         and+ t' = has_type env t wt in
+         and+ t' = has_type env t wt
+         and+ tyx = decode wx in
          STLC.Abs (x, tyx, t')
     | Untyped.Let (x, t, u) ->
       (* OLD : [[let x = t in u : w]] := ∃wt. [[t : wt]] ∧ [[u : w]](E,x↦wt)
@@ -174,8 +174,8 @@ module Make (T : Utils.Functor) = struct
     | Untyped.Annot (t, ty) ->
       (* [[(t : ty) : w]] := ∃(wt = ty). [[t : wt]] /\ [[wt = w]] *)
       bind ty @@ fun wt ->
-      let+ t' = has_type env t wt
-      and+ () = eq wt w in
+      let+ () = eq wt w
+      and+ t' = has_type env t wt in
       STLC.Annot (t', ty)
     | Untyped.Tuple ts ->
       (* [[(t₁, t₂ ... tₙ) : w]] :=
@@ -233,8 +233,8 @@ module Make (T : Utils.Functor) = struct
         let rec loop = function
           | [] -> Ret (fun _sol -> [])
           | (x, w) :: ws ->
-            let+ ty = decode w
-            and+ bindings = loop ws in
+            let+ bindings = loop ws
+            and+ ty = decode w in
             (x, ty) :: bindings
         in
 

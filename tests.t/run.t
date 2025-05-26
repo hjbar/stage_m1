@@ -487,3 +487,212 @@ An example of random sampling output at higher size.
         lambda (b : β). let (l : α) = id a in let (r : β) = id b in (l, r)
 
   $ minihell $FLAGS id_poly2.test
+
+## Log-Solver
+
+  $ minihell --show-constraint --show-type --show-typed-term --log-solver log_solver.test
+
+  Generated constraint:
+    ∃?final_type.
+      (∃.
+        let ?scheme_s : ?f =
+        ∃?x ?wt/2 (?warr/1 = ?x -> ?wt/2). ?f = ?warr/1 ∧ ?wt/2 = ?x ∧ decode ?x
+        in
+        (∃?y ?wt (?warr = ?y -> ?wt).
+          ?final_type = ?warr
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?scheme_s ≤ ?wt/1 ∧ ?wu = ?y)
+          ∧ decode ?y))
+      ∧ decode_scheme ?scheme_s
+      ∧ decode ?final_type
+
+  Constraint solving log:
+    ∃?final_type.
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃.
+        let ?scheme_s : ?f =
+        ∃?x ?wt/2 (?warr/1 = ?x -> ?wt/2). decode ?x ∧ ?wt/2 = ?x ∧ ?f = ?warr/1
+        in
+        (∃?y ?wt (?warr = ?y -> ?wt).
+          decode ?y
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?y ∧ ?scheme_s ≤ ?wt/1)
+          ∧ ?final_type = ?warr))
+    ∃?final_type.
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃.
+        let ?scheme_s : ?f =
+        ∃?x ?wt/2 (?warr/1 = ?x -> ?wt/2). decode ?x ∧ ?wt/2 = ?x ∧ ?f = ?warr/1
+        in
+        (∃?y ?wt (?warr = ?y -> ?wt).
+          decode ?y
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?y ∧ ?scheme_s ≤ ?wt/1)
+          ∧ ?final_type = ?warr))
+    ∃?final_type.
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃.
+        let ?scheme_s : ?f =
+        ∃?x ?wt/2 (?warr/1 = ?x -> ?wt/2). decode ?x ∧ ?wt/2 = ?x ∧ ?f = ?warr/1
+        in
+        (∃?y ?wt (?warr = ?y -> ?wt).
+          decode ?y
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?y ∧ ?scheme_s ≤ ?wt/1)
+          ∧ ?final_type = ?warr))
+    ∃?final_type.
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃.
+        let ?scheme_s : ?f =
+        ∃?x ?wt/2 (?warr/1 = ?x -> ?wt/2). decode ?x ∧ ?wt/2 = ?x ∧ ?f = ?warr/1
+        in
+        (∃?y ?wt (?warr = ?y -> ?wt).
+          decode ?y
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?y ∧ ?scheme_s ≤ ?wt/1)
+          ∧ ?final_type = ?warr))
+    ∃?final_type.
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃?x.
+        let ?scheme_s : ?f =
+        ∃?wt/2 (?warr/1 = ?x -> ?wt/2). decode ?x ∧ ?wt/2 = ?x ∧ ?f = ?warr/1
+        in
+        (∃?y ?wt (?warr = ?y -> ?wt).
+          decode ?y
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?y ∧ ?scheme_s ≤ ?wt/1)
+          ∧ ?final_type = ?warr))
+    ∃?final_type.
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃?wt/2 ?x.
+        let ?scheme_s : ?f =
+        ∃(?warr/1 = ?x -> ?wt/2). decode ?x ∧ ⊥ ∧ ?f = ?warr/1
+        in
+        (∃?y ?wt (?warr = ?y -> ?wt).
+          decode ?y
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?y ∧ ?scheme_s ≤ ?wt/1)
+          ∧ ?final_type = ?warr))
+    ∃?final_type.
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃?x.
+        let ?scheme_s : ?f =
+        ∃. decode ?x ∧ ⊥ ∧ ⊥
+        in
+        (∃?y ?wt (?warr = ?y -> ?wt).
+          decode ?y
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?y ∧ ?scheme_s ≤ ?wt/1)
+          ∧ ?final_type = ?warr))
+    ∃?final_type.
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃?x.
+        let ?scheme_s : ?f =
+        ∃. decode ?x ∧ ⊥
+        in
+        (∃?y ?wt (?warr = ?y -> ?wt).
+          decode ?y
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?y ∧ ?scheme_s ≤ ?wt/1)
+          ∧ ?final_type = ?warr))
+    ∃?final_type.
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃?wt/2.
+        let ?scheme_s : ?f =
+        ∃. decode ?wt/2
+        in
+        (∃?y ?wt (?warr = ?y -> ?wt).
+          decode ?y
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?y ∧ ?scheme_s ≤ ?wt/1)
+          ∧ ?final_type = ?warr))
+    ∃?final_type.
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃?wt/2.
+        let ?scheme_s : ?f =
+        ∃. decode ?wt/2
+        in
+        (∃?y ?wt (?warr = ?y -> ?wt).
+          decode ?y
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?y ∧ ?scheme_s ≤ ?wt/1)
+          ∧ ?final_type = ?warr))
+    ∃?y ?final_type.
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃?wt/2.
+        let ?scheme_s : ?f =
+        ∃. decode ?wt/2
+        in
+        (∃?wt (?warr = ?y -> ?wt).
+          decode ?y
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?y ∧ ?scheme_s ≤ ?wt/1)
+          ∧ ?final_type = ?warr))
+    ∃?y ?wt ?final_type.
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃?wt/2.
+        let ?scheme_s : ?f =
+        ∃. decode ?wt/2
+        in
+        (∃(?warr = ?y -> ?wt).
+          decode ?y
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?y ∧ ?scheme_s ≤ ?wt/1)
+          ∧ ?final_type = ?warr))
+    ∃?y ?wt ?final_type.
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃?wt/2.
+        let ?scheme_s : ?f =
+        ∃. decode ?wt/2
+        in
+        (∃.
+          decode ?y
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?y ∧ ?scheme_s ≤ ?wt/1)
+          ∧ ⊥))
+    ∃?y ?wt (?final_type = ?y -> ?wt).
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃?wt/2.
+        let ?scheme_s : ?f =
+        ∃. decode ?wt/2
+        in
+        (∃.
+          decode ?y ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?y ∧ ?scheme_s ≤ ?wt/1)))
+    ∃?y ?wu ?wt (?final_type = ?y -> ?wt).
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃?wt/2.
+        let ?scheme_s : ?f =
+        ∃. decode ?wt/2
+        in
+        (∃. decode ?y ∧ (∃(?wt/1 = ?wu -> ?wt). ⊥ ∧ ?scheme_s ≤ ?wt/1)))
+    ∃?wu ?wt (?wt/1 = ?wu -> ?wt) ?y ?wt (?final_type = ?y -> ?wt).
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃?wt/2.
+        let ?scheme_s : ?f =
+        ∃. decode ?wt/2
+        in
+        (∃. decode ?y ∧ ⊥ ∧ ?scheme_s ≤ ?wt/1))
+    ∃?y (?final_type = ?y -> ?wt/2).
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃?wt/2 (?f = ?wt/2 -> ?wt/2).
+        let ?scheme_s : ?f =
+        ∃. decode ?wt/2
+        in
+        (∃. decode ?y ∧ ⊥ ∧ ?scheme_s ≤ ?f))
+    ∃(?final_type = ?wt/2 -> ?wt/2).
+      decode ?final_type
+      ∧ decode_scheme ?scheme_s
+      ∧ (∃?wt/2 (?f = ?wt/2 -> ?wt/2).
+        let ?scheme_s : ?f =
+        ∃. decode ?wt/2
+        in
+        (∃. decode ?wt/2 ∧ ?scheme_s ≤ ?f))
+
+  Inferred type:
+    α -> α
+
+  Elaborated term:
+    let (f : α -> α) = lambda (x : α). x in lambda (y : α). f y

@@ -120,6 +120,7 @@ let parse_args () =
   let log_solver = ref false in
   let show_type = ref true in
   let show_typed_term = ref true in
+
   let inputs = Queue.create () in
   let add_input path = Queue.add path inputs in
 

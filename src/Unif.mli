@@ -77,6 +77,12 @@ module Env : sig
 
       @raise [Not_found] if [x] is not bound in [env]. *)
   val repr : var -> t -> repr
+
+  (* DEBUG *)
+
+  val debug_repr_assoc : t -> PPrint.document
+
+  val debug_rank : t -> PPrint.document
 end
 
 (** Unification errors:

@@ -126,7 +126,7 @@ let update_ranks (generation : generation) (env : env) : env =
       assert (data.status <> Generic);
 
       (* If we already this variable, stop *)
-      if Hashtbl.find_opt cache var <> None then begin
+      if Hashtbl.mem cache var then begin
         assert (data.rank <= k);
         (env, data.rank)
       end

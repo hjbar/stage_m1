@@ -8,6 +8,11 @@ module Make (T : Utils.Functor) = struct
   let simplify (env : env) (c : sat_constraint) : sat_constraint =
     let is_in_env v = Unif.Env.mem v env in
 
+    let is_rank_k v k =
+      Debug.debug_what_rank v env;
+      Unif.Env.mem v env && (Unif.Env.repr v env).rank = k
+    in
+
     let normalize v =
       match Unif.Env.repr v env with
       | { var; _ } -> var
@@ -16,6 +21,7 @@ module Make (T : Utils.Functor) = struct
 
     let module VarSet = Constraint.Var.Set in
     let exist v s (fvs, c) : VarSet.t * sat_constraint =
+      Debug.debug_what_repr_assoc v env;
       assert (Var.eq v (normalize v));
 
       let s =
@@ -33,11 +39,11 @@ module Make (T : Utils.Functor) = struct
       (VarSet.remove v fvs, Exist (v, s, c))
     in
 
-    let rec simpl (bvs : VarSet.t) (c : sat_constraint) :
+    let rec simpl ~rank (bvs : VarSet.t) (c : sat_constraint) :
       VarSet.t * sat_constraint =
       match c with
       | Loc (loc, c) ->
-        let vs, c = simpl bvs c in
+        let vs, c = simpl ~rank bvs c in
         (vs, Loc (loc, c))
       | False ->
         (* Note: we do not attempt to normalize (⊥ ∧ C) into ⊥, (∃w. ⊥)
@@ -52,7 +58,7 @@ module Make (T : Utils.Functor) = struct
           List.fold_left
             begin
               fun (fvs, cs) c ->
-                let fvs', c = simpl bvs c in
+                let fvs', c = simpl ~rank bvs c in
                 let cs' = match c with Conj cs' -> cs' | _ -> [ c ] in
 
                 (VarSet.union fvs' fvs, cs' @ cs)
@@ -76,7 +82,7 @@ module Make (T : Utils.Functor) = struct
       end
       | Exist (v, s, c) ->
         let v = normalize v in
-        let fvs, c = simpl (VarSet.add v bvs) c in
+        let fvs, c = simpl ~rank (VarSet.add v bvs) c in
 
         if is_in_env v then (fvs, c)
         else if not @@ VarSet.mem v fvs then (fvs, c)
@@ -92,20 +98,22 @@ module Make (T : Utils.Functor) = struct
       | Let (sch_var, var, c1, c2) ->
         let var = normalize var in
 
-        let bvs', c1 = simpl bvs c1 in
-        let bvs_inner = bvs |> VarSet.add var |> VarSet.union bvs' in
+        let rank_inner = rank + 1 in
+        let bvs_inner = VarSet.add var bvs in
+        let fvs1, c1 = simpl ~rank:rank_inner bvs_inner c1 in
 
-        let bvs_inner', c2 = simpl bvs_inner c2 in
-        let bvs_inner_union = VarSet.union bvs_inner bvs_inner' in
+        let fvs2, c2 = simpl ~rank bvs c2 in
 
-        (bvs_inner_union, Let (sch_var, var, c1, c2))
-    in
+        let fvs = fvs1 |> VarSet.remove var |> VarSet.union fvs2 in
 
-    let rec add_exist (fvs, c) =
+        (fvs, add_exist ~rank:rank_inner (fvs, Let (sch_var, var, c1, c2)))
+    and add_exist ~rank (fvs, c) =
       match VarSet.choose_opt fvs with
       | None -> c
-      | Some v -> add_exist @@ exist v None (fvs, c)
+      | Some v when is_rank_k v rank -> add_exist ~rank @@ exist v None (fvs, c)
+      | Some v -> add_exist ~rank (VarSet.remove v fvs, c)
     in
 
-    add_exist @@ simpl VarSet.empty c
+    let rank = Unif.base_rank - 1 in
+    add_exist ~rank @@ simpl ~rank VarSet.empty c
 end

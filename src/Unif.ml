@@ -81,7 +81,7 @@ module Env = struct
   let clean_pool rank env = { env with pool = IntMap.remove rank env.pool }
 
   let get_pool rank env =
-    match IntMap.find_opt rank env.pool with None -> [] | Some l -> l
+    Option.value ~default:[] @@ IntMap.find_opt rank env.pool
 
   let uvar var env : uvar = Constraint.Var.Map.find var env.map
 
@@ -119,6 +119,31 @@ module Env = struct
     let var_of_uvar uv = (UF.get env.store uv).var in
     let structure = Option.map (Structure.map var_of_uvar) data in
     { var; structure; status; rank }
+
+  let debug_repr_assoc env =
+    let open PPrint in
+    Constraint.Var.Map.fold
+      begin
+        fun var _ acc ->
+          let var_doc = Constraint.Var.print var in
+          let repr_doc = Constraint.Var.print (repr var env).var in
+
+          acc ^^ var_doc ^^ string " |--> " ^^ repr_doc ^^ break 1
+      end
+      env.map empty
+
+  let debug_rank env =
+    let open PPrint in
+    Constraint.Var.Map.fold
+      begin
+        fun var uvar acc ->
+          let var_doc = Constraint.Var.print var in
+          let rank = (UF.get env.store uvar).rank in
+          let str = Format.sprintf ".rank = %d" rank in
+
+          acc ^^ var_doc ^^ string str ^^ break 1
+      end
+      env.map empty
 end
 
 (* Errors check *)
