@@ -7,6 +7,4 @@ let () =
     let b = Var.fresh "b" in
     Exist (a, None, Exist (b, None, Conj (Eq (a, b), Do MSeq.fail)))
   in
-  let logs, _env, _result = Solver.eval ~log:true Unif.Env.empty c in
-  PPrint.(separate hardline logs)
-  |> Utils.string_of_doc |> print_endline |> print_newline
+  ignore (Solver.eval ~log:true Unif.Env.empty c)

@@ -57,7 +57,7 @@ let get_type (t : STLC.term) : STLC.ty =
             , Infer.decode w ) ) )
   in
 
-  let _, env, nf = Solver.eval ~log:false Unif.Env.empty cst in
+  let env, nf = Solver.eval ~log:false Unif.Env.empty cst in
   match nf with
   | NRet v -> snd @@ v @@ Decode.decode env ()
   | NErr _ | NDo _ -> assert false
