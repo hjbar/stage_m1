@@ -31,13 +31,18 @@ module Make (T : Utils.Functor) = struct
       in
 
       let fvs =
-        let fvs = ref fvs in
-        Option.iter
-          ( Structure.iter @@ fun v ->
-            let v = normalize v in
-            fvs := VarSet.add v !fvs )
-          s;
-        !fvs
+        Option.fold ~none:fvs
+          ~some:
+            begin
+              Structure.fold
+                begin
+                  fun fvs v ->
+                    let v = normalize v in
+                    VarSet.add v fvs
+                end
+                fvs
+            end
+          s
       in
 
       (VarSet.remove v fvs, Exist (v, s, c))
