@@ -8,6 +8,8 @@ type raw_ty = string ty_
 
 type ty = TyVar.t ty_
 
+type scheme = TyVar.t list * ty
+
 let rec freshen_ty (Constr s) = Constr (Structure.freshen freshen_ty s)
 
 module TeVar = Utils.Variables ()

@@ -58,9 +58,7 @@ module Make (T : Utils.Functor) = struct
     | Exist : variable * structure option * ('a, 'e) t -> ('a, 'e) t
     | Decode : variable -> (STLC.ty, variable Utils.cycle) t
     | Do : ('a, 'e) t T.t -> ('a, 'e) t
-    | DecodeScheme :
-        scheme_variable
-        -> (variable list * STLC.ty, variable Utils.cycle) t
+    | DecodeScheme : scheme_variable -> (STLC.scheme, variable Utils.cycle) t
     | Instance : scheme_variable * variable -> (STLC.ty list, eq_error) t
     | Let :
         scheme_variable * variable * ('a, 'e) t * ('b, 'e) t

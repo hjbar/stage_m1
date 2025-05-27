@@ -172,7 +172,10 @@ module Make (T : Utils.Functor) = struct
         let scheme = SEnv.find sch_var !solver_env in
 
         let body = Generalization.body scheme in
-        let quantifiers = Generalization.quantifiers scheme in
+        let quantifiers =
+          scheme |> Generalization.quantifiers
+          |> List.map (fun var -> STLC.TyVar.fresh @@ Constraint.Var.name var)
+        in
 
         nret @@ fun sol -> (quantifiers, sol body)
       | Instance (sch_var, w) -> begin
