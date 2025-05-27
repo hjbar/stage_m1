@@ -191,7 +191,6 @@ module Make (T : Utils.Functor) = struct
       end
       | Let (sch_var, var, c1, c2) -> begin
         unif_env := Generalization.enter !unif_env;
-        add_to_log !unif_env;
 
         if not @@ Unif.Env.mem var !unif_env then begin
           unif_env := Unif.Env.add var None !unif_env;
@@ -231,7 +230,7 @@ module Make (T : Utils.Functor) = struct
     add_to_log !unif_env;
     match eval c0 with
     | exception Located (loc, exn, bt) ->
-      Printf.eprintf "Error at %s" (MenhirLib.LexerUtil.range loc);
+      Printf.eprintf "Error at %s" @@ MenhirLib.LexerUtil.range loc;
       Printexc.raise_with_backtrace exn bt
     | exception exn -> raise exn
     | result -> (get_log (), !unif_env, result)

@@ -32,7 +32,11 @@ module Make (T : Utils.Functor) = struct
 
       let fvs =
         let fvs = ref fvs in
-        Option.iter (Structure.iter @@ fun v -> fvs := VarSet.add v !fvs) s;
+        Option.iter
+          ( Structure.iter @@ fun v ->
+            let v = normalize v in
+            fvs := VarSet.add v !fvs )
+          s;
         !fvs
       in
 
@@ -61,7 +65,7 @@ module Make (T : Utils.Functor) = struct
                 let fvs', c = simpl ~rank bvs c in
                 let cs' = match c with Conj cs' -> cs' | _ -> [ c ] in
 
-                (VarSet.union fvs' fvs, cs' @ cs)
+                (VarSet.union fvs fvs', cs @ cs')
             end
             (VarSet.empty, []) cs
         in
