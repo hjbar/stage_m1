@@ -114,7 +114,7 @@ module Make (M : Utils.MonadPlus) = struct
      fun ~fuel env cstr ->
       if fuel = -1 then M.fail
       else
-        let _logs, env, nf = Solver.eval ~log:false env cstr in
+        let env, nf = Solver.eval ~log:false env cstr in
 
         match nf with
         | NRet v when fuel = 0 -> M.return @@ v (Decode.decode env ())
