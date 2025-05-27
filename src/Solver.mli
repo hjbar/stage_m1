@@ -23,10 +23,9 @@ module Make (T : Utils.Functor) : sig
           operation [E[_] : ('a1, 'e1) Constraint.t -> ('a2, 'e2) Constraint.t]
       *)
 
-  (** If [~log:true] is passed in input, print to stderr a list of
-      intermediate steps (obtained from the solver environment and the
-      original constraint by constraint simplification) as the
-      constraint-solving progresses. *)
+  (** If [~log:true] is passed in input, print to stderr a list of intermediate
+      steps (obtained from the solver environment and the original constraint by
+      constraint simplification) as the constraint-solving progresses. *)
   val eval :
        log:bool
     -> unif_env

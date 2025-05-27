@@ -76,8 +76,7 @@ let call_typer ~config (term : Untyped.term) =
       (ConstraintPrinter.print_constraint cst);
 
   let env, nf =
-    if config.log_solver then
-      prerr_endline "Constraint solving log:";
+    if config.log_solver then prerr_endline "Constraint solving log:";
     let p = Solver.eval ~log:config.log_solver Unif.Env.empty cst in
     if config.log_solver then prerr_newline ();
     p

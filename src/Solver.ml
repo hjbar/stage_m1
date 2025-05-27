@@ -23,8 +23,8 @@ module Make (T : Utils.Functor) = struct
     fun env ->
       c0_erased
       |> ConstraintSimplifier.simplify env
-      |> ConstraintPrinter.print_sat_constraint
-      |> Utils.string_of_doc |> prerr_endline
+      |> ConstraintPrinter.print_sat_constraint |> Utils.string_of_doc
+      |> prerr_endline
 
   (** See [../README.md] ("High-level description") or [Solver.mli] for a
       description of normal constraints and our expectations regarding the
@@ -54,9 +54,7 @@ module Make (T : Utils.Functor) = struct
          (You can also tweak this code temporarily to print stuff on
          stderr right away if you need dirtier ways to debug.)
     *)
-    let add_to_log =
-      if log then make_logger c0 else ignore
-    in
+    let add_to_log = if log then make_logger c0 else ignore in
 
     let exception Located of Utils.loc * exn * Printexc.raw_backtrace in
     let locate_exn loc exn =
