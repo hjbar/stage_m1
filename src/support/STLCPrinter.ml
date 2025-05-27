@@ -1,5 +1,11 @@
 open STLC
 
+let print_quantifier (quantifiers : TyVar.t list) : PPrint.document =
+  let open PPrint in
+  List.fold_left
+    (fun acc var -> acc ^^ string "∀" ^^ STLC.TyVar.print var ^^ string ". ")
+    empty quantifiers
+
 let print_ty : ty -> PPrint.document =
   let rec print t =
     let print_self = print
@@ -15,6 +21,10 @@ let print_ty : ty -> PPrint.document =
   in
 
   print
+
+let print_scheme ((quantifiers, ty) : scheme) : PPrint.document =
+  let open PPrint in
+  print_quantifier quantifiers ^^ print_ty ty
 
 let print_term : term -> PPrint.document =
   let print_binding x tau = Printer.annot (TeVar.print x) (print_ty tau) in

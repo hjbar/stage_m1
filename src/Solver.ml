@@ -159,13 +159,19 @@ module Make (T : Utils.Functor) = struct
       | DecodeScheme sch_var ->
         let scheme = SEnv.find sch_var !solver_env in
 
-        let body = Generalization.body scheme in
-        let quantifiers =
+        let body sol = sol @@ Generalization.body scheme in
+        let quantifiers (sol : variable -> STLC.ty) =
           scheme |> Generalization.quantifiers
-          |> List.map (fun var -> STLC.TyVar.fresh @@ Constraint.Var.name var)
+          |> List.map
+               begin
+                 fun var ->
+                   failwith "haha" |> ignore;
+                   let (Constr ty) = sol var in
+                   match ty with Var v -> v | Arrow _ | Prod _ -> assert false
+               end
         in
 
-        nret @@ fun sol -> (quantifiers, sol body)
+        nret @@ fun sol -> (quantifiers sol, body sol)
       | Instance (sch_var, w) -> begin
         let sch = SEnv.find sch_var !solver_env in
 

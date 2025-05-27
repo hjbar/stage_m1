@@ -12,6 +12,8 @@ module Make (T : Utils.Functor) : sig
 
   val decode : Constraint.variable -> STLC.ty constraint_
 
+  val decode_scheme : Constraint.scheme_variable -> STLC.scheme constraint_
+
   type env =
     Constraint.variable Untyped.Var.Map.t
     * Constraint.scheme_variable Untyped.Var.Map.t

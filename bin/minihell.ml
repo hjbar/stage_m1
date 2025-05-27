@@ -59,16 +59,15 @@ let call_parser ~config parser_fun input_path =
 
 let call_typer ~config (term : Untyped.term) =
   let cst =
-    let w = Constraint.Var.fresh "final_type" in
-    Constraint.(
-      Exist
-        ( w
-        , None
-        , Conj
-            ( Infer.has_type
-                (Untyped.Var.Map.empty, Untyped.Var.Map.empty)
-                term w
-            , Infer.decode w ) ) )
+    let open Constraint in
+    let s = SVar.fresh "final_scheme" in
+    let w = Var.fresh "final_term" in
+
+    Let
+      ( s
+      , w
+      , Infer.has_type (Untyped.Var.Map.empty, Untyped.Var.Map.empty) term w
+      , Infer.decode_scheme s )
   in
 
   if config.show_constraint then
@@ -92,9 +91,9 @@ let call_typer ~config (term : Untyped.term) =
 
 let print_result ~config result =
   match result with
-  | Ok (term, ty) ->
+  | Ok (term, scheme) ->
     if config.show_type then
-      print_section "Inferred type" (STLCPrinter.print_ty ty);
+      print_section "Inferred type" (STLCPrinter.print_scheme scheme);
 
     if config.show_typed_term then
       print_section "Elaborated term" (STLCPrinter.print_term term)
