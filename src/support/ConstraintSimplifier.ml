@@ -88,11 +88,11 @@ module Make (T : Utils.Functor) = struct
         (fvs, Loc (loc, c))
       | False ->
         (* Note: we do not attempt to normalize (⊥ ∧ C) into ⊥, (∃w. ⊥)
-         into ⊥, etc. If a contradiction appears in the constraint, we
-         think that it is clearer to see it deep in the constraint
-         term, in the context where the solver found it, rather than
-         bring it all the way to the top and erasing the rest of the
-         constraint in the process.  *)
+           into ⊥, etc. If a contradiction appears in the constraint, we
+           think that it is clearer to see it deep in the constraint
+           term, in the context where the solver found it, rather than
+           bring it all the way to the top and erasing the rest of the
+           constraint in the process.  *)
         (VarSet.empty, False)
       | Conj cs ->
         let fvs, cs =
