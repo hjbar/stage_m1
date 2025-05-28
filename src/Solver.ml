@@ -141,7 +141,7 @@ module Make (T : Utils.Functor) = struct
           information through unifications.
         *)
         if not @@ Unif.Env.mem x !unif_env then begin
-          unif_env := Unif.Env.add x s !unif_env;
+          unif_env := Unif.Env.add_flexible x s !unif_env;
           add_to_log !unif_env
         end;
 
@@ -160,12 +160,15 @@ module Make (T : Utils.Functor) = struct
         let scheme = SEnv.find sch_var !solver_env in
 
         let body sol = sol @@ Generalization.body scheme in
-        let quantifiers (sol : variable -> STLC.ty) =
+        let quantifiers (sol : variable -> STLC.ty) : Structure.TyVar.t list =
           scheme |> Generalization.quantifiers
           |> List.map
                begin
                  fun var ->
-                   failwith "haha" |> ignore;
+                   failwith
+                     "Finally, reach List.map inside function quantifiers sol \
+                      in Solver"
+                   |> ignore;
                    let (Constr ty) = sol var in
                    match ty with Var v -> v | Arrow _ | Prod _ -> assert false
                end
@@ -190,7 +193,7 @@ module Make (T : Utils.Functor) = struct
         unif_env := Generalization.enter !unif_env;
 
         if not @@ Unif.Env.mem var !unif_env then begin
-          unif_env := Unif.Env.add var None !unif_env;
+          unif_env := Unif.Env.add_flexible var None !unif_env;
           add_to_log !unif_env
         end;
 

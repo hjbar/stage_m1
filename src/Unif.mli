@@ -65,24 +65,26 @@ module Env : sig
 
   val mem : var -> t -> bool
 
-  val is_representative : var -> t -> bool
-
-  val add : var -> structure -> t -> t
-
-  val add_data : repr -> t -> t
+  val add_repr : repr -> t -> t
 
   val register : var -> rank:int -> t -> t
+
+  val add_flexible : var -> structure -> t -> t
 
   (** [repr x env] gets the representant of [x] in [env].
 
       @raise [Not_found] if [x] is not bound in [env]. *)
   val repr : var -> t -> repr
 
+  val is_representative : var -> t -> bool
+
   (* DEBUG *)
 
   val debug_repr_assoc : t -> PPrint.document
 
   val debug_rank : t -> PPrint.document
+
+  val debug_pool_assoc : t -> PPrint.document
 end
 
 (** Unification errors:

@@ -28,24 +28,20 @@ let base_rank = Unif.base_rank
 
 (* Adjust the rank when is Flexible, i.e. not generalized yet *)
 
-let adjust_rank (data : data) (k : rank) : data =
+let adjust_rank (data : data) (k : rank) (env : env) : env * data =
   assert (data.status <> Generic);
-  { data with rank = min data.rank k }
 
-(* Insert v at rank r *)
+  let data = { data with rank = min data.rank k } in
+  let env = Env.add_repr data env in
 
-let register (var : variable) ~(rank : int) (env : env) : env =
-  Env.register var ~rank env
+  (env, data)
 
 (* Create a new flexible variable in this environment *)
 
-let flexible (structure : structure) (env : env) : env * variable =
-  let var = Var.fresh "v" in
-  let rank = Env.get_young env in
-
-  let env = Env.add var structure env in
-  let env = register var ~rank env in
-
+let fresh_flexible ?(name = "v") (structure : structure) (env : env) :
+  env * variable =
+  let var = Var.fresh name in
+  let env = Env.add_flexible var structure env in
   (env, var)
 
 (* Call this function before enter in a new level *)
@@ -54,7 +50,10 @@ let enter (env : env) : env =
   let env = Env.incr_young env in
   let young = Env.get_young env in
 
+  Debug.debug_what_pool_assoc young env;
+  Debug.print_message "The pool must be empty";
   assert (Env.pool_is_empty young env);
+
   env
 
 (* The set of all young variables *)
@@ -78,6 +77,7 @@ let discover_young_generation (env : env) : generation =
   let state_young = Env.get_young env in
 
   (* The most recent pool holds a list of all variables in the young generation *)
+  Debug.debug_what_pool_assoc state_young env;
   let inhabitants = Env.get_pool state_young env in
 
   (* Compute the elements of the young generation *)
@@ -89,6 +89,9 @@ let discover_young_generation (env : env) : generation =
           let set = VarSet.add var set in
 
           let r = data.rank in
+
+          Debug.print_message
+          @@ Format.sprintf "%d <= %d && %d <= %d" base_rank r r state_young;
 
           assert (data.status <> Generic);
           assert (base_rank <= r && r <= state_young);
@@ -135,8 +138,7 @@ let update_ranks (generation : generation) (env : env) : env =
         Hashtbl.replace cache var ();
 
         (* Update the rank of the variable and push the update in env *)
-        let data = adjust_rank data k in
-        let env = Env.add_data data env in
+        let env, data = adjust_rank data k env in
 
         (* If the variable is not young, stop *)
         if not @@ generation.is_young var then (env, data.rank)
@@ -160,8 +162,7 @@ let update_ranks (generation : generation) (env : env) : env =
             in
 
             (* Adjust the rank of var with the max rank of its children *)
-            let data = adjust_rank data max_rank in
-            let env = Env.add_data data env in
+            let env, _data = adjust_rank data max_rank env in
 
             (* Return the new env *)
             (env, max_rank)
@@ -184,9 +185,14 @@ let update_ranks (generation : generation) (env : env) : env =
 (* Returns a list of the variables that have become generic *)
 
 let generalize (generation : generation) (env : env) : env * variable list =
+  (* Debug print *)
+  Debug.print_header "Generalization.generalize" PPrint.empty;
+
+  (* Init *)
   let state_young = Env.get_young env in
   let env = ref env in
 
+  (* Compote generics *)
   let l =
     List.filter
       begin
@@ -208,7 +214,7 @@ let generalize (generation : generation) (env : env) : env * variable list =
                  assert (rank = state_young);
 
                  let data = { data with status = Generic } in
-                 env := Env.add_data data !env;
+                 env := Env.add_repr data !env;
 
                  data.structure = None
                end
@@ -217,6 +223,7 @@ let generalize (generation : generation) (env : env) : env * variable list =
       generation.inhabitants
   in
 
+  (* Result *)
   (!env, l)
 
 (* The representation of a scheme *)
@@ -302,8 +309,10 @@ let exit (roots : roots) (env : env) : env * quantifiers * schemes =
   let schemes = List.map (Fun.flip schemify @@ env) roots in
 
   (* Clean the environment *)
+  Debug.debug_what_pool_assoc state_young env;
   let env = Env.clean_pool state_young env in
   let env = Env.decr_young env in
+  Debug.debug_what_pool_assoc state_young env;
 
   (* Result *)
   (env, quantifiers, schemes)
@@ -312,6 +321,9 @@ let exit (roots : roots) (env : env) : env * quantifiers * schemes =
 
 let instantiate ({ root; generics; quantifiers } : scheme) (var : variable)
   (env : env) : (env * quantifiers, err) result =
+  (* Debug print *)
+  Debug.print_header "Generalization.instantiate" PPrint.empty;
+
   (* To mark variables *)
   let table = Hashtbl.create 16 in
 
@@ -328,7 +340,7 @@ let instantiate ({ root; generics; quantifiers } : scheme) (var : variable)
 
             Hashtbl.replace table var i;
 
-            let cur_env, var = flexible None !env in
+            let cur_env, var = fresh_flexible ~name:var.name None !env in
             env := cur_env;
 
             var
@@ -364,7 +376,7 @@ let instantiate ({ root; generics; quantifiers } : scheme) (var : variable)
             { (Env.repr var_copy env) with structure = structure_copy }
           in
 
-          Env.add_data data env
+          Env.add_repr data env
       end
       env generics mapping
   in

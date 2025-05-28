@@ -87,24 +87,16 @@ module Env = struct
 
   let mem var env = Constraint.Var.Map.mem var env.map
 
-  let is_representative (var : var) env =
-    UF.is_representative env.store @@ Constraint.Var.Map.find var env.map
-
-  let add_data data env =
-    let var = data.var in
-    let status = data.status in
-    let rank = data.rank in
+  let add_repr repr env =
+    let var = repr.var in
     let data =
-      Option.map (Structure.map @@ fun v -> uvar v env) data.structure
+      Option.map (Structure.map @@ fun v -> uvar v env) repr.structure
     in
+    let status = repr.status in
+    let rank = repr.rank in
 
     let uvar = UF.make env.store { var; data; status; rank } in
     { env with map = Constraint.Var.Map.add var uvar env.map }
-
-  let add var structure env =
-    let status = Flexible in
-    let rank = env.young in
-    add_data { var; structure; status; rank } env
 
   let register var ~rank env =
     let l =
@@ -114,11 +106,23 @@ module Env = struct
     in
     { env with pool = IntMap.add rank l env.pool }
 
+  let add_flexible var structure env =
+    let status = Flexible in
+    let rank = env.young in
+
+    let env = add_repr { var; structure; status; rank } env in
+    register var ~rank env
+
   let repr var env =
     let { var; data; status; rank } = UF.get env.store @@ uvar var env in
     let var_of_uvar uv = (UF.get env.store uv).var in
     let structure = Option.map (Structure.map var_of_uvar) data in
     { var; structure; status; rank }
+
+  let is_representative var env =
+    match repr var env with
+    | var_repr -> Constraint.Var.eq var var_repr.var
+    | exception Not_found -> true
 
   let debug_repr_assoc env =
     let open PPrint in
@@ -144,6 +148,22 @@ module Env = struct
           acc ^^ var_doc ^^ string str ^^ break 1
       end
       env.map empty
+
+  let debug_pool_assoc env =
+    let open PPrint in
+    IntMap.fold
+      begin
+        fun rank variables acc ->
+          let variables_doc =
+            List.fold_left
+              (fun acc variable -> acc ^^ Constraint.Var.print variable ^^ space)
+              empty variables
+          in
+          acc
+          ^^ string (Format.sprintf "%d |--> " rank)
+          ^^ variables_doc ^^ break 1
+      end
+      env.pool empty
 end
 
 (* Errors check *)
