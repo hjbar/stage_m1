@@ -165,10 +165,6 @@ module Make (T : Utils.Functor) = struct
           |> List.map
                begin
                  fun var ->
-                   failwith
-                     "Finally, reach List.map inside function quantifiers sol \
-                      in Solver"
-                   |> ignore;
                    let (Constr ty) = sol var in
                    match ty with Var v -> v | Arrow _ | Prod _ -> assert false
                end
