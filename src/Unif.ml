@@ -269,8 +269,21 @@ and merge queue (n1 : unode) (n2 : unode) : unode =
       match merge with None -> clash () | Some d -> Some d
     end
   in
+  let status =
+    match n1.status, n2.status with
+    | _, _ -> failwith "TODO"
+  in
+  let rank =
+    match n1.rank, n2.rank with
+    | _, _ -> failwith "TODO"
+  in
 
-  { n1 with data }
+  {
+    var = n1.var;
+    data;
+    status;
+    rank;
+  }
 
 let unifiable env v1 v2 =
   match unify env v1 v2 with Ok _ -> true | Error _ -> false

@@ -178,7 +178,9 @@ module Make (T : Utils.Functor) = struct
         | Ok new_env ->
           unif_env := new_env;
           add_to_log !unif_env;
-
+          if (Constraint.Var.name x1 = "wu") then
+            Debug.print_header "UNIF ENV"
+              (Unif.Env.debug !unif_env);
           nret @@ fun _sol -> ()
         | Error (Cycle cy) -> nerr @@ Cycle cy
         | Error (Clash (y1, y2)) ->
