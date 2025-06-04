@@ -110,8 +110,7 @@ module Env = struct
     let status = Flexible in
     let rank = env.young in
 
-    let env = add_repr { var; structure; status; rank } env in
-    register var ~rank env
+    env |> add_repr { var; structure; status; rank } |> register var ~rank
 
   let repr var env =
     let { var; data; status; rank } = UF.get env.store @@ uvar var env in

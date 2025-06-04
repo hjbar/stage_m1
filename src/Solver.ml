@@ -68,59 +68,112 @@ module Make (T : Utils.Functor) = struct
     let solver_env : solver_env ref = ref SEnv.empty in
     let unif_env : unif_env ref = ref unif_env in
 
+    let print_enter, print_comeback, print_re_comeback =
+      let cpt = ref ~-1 in
+
+      let f1 s =
+        incr cpt;
+        Format.printf "Enter %s - %d\n%!" s !cpt
+      in
+
+      let f2 s =
+        incr cpt;
+        Format.printf "Comeback %s - %d\n%!" s !cpt
+      in
+
+      let f3 s =
+        incr cpt;
+        Format.printf "Re-comeback %s - %d\n%!" s !cpt
+      in
+
+      (f1, f2, f3)
+    in
+
     let rec eval : type a e. (a, e) Constraint.t -> (a, e) normal_constraint =
       let open Constraint in
       let ( let+ ) nf f = T.map f nf in
 
       function
-      | Loc (loc, c) -> begin try eval c with exn -> locate_exn loc exn end
-      | Ret v -> NRet v
-      | Err e -> NErr e
+      | Loc (loc, c) -> begin
+        print_enter "Loc";
+        try eval c with exn -> locate_exn loc exn
+      end
+      | Ret v ->
+        print_enter "Ret";
+        NRet v
+      | Err e ->
+        print_enter "Err";
+        NErr e
       | Map (c, f) -> begin
-        match eval c with
-        | NRet v -> nret @@ fun sol -> f @@ v sol
-        | NErr e -> NErr e
-        | NDo p ->
-          ndo
-          @@
-          let+ c = p in
-          Map (c, f)
+        print_enter "Map";
+
+        let res =
+          match eval c with
+          | NRet v -> nret @@ fun sol -> f @@ v sol
+          | NErr e -> NErr e
+          | NDo p ->
+            ndo
+            @@
+            let+ c = p in
+            Map (c, f)
+        in
+
+        print_comeback "Map";
+        res
       end
       | MapErr (c, f) -> begin
-        match eval c with
-        | NRet v -> NRet v
-        | NErr e -> nerr @@ f e
-        | NDo p ->
-          ndo
-          @@
-          let+ c = p in
-          MapErr (c, f)
+        print_enter "MapErr";
+
+        let res =
+          match eval c with
+          | NRet v -> NRet v
+          | NErr e -> nerr @@ f e
+          | NDo p ->
+            ndo
+            @@
+            let+ c = p in
+            MapErr (c, f)
+        in
+
+        print_comeback "MapErr";
+        res
       end
       | Conj (c, d) -> begin
-        match eval c with
+        print_enter "Conj";
+
+        let res = eval c in
+        print_comeback "Conj";
+
+        match res with
         | NErr e -> NErr e
         | nc -> begin
-          match (nc, eval d) with
-          | NErr e, _ | _, NErr e -> NErr e
-          | NRet v, NRet w -> nret @@ fun sol -> (v sol, w sol)
-          | NRet v, NDo q ->
-            ndo
-            @@
-            let+ d = q in
-            Conj (Ret v, d)
-          | NDo p, NRet w ->
-            ndo
-            @@
-            let+ c = p in
-            Conj (c, Ret w)
-          | NDo p, NDo q ->
-            ndo
-            @@
-            let+ c = p in
-            Conj (c, Do q)
+          let res =
+            match (nc, eval d) with
+            | NErr e, _ | _, NErr e -> NErr e
+            | NRet v, NRet w -> nret @@ fun sol -> (v sol, w sol)
+            | NRet v, NDo q ->
+              ndo
+              @@
+              let+ d = q in
+              Conj (Ret v, d)
+            | NDo p, NRet w ->
+              ndo
+              @@
+              let+ c = p in
+              Conj (c, Ret w)
+            | NDo p, NDo q ->
+              ndo
+              @@
+              let+ c = p in
+              Conj (c, Do q)
+          in
+
+          print_re_comeback "Conj";
+          res
         end
       end
       | Eq (x1, x2) -> begin
+        print_enter "Eq";
         match Unif.unify !unif_env x1 x2 with
         | Ok new_env ->
           unif_env := new_env;
@@ -133,6 +186,7 @@ module Make (T : Utils.Functor) = struct
           nerr @@ Clash (decoder y1, decoder y2)
       end
       | Exist (x, s, c) -> begin
+        print_enter "Exist";
         (*
           Our solver may re-enter existentials that
           it has already traversed. In this case we
@@ -145,18 +199,28 @@ module Make (T : Utils.Functor) = struct
           add_to_log !unif_env
         end;
 
-        match eval c with
-        | NRet v -> NRet v
-        | NErr e -> NErr e
-        | NDo p ->
-          ndo
-          @@
-          let+ c = p in
-          Exist (x, s, c)
+        let res =
+          match eval c with
+          | NRet v -> NRet v
+          | NErr e -> NErr e
+          | NDo p ->
+            ndo
+            @@
+            let+ c = p in
+            Exist (x, s, c)
+        in
+
+        print_comeback "Exist";
+        res
       end
-      | Decode v -> nret @@ fun sol -> sol v
-      | Do p -> NDo p
+      | Decode v ->
+        print_enter "Decode";
+        nret @@ fun sol -> sol v
+      | Do p ->
+        print_enter "Do";
+        NDo p
       | DecodeScheme sch_var ->
+        print_enter "DecodeScheme";
         let scheme = SEnv.find sch_var !solver_env in
 
         let body sol = sol @@ Generalization.body scheme in
@@ -172,12 +236,22 @@ module Make (T : Utils.Functor) = struct
 
         nret @@ fun sol -> (quantifiers sol, body sol)
       | Instance (sch_var, w) -> begin
+        print_enter "Instance";
+
         let sch = SEnv.find sch_var !solver_env in
+
+        Format.printf "Before instantiate\n%!";
+        Debug.debug_what_repr_assoc w !unif_env;
+        Debug.debug_what_rank w !unif_env;
 
         match Generalization.instantiate sch w !unif_env with
         | Ok (new_unif_env, witnesses) ->
           unif_env := new_unif_env;
           add_to_log !unif_env;
+
+          Format.printf "After instantiate\n%!";
+          Debug.debug_what_repr_assoc w !unif_env;
+          Debug.debug_what_rank w !unif_env;
 
           nret @@ fun sol -> List.map sol witnesses
         | Error (Cycle cy) -> nerr @@ Cycle cy
@@ -186,6 +260,7 @@ module Make (T : Utils.Functor) = struct
           nerr @@ Clash (decoder y1, decoder y2)
       end
       | Let (sch_var, var, c1, c2) -> begin
+        print_enter "Let";
         unif_env := Generalization.enter !unif_env;
 
         if not @@ Unif.Env.mem var !unif_env then begin
@@ -193,7 +268,10 @@ module Make (T : Utils.Functor) = struct
           add_to_log !unif_env
         end;
 
-        match eval c1 with
+        let res = eval c1 in
+        print_comeback "Let";
+
+        match res with
         | NRet r1 -> begin
           let new_unif_env, _gammas, schemes =
             Generalization.exit [ var ] !unif_env
@@ -205,14 +283,19 @@ module Make (T : Utils.Functor) = struct
 
           solver_env := SEnv.add sch_var (List.hd schemes) !solver_env;
 
-          match eval c2 with
-          | NRet r2 -> nret @@ fun on_sol -> (r1 on_sol, r2 on_sol)
-          | NErr e -> NErr e
-          | NDo p ->
-            ndo
-            @@
-            let+ c2 = p in
-            Let (sch_var, var, Ret r1, c2)
+          let res =
+            match eval c2 with
+            | NRet r2 -> nret @@ fun on_sol -> (r1 on_sol, r2 on_sol)
+            | NErr e -> NErr e
+            | NDo p ->
+              ndo
+              @@
+              let+ c2 = p in
+              Let (sch_var, var, Ret r1, c2)
+          in
+
+          print_re_comeback "Let";
+          res
         end
         | NErr e -> NErr e
         | NDo p ->

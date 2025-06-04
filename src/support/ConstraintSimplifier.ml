@@ -38,10 +38,10 @@ module Make (T : Utils.Functor) = struct
     (* Add annotation for structure of a variable in a constraint *)
     let annot_structure v c =
       match Unif.Env.repr v env with
+      | { structure = None; _ } | (exception Not_found) -> c
       | { structure = Some s; _ } ->
         let ws = Constraint.Var.fresh @@ Constraint.Var.name v ^ "'" in
         Exist (ws, Some s, Eq (v, ws))
-      | { structure = None; _ } | (exception Not_found) -> c
     in
 
     (* Bind existential v to the constraint and remove v from the free variables of the constraint *)
