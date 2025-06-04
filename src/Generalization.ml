@@ -294,9 +294,9 @@ let schemify (root : variable) (env : env) : scheme =
   let rec traverse (var : variable) (acc : variable list) : variable list =
     let data = Env.repr var env in
 
-    if data.status <> Generic || Hashtbl.mem cache var then acc
+    if data.status <> Generic || Hashtbl.mem cache data.var then acc
     else begin
-      Hashtbl.replace cache var ();
+      Hashtbl.replace cache data.var ();
       let acc = var :: acc in
 
       match data.structure with
@@ -463,7 +463,7 @@ let instantiate ({ root; generics; quantifiers } : scheme) (var : variable)
             let env, fresh_var =
               fresh_flexible ~name:("fresh_" ^ data.var.name) None env
             in
-            Hashtbl.replace ht var fresh_var;
+            Hashtbl.replace ht data.var fresh_var;
 
             env
         end
@@ -476,7 +476,7 @@ let instantiate ({ root; generics; quantifiers } : scheme) (var : variable)
   (* Maps every variable to its copy if needed *)
   let copy (env : env) (var : variable) : variable =
     let data = Env.repr var env in
-    if data.status <> Generic then var else Hashtbl.find mapping var
+    if data.status <> Generic then var else Hashtbl.find mapping data.var
   in
 
   (* For every pair of var and var_copy, equip var_copy with structure of var *)
