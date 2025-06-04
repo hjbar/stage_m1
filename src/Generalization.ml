@@ -62,7 +62,8 @@ let enter (env : env) : env =
   let env = Env.incr_young env in
   let young = Env.get_young env in
 
-  Debug.debug_what_pool_assoc young env;
+  Debug.print_header "DEBUG POOLS"
+    (Unif.Env.debug_pool_assoc env);
   Debug.print_message "The pool must be empty";
   assert (Env.pool_is_empty young env);
 
@@ -91,7 +92,7 @@ let discover_young_generation (env : env) : generation =
   let state_young = Env.get_young env in
 
   (* The most recent pool holds a list of all variables in the young generation *)
-  Debug.debug_what_pool_assoc state_young env;
+  Debug.print_header "DEBUG POOL" (Unif.Env.debug_pool_assoc env);
 
   let inhabitants = Env.get_pool state_young env in
 
@@ -250,7 +251,7 @@ type scheme =
   { root : root (* A root variable : must be generic *)
   ; generics : variable list (* All the generic variables of the scheme *)
   ; quantifiers : quantifiers
-      (* All the generic variables that are not no structure *)
+      (* All the generic variables that have no structure *)
   }
 
 and root = variable
@@ -268,6 +269,13 @@ let body { root; _ } = root
 (* Utils function : get the quantifiers of a scheme *)
 
 let quantifiers { quantifiers; _ } = quantifiers
+
+let debug_scheme { root; quantifiers; _ } =
+  let open PPrint in
+  string "forall "
+  ^^ separate_map space Constraint.Var.print quantifiers
+  ^^ dot ^^ space
+  ^^ Constraint.Var.print root
 
 (* Return a monomorphic scheme whose root is the root *)
 
@@ -319,7 +327,7 @@ let exit (roots : roots) (env : env) : env * quantifiers * schemes =
   assert (state_young >= base_rank);
 
   (* Discover the young variables *)
-  Debug.debug_what env;
+  Debug.print_header "ENV" (Unif.Env.debug env);
   let generation = discover_young_generation env in
 
   (* Update the rank of every young variable -- variables that must become generic still have rank state_young *)
@@ -332,10 +340,10 @@ let exit (roots : roots) (env : env) : env * quantifiers * schemes =
   let schemes = List.map (Fun.flip schemify @@ env) roots in
 
   (* Clean the environment *)
-  Debug.debug_what_pool_assoc state_young env;
+  Debug.print_header "DEBUG POOL" (Unif.Env.debug_pool_assoc env);
   let env = Env.clean_pool state_young env in
   let env = Env.decr_young env in
-  Debug.debug_what_pool_assoc state_young env;
+  Debug.print_header "DEBUG POOL" (Unif.Env.debug_pool_assoc env);
 
   (* Result *)
   (env, quantifiers, schemes)

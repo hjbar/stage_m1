@@ -30,6 +30,8 @@ val quantifiers : scheme -> quantifiers
 
 val trivial : variable -> scheme
 
+val debug_scheme : scheme -> PPrint.document
+
 (* Functions on generalization *)
 
 val fresh_flexible : ?name:string -> structure -> env -> env * variable

@@ -241,15 +241,19 @@ module Make (T : Utils.Functor) = struct
         let sch = SEnv.find sch_var !solver_env in
 
         Format.printf "Before instantiate\n%!";
-        Debug.debug_what !unif_env;
+        Debug.print_header "DEBUG ENV" (Unif.Env.debug !unif_env);
 
         match Generalization.instantiate sch w !unif_env with
         | Ok (new_unif_env, witnesses) ->
           unif_env := new_unif_env;
           add_to_log !unif_env;
 
-          Format.printf "After instantiate\n%!";
-          Debug.debug_what !unif_env;
+          Format.printf "After instantiate (%s <= %s) at level %d\n%!"
+            (Constraint.SVar.print sch_var |> Utils.string_of_doc)
+            (Constraint.Var.print w |> Utils.string_of_doc)
+            (Unif.Env.get_young !unif_env)
+          ;
+          Debug.print_header "DEBUG ENV" (Unif.Env.debug !unif_env);
 
           nret @@ fun sol -> List.map sol witnesses
         | Error (Cycle cy) -> nerr @@ Cycle cy
@@ -277,9 +281,17 @@ module Make (T : Utils.Functor) = struct
           unif_env := new_unif_env;
           add_to_log !unif_env;
 
-          assert (List.length schemes = 1);
+          let scheme = 
+            assert (List.length schemes = 1);
+            List.hd schemes
+          in
 
-          solver_env := SEnv.add sch_var (List.hd schemes) !solver_env;
+          Debug.print_header "DEBUG ENV"
+            (Unif.Env.debug !unif_env);
+          Debug.print_header "DEBUG SCHEME"
+            (Generalization.debug_scheme scheme);
+
+          solver_env := SEnv.add sch_var scheme !solver_env;
 
           let res =
             match eval c2 with

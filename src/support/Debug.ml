@@ -36,21 +36,3 @@ let print_message msg =
   let open PPrint in
   string sep ^^ break 1 ^^ string msg ^^ break 1 ^^ string sep ^^ break 1
   |> print_document
-
-(* Debug display of the whole unification environment *)
-let debug_what (env : Unif.Env.t) : unit =
-  let open PPrint in
-  run_test @@ fun () ->
-  get_header "PRINT ENV" (Unif.Env.debug env)
-  ^^ break 1
-  |> print_document
-
-(* Debug display of the by-rank pools in the environment. *)
-let debug_what_pool_assoc (r : Unif.rank) (env : Unif.Env.t) : unit =
-  let open PPrint in
-  run_test @@ fun () ->
-  get_header "PRINT ENV POOL ASSOC" (Unif.Env.debug_pool_assoc env)
-  ^^ break 1
-  ^^ get_sub_header "Get pool of rank" (string (string_of_int r) ^^ break 1)
-  ^^ break 1
-  |> print_document
