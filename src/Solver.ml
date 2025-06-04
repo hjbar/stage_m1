@@ -178,9 +178,8 @@ module Make (T : Utils.Functor) = struct
         | Ok new_env ->
           unif_env := new_env;
           add_to_log !unif_env;
-          if (Constraint.Var.name x1 = "wu") then
-            Debug.print_header "UNIF ENV"
-              (Unif.Env.debug !unif_env);
+          if Constraint.Var.name x1 = "wu" then
+            Debug.print_header "UNIF ENV" (Unif.Env.debug !unif_env);
           nret @@ fun _sol -> ()
         | Error (Cycle cy) -> nerr @@ Cycle cy
         | Error (Clash (y1, y2)) ->
@@ -253,8 +252,7 @@ module Make (T : Utils.Functor) = struct
           Format.printf "After instantiate (%s <= %s) at level %d\n%!"
             (Constraint.SVar.print sch_var |> Utils.string_of_doc)
             (Constraint.Var.print w |> Utils.string_of_doc)
-            (Unif.Env.get_young !unif_env)
-          ;
+            (Unif.Env.get_young !unif_env);
           Debug.print_header "DEBUG ENV" (Unif.Env.debug !unif_env);
 
           nret @@ fun sol -> List.map sol witnesses
@@ -283,15 +281,13 @@ module Make (T : Utils.Functor) = struct
           unif_env := new_unif_env;
           add_to_log !unif_env;
 
-          let scheme = 
+          let scheme =
             assert (List.length schemes = 1);
             List.hd schemes
           in
 
-          Debug.print_header "DEBUG ENV"
-            (Unif.Env.debug !unif_env);
-          Debug.print_header "DEBUG SCHEME"
-            (Generalization.debug_scheme scheme);
+          Debug.print_header "DEBUG ENV" (Unif.Env.debug !unif_env);
+          Debug.print_header "DEBUG SCHEME" (Generalization.debug_scheme scheme);
 
           solver_env := SEnv.add sch_var scheme !solver_env;
 

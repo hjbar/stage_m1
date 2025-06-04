@@ -62,8 +62,7 @@ let enter (env : env) : env =
   let env = Env.incr_young env in
   let young = Env.get_young env in
 
-  Debug.print_header "DEBUG POOLS"
-    (Unif.Env.debug_pool_assoc env);
+  Debug.print_header "DEBUG POOLS" (Unif.Env.debug_pool_assoc env);
   Debug.print_message "The pool must be empty";
   assert (Env.pool_is_empty young env);
 
@@ -131,6 +130,7 @@ let discover_young_generation (env : env) : generation =
 
 let update_ranks (generation : generation) (env : env) : env =
   print_under "update_ranks";
+  Debug.print_header "DEBUG ENV" (Unif.Env.debug env);
 
   (* To mark visited variable *)
   let cache = Hashtbl.create 16 in
@@ -147,13 +147,13 @@ let update_ranks (generation : generation) (env : env) : env =
       assert (data.status <> Generic);
 
       (* If we already this variable, stop *)
-      if Hashtbl.mem cache var then begin
+      if Hashtbl.mem cache data.var then begin
         assert (data.rank <= k);
         (env, data.rank)
       end
       else begin
         (* Push the information that we visited this variable *)
-        Hashtbl.replace cache var ();
+        Hashtbl.replace cache data.var ();
 
         (* Update the rank of the variable and push the update in env *)
         let env, data = adjust_rank data k env in
@@ -274,8 +274,7 @@ let debug_scheme { root; quantifiers; _ } =
   let open PPrint in
   string "forall "
   ^^ separate_map space Constraint.Var.print quantifiers
-  ^^ dot ^^ space
-  ^^ Constraint.Var.print root
+  ^^ dot ^^ space ^^ Constraint.Var.print root
 
 (* Return a monomorphic scheme whose root is the root *)
 

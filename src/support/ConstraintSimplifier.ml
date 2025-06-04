@@ -17,9 +17,7 @@ module Make (T : Utils.Functor) = struct
     let is_in_env v = Unif.Env.mem v env in
 
     (* v is register at rank k in the unify's env ? *)
-    let is_rank_k v k =
-      Unif.Env.mem v env && (Unif.Env.repr v env).rank = k
-    in
+    let is_rank_k v k = Unif.Env.mem v env && (Unif.Env.repr v env).rank = k in
 
     (* Returns true if v1 and v2 are not unifiable, false otherwise *)
     let is_not_unifiable v1 v2 =

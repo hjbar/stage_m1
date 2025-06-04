@@ -128,40 +128,35 @@ module Env = struct
     let ( ^^ ) = PP.( ^^ ) in
     if var <> uvar.var then
       (* not representative *)
-      (Constraint.Var.print var
-       ^^ PP.string " |--> "
-       ^^ Constraint.Var.print uvar.var,
-       `Non_repr)
+      ( Constraint.Var.print var ^^ PP.string " |--> "
+        ^^ Constraint.Var.print uvar.var
+      , `Non_repr )
     else begin
-      let rank_doc, order = match uvar.status with 
-        | Flexible -> PP.string (string_of_int uvar.rank), `Rank uvar.rank
-        | Generic -> PP.string "G", `Generic
-       in
-       let structure_doc =
-         match uvar.structure with
-         | None -> PP.empty
-         | Some s ->
-           PP.string "= "
-           ^^ Structure.print Constraint.Var.print s
-       in
-       (Constraint.Var.print var
-        ^^ PP.parens rank_doc ^^ PP.space
-        ^^ structure_doc,
-        order)
+      let rank_doc, order =
+        match uvar.status with
+        | Flexible -> (PP.string (string_of_int uvar.rank), `Rank uvar.rank)
+        | Generic -> (PP.string "G", `Generic)
+      in
+      let structure_doc =
+        match uvar.structure with
+        | None -> PP.empty
+        | Some s -> PP.string "= " ^^ Structure.print Constraint.Var.print s
+      in
+      ( Constraint.Var.print var ^^ PP.parens rank_doc ^^ PP.space
+        ^^ structure_doc
+      , order )
     end
 
   let debug (env : t) =
     let open PPrint in
-    env.map
-    |> Constraint.Var.Map.bindings
+    env.map |> Constraint.Var.Map.bindings
     |> List.map (fun (v, _uv) ->
-      let doc, order = debug_var v (repr v env) in
-      doc,
-      match order with
-      | `Non_repr -> -10
-      | `Rank n -> n
-      | `Generic -> max_int
-    )
+         let doc, order = debug_var v (repr v env) in
+         ( doc
+         , match order with
+           | `Non_repr -> -10
+           | `Rank n -> n
+           | `Generic -> max_int ) )
     |> List.sort (fun (_, o1) (_, o2) -> Int.compare o1 o2)
     |> concat_map (fun (doc, _order) -> doc ^^ hardline)
 
@@ -171,8 +166,7 @@ module Env = struct
       begin
         fun rank variables acc ->
           let variables_doc =
-            space ^^
-            separate_map space Constraint.Var.print variables
+            space ^^ separate_map space Constraint.Var.print variables
           in
           acc
           ^^ string (Format.sprintf "%d |--> " rank)
@@ -250,6 +244,13 @@ and unify_uvars store (queue : (uvar * uvar) Queue.t) =
 
 and merge queue (n1 : unode) (n2 : unode) : unode =
   let clash () = raise @@ Clash (n1.var, n2.var) in
+  let generic (n : unode) () =
+    Printf.ksprintf invalid_arg
+      "Constraint variable '%s' is generic at this point"
+    @@ Constraint.Var.name n.var
+  in
+
+  let var = n1.var in
 
   let data =
     match (n1.data, n2.data) with
@@ -269,21 +270,17 @@ and merge queue (n1 : unode) (n2 : unode) : unode =
       match merge with None -> clash () | Some d -> Some d
     end
   in
+
   let status =
-    match n1.status, n2.status with
-    | _, _ -> failwith "TODO"
-  in
-  let rank =
-    match n1.rank, n2.rank with
-    | _, _ -> failwith "TODO"
+    match (n1.status, n2.status) with
+    | Flexible, Flexible -> Flexible
+    | Generic, _ -> generic n1 ()
+    | _, Generic -> generic n2 ()
   in
 
-  {
-    var = n1.var;
-    data;
-    status;
-    rank;
-  }
+  let rank = min n1.rank n2.rank in
+
+  { var; data; status; rank }
 
 let unifiable env v1 v2 =
   match unify env v1 v2 with Ok _ -> true | Error _ -> false
