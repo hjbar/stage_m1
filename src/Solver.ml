@@ -241,8 +241,7 @@ module Make (T : Utils.Functor) = struct
         let sch = SEnv.find sch_var !solver_env in
 
         Format.printf "Before instantiate\n%!";
-        Debug.debug_what_repr_assoc w !unif_env;
-        Debug.debug_what_rank w !unif_env;
+        Debug.debug_what !unif_env;
 
         match Generalization.instantiate sch w !unif_env with
         | Ok (new_unif_env, witnesses) ->
@@ -250,8 +249,7 @@ module Make (T : Utils.Functor) = struct
           add_to_log !unif_env;
 
           Format.printf "After instantiate\n%!";
-          Debug.debug_what_repr_assoc w !unif_env;
-          Debug.debug_what_rank w !unif_env;
+          Debug.debug_what !unif_env;
 
           nret @@ fun sol -> List.map sol witnesses
         | Error (Cycle cy) -> nerr @@ Cycle cy

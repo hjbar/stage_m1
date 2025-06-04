@@ -319,7 +319,7 @@ let exit (roots : roots) (env : env) : env * quantifiers * schemes =
   assert (state_young >= base_rank);
 
   (* Discover the young variables *)
-  Debug.debug_what_rank (List.hd roots) env;
+  Debug.debug_what env;
   let generation = discover_young_generation env in
 
   (* Update the rank of every young variable -- variables that must become generic still have rank state_young *)

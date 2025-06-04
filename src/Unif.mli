@@ -80,9 +80,7 @@ module Env : sig
 
   (* DEBUG *)
 
-  val debug_repr_assoc : t -> PPrint.document
-
-  val debug_rank : t -> PPrint.document
+  val debug : t -> PPrint.document
 
   val debug_pool_assoc : t -> PPrint.document
 end

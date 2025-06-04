@@ -18,7 +18,6 @@ module Make (T : Utils.Functor) = struct
 
     (* v is register at rank k in the unify's env ? *)
     let is_rank_k v k =
-      Debug.debug_what_rank v env;
       Unif.Env.mem v env && (Unif.Env.repr v env).rank = k
     in
 
@@ -46,7 +45,6 @@ module Make (T : Utils.Functor) = struct
 
     (* Bind existential v to the constraint and remove v from the free variables of the constraint *)
     let exist v s (fvs, c) : VarSet.t * sat_constraint =
-      Debug.debug_what_repr_assoc v env;
       assert (Var.eq v (normalize v));
 
       let s =

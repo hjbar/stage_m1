@@ -123,30 +123,47 @@ module Env = struct
     | var_repr -> Constraint.Var.eq var var_repr.var
     | exception Not_found -> true
 
-  let debug_repr_assoc env =
+  let debug_var var uvar =
+    let module PP = PPrint in
+    let ( ^^ ) = PP.( ^^ ) in
+    if var <> uvar.var then
+      (* not representative *)
+      (Constraint.Var.print var
+       ^^ PP.string " |--> "
+       ^^ Constraint.Var.print uvar.var,
+       `Non_repr)
+    else begin
+      let rank_doc, order = match uvar.status with 
+        | Flexible -> PP.string (string_of_int uvar.rank), `Rank uvar.rank
+        | Generic -> PP.string "G", `Generic
+       in
+       let structure_doc =
+         match uvar.structure with
+         | None -> PP.empty
+         | Some s ->
+           PP.string "= "
+           ^^ Structure.print Constraint.Var.print s
+       in
+       (Constraint.Var.print var
+        ^^ PP.parens rank_doc ^^ PP.space
+        ^^ structure_doc,
+        order)
+    end
+
+  let debug (env : t) =
     let open PPrint in
-    Constraint.Var.Map.fold
-      begin
-        fun var _ acc ->
-          let var_doc = Constraint.Var.print var in
-          let repr_doc = Constraint.Var.print (repr var env).var in
-
-          acc ^^ var_doc ^^ string " |--> " ^^ repr_doc ^^ break 1
-      end
-      env.map empty
-
-  let debug_rank env =
-    let open PPrint in
-    Constraint.Var.Map.fold
-      begin
-        fun var uvar acc ->
-          let var_doc = Constraint.Var.print var in
-          let rank = (UF.get env.store uvar).rank in
-          let str = Format.sprintf ".rank = %d" rank in
-
-          acc ^^ var_doc ^^ string str ^^ break 1
-      end
-      env.map empty
+    env.map
+    |> Constraint.Var.Map.bindings
+    |> List.map (fun (v, _uv) ->
+      let doc, order = debug_var v (repr v env) in
+      doc,
+      match order with
+      | `Non_repr -> -10
+      | `Rank n -> n
+      | `Generic -> max_int
+    )
+    |> List.sort (fun (_, o1) (_, o2) -> Int.compare o1 o2)
+    |> concat_map (fun (doc, _order) -> doc ^^ hardline)
 
   let debug_pool_assoc env =
     let open PPrint in
@@ -154,9 +171,8 @@ module Env = struct
       begin
         fun rank variables acc ->
           let variables_doc =
-            List.fold_left
-              (fun acc variable -> acc ^^ Constraint.Var.print variable ^^ space)
-              empty variables
+            space ^^
+            separate_map space Constraint.Var.print variables
           in
           acc
           ^^ string (Format.sprintf "%d |--> " rank)

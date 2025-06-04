@@ -37,30 +37,15 @@ let print_message msg =
   string sep ^^ break 1 ^^ string msg ^^ break 1 ^^ string sep ^^ break 1
   |> print_document
 
-(* Show the rank of unif_env's variables and the variable we want to know the rank *)
-
-let debug_what_rank (v : Constraint.variable) (env : Unif.Env.t) : unit =
+(* Debug display of the whole unification environment *)
+let debug_what (env : Unif.Env.t) : unit =
   let open PPrint in
   run_test @@ fun () ->
-  get_header "PRINT ENV RANK" (Unif.Env.debug_rank env)
-  ^^ break 1
-  ^^ get_sub_header "Get rank of variable" (Constraint.Var.print v ^^ break 1)
+  get_header "PRINT ENV" (Unif.Env.debug env)
   ^^ break 1
   |> print_document
 
-(* Show the assoc between variable and repr in unif_env and the variable we want to know the repr *)
-
-let debug_what_repr_assoc (v : Constraint.variable) (env : Unif.Env.t) : unit =
-  let open PPrint in
-  run_test @@ fun () ->
-  get_header "PRINT ENV REPR ASSOC" (Unif.Env.debug_repr_assoc env)
-  ^^ break 1
-  ^^ get_sub_header "Test variable" (Constraint.Var.print v ^^ break 1)
-  ^^ break 1
-  |> print_document
-
-(* Show the assoc between rank and variables in the pool of the env *)
-
+(* Debug display of the by-rank pools in the environment. *)
 let debug_what_pool_assoc (r : Unif.rank) (env : Unif.Env.t) : unit =
   let open PPrint in
   run_test @@ fun () ->

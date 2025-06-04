@@ -10,8 +10,6 @@ val print_message : string -> unit
 
 (* Others functions *)
 
-val debug_what_rank : Constraint.variable -> Unif.Env.t -> unit
-
-val debug_what_repr_assoc : Constraint.variable -> Unif.Env.t -> unit
+val debug_what : Unif.Env.t -> unit
 
 val debug_what_pool_assoc : Unif.rank -> Unif.Env.t -> unit
