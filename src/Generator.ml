@@ -54,7 +54,7 @@ module Make (M : Utils.MonadPlus) = struct
         let x = new_var () in
         let inner_env = Env.bind_tevar x env in
 
-        M.return @@ Let (x, gen env, gen inner_env)
+        M.return @@ Let (x, gen env, gen @@ inner_env)
       in
 
       let tuple_size = M.one_of [| 2 |] in

@@ -38,30 +38,6 @@ let generate (module M : Utils.MonadPlus) =
   let module Gen = Generator.Make (M) in
   M.run @@ Gen.typed ~size:config.size
 
-let get_type (t : STLC.term) : STLC.ty =
-  let module Untyped = Untyped.Make (Utils.Empty) in
-  let module Constraint = Constraint.Make (Utils.Empty) in
-  let module Infer = Infer.Make (Utils.Empty) in
-  let module Solver = Solver.Make (Utils.Empty) in
-  let t = Untyped.of_typed t in
-
-  let cst =
-    let w = Constraint.Var.fresh "final_type" in
-
-    Constraint.(
-      Exist
-        ( w
-        , None
-        , Conj
-            ( Infer.has_type (Untyped.Var.Map.empty, Untyped.Var.Map.empty) t w
-            , Infer.decode w ) ) )
-  in
-
-  let env, nf = Solver.eval ~log:false Unif.Env.empty cst in
-  match nf with
-  | NRet v -> snd @@ v @@ Decode.decode env ()
-  | NErr _ | NDo _ -> assert false
-
 let () =
   match config.seed with None -> Random.self_init () | Some s -> Random.init s
 

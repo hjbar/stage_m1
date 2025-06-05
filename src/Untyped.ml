@@ -65,13 +65,4 @@ module Make (T : Utils.Functor) = struct
     in
 
     fun t -> freshen Env.empty t
-
-  let rec of_typed : STLC.term -> term = function
-    | Var x -> Var x
-    | App (t1, t2) -> App (of_typed t1, of_typed t2)
-    | Abs (x, _, t) -> Abs (x, of_typed t)
-    | Let (x, _, t1, t2) -> Let (x, of_typed t1, of_typed t2)
-    | Annot (t, ty) -> Annot (of_typed t, ty)
-    | Tuple l -> Tuple (List.map of_typed l)
-    | LetTuple (l, t1, t2) -> LetTuple (List.map fst l, of_typed t1, of_typed t2)
 end
