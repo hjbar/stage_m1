@@ -66,22 +66,18 @@ let () =
   match config.seed with None -> Random.self_init () | Some s -> Random.init s
 
 let () =
-  let map_function =
-    let f =
-      if config.types then fun t ->
-        [ STLCPrinter.print_term t; STLCPrinter.print_ty @@ get_type t ]
-      else fun t -> [ STLCPrinter.print_term t ]
-    in
-    Seq.map f
-  in
-  let separate_function =
-    PPrint.(
-      if config.types then
-        separate @@ hardline ^^ hardline ^^ hardline ^^ hardline
-      else separate (hardline ^^ hardline) )
+  let scheme_to_doc (term, scheme) =
+    let term_doc = STLCPrinter.print_term term in
+
+    match config.types with
+    | false -> term_doc
+    | true ->
+      PPrint.(
+        term_doc ^^ hardline ^^ hardline ^^ string "Inferred type : "
+        ^^ STLCPrinter.print_scheme scheme )
   in
 
-  generate (if config.exhaustive then (module MSeq) else (module MRand))
-  |> Seq.take config.count |> map_function
-  |> Seq.map PPrint.(separate @@ hardline ^^ hardline)
-  |> List.of_seq |> separate_function |> Utils.string_of_doc |> print_endline
+  (if config.exhaustive then (module MSeq) else (module MRand))
+  |> generate |> Seq.take config.count |> Seq.map scheme_to_doc |> List.of_seq
+  |> PPrint.(separate (hardline ^^ hardline ^^ hardline ^^ hardline))
+  |> Utils.string_of_doc |> print_endline

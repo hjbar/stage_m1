@@ -81,15 +81,14 @@ module Make (M : Utils.MonadPlus) = struct
 
     gen (Env.empty ())
 
-  let constraint_ : (STLC.term, Infer.err) Constraint.t =
-    let w = Constraint.Var.fresh "final_type" in
-    Constraint.(
-      Exist
-        ( w
-        , None
-        , Infer.has_type
-            (Untyped.Var.Map.empty, Untyped.Var.Map.empty)
-            untyped w ) )
+  let constraint_ : (STLC.term * STLC.scheme, Infer.err) Constraint.t =
+    let s = Constraint.SVar.fresh "final_scheme" in
+    let w = Constraint.Var.fresh "final_term" in
+    Let
+      ( s
+      , w
+      , Infer.has_type (Untyped.Var.Map.empty, Untyped.Var.Map.empty) untyped w
+      , Infer.decode_scheme s )
 
   (* This definition uses [constraint_] to generate well-typed terms.
      An informal description of a possible way to do this is described
@@ -106,7 +105,7 @@ module Make (M : Utils.MonadPlus) = struct
      > can be reached by expanding `Do` nodes *at most* `size` times, but
      > this typically gives a worse generator.)
   *)
-  let typed ~size : STLC.term M.t =
+  let typed ~size : (STLC.term * STLC.scheme) M.t =
     let open struct
       type env = Solver.unif_env
     end in

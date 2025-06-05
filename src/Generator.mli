@@ -5,7 +5,7 @@ module Make (M : Utils.MonadPlus) : sig
 
   val untyped : Untyped.term
 
-  val constraint_ : (STLC.term, Infer.err) Constraint.t
+  val constraint_ : (STLC.term * STLC.scheme, Infer.err) Constraint.t
 
-  val typed : size:int -> STLC.term M.t
+  val typed : size:int -> (STLC.term * STLC.scheme) M.t
 end

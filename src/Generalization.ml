@@ -4,12 +4,6 @@ module Env = Unif.Env
 module IntMap = Unif.IntMap
 module Var = Constraint.Var
 
-let print_under =
-  let cpt = ref ~-1 in
-  fun s ->
-    incr cpt;
-    Format.printf "Under %s - %d\n%!" s !cpt
-
 (* Import some types *)
 
 type variable = Unif.var
@@ -35,8 +29,6 @@ let base_rank = Unif.base_rank
 (* Adjust the rank when is Flexible, i.e. not generalized yet *)
 
 let adjust_rank (data : data) (k : rank) (env : env) : env * data =
-  print_under "adjust_rank";
-
   assert (data.status <> Generic);
 
   let data = { data with rank = min data.rank k } in
@@ -48,8 +40,6 @@ let adjust_rank (data : data) (k : rank) (env : env) : env * data =
 
 let fresh_flexible ?(name = "fresh") (structure : structure) (env : env) :
   env * variable =
-  print_under "fresh_flexible";
-
   let var = Var.fresh name in
   let env = Env.add_flexible var structure env in
   (env, var)
@@ -57,8 +47,6 @@ let fresh_flexible ?(name = "fresh") (structure : structure) (env : env) :
 (* Call this function before enter in a new level *)
 
 let enter (env : env) : env =
-  print_under "enter";
-
   let env = Env.incr_young env in
   let young = Env.get_young env in
 
@@ -85,8 +73,6 @@ module VarSet = Set.Make (Var)
 (* Before we want to exit, create a generation describing the young generation *)
 
 let discover_young_generation (env : env) : generation =
-  print_under "discover_young_generation";
-
   (* Young of the env *)
   let state_young = Env.get_young env in
 
@@ -129,7 +115,6 @@ let discover_young_generation (env : env) : generation =
 (* updates the rank of every variables in the young generation *)
 
 let update_ranks (generation : generation) (env : env) : env =
-  print_under "update_ranks";
   Debug.print_header "DEBUG ENV" (Unif.Env.debug env);
 
   (* To mark visited variable *)
@@ -205,7 +190,6 @@ let update_ranks (generation : generation) (env : env) : env =
 let generalize (generation : generation) (env : env) : env * variable list =
   (* Debug print *)
   Debug.print_header "Generalization.generalize" PPrint.empty;
-  print_under "generalize";
 
   (* Init *)
   let state_young = Env.get_young env in
@@ -286,8 +270,6 @@ let trivial (root : variable) : scheme =
 (* Transform root into a scheme -- assert : calls after generalization *)
 
 let schemify (root : variable) (env : env) : scheme =
-  print_under "schemify";
-
   (* Compute generics *)
   let cache = Hashtbl.create 16 in
 
@@ -300,7 +282,7 @@ let schemify (root : variable) (env : env) : scheme =
       let acc = var :: acc in
 
       match data.structure with
-      | None -> acc
+      | None -> List.rev acc
       | Some structure -> Structure.fold (Fun.flip traverse) acc structure
     end
   in
@@ -317,8 +299,6 @@ let schemify (root : variable) (env : env) : scheme =
 (* Exit function *)
 
 let exit (roots : roots) (env : env) : env * quantifiers * schemes =
-  print_under "exit";
-
   (* The young of the env *)
   let state_young = Env.get_young env in
 

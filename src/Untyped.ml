@@ -41,7 +41,13 @@ module Make (T : Utils.Functor) = struct
     in
 
     let rec freshen env = function
-      | Var x -> Var (Env.find x env)
+      | Var x -> begin
+        match Env.find_opt x env with
+        | None ->
+          Printf.ksprintf invalid_arg
+            "Constraint variable '%s' is unbound at this point" x
+        | Some v -> Var v
+      end
       | App (t1, t2) -> App (freshen env t1, freshen env t2)
       | Abs (x, t) ->
         let env, x = bind env x in
