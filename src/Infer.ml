@@ -125,8 +125,7 @@ module Make (T : Utils.Functor) = struct
     match t with
     | Untyped.Loc (loc, t) -> Constraint.Loc (loc, has_type env t w)
     | Untyped.Var x -> begin
-      (* OLD : [[x : w]] := (E(x) = w)
-                   TODO : new doc *)
+      (* OLD : [[x : w]] := (E(x) = w) TODO : new doc *)
       match findopt_mono x env with
       | Some wx ->
         let+ () = eq w wx in
@@ -168,8 +167,12 @@ module Make (T : Utils.Functor) = struct
 
       let inner_env = add_poly x s env in
 
-      let+ t', u' = make_let s wt (has_type env t wt) (has_type inner_env u w)
-      and+ _vs, ty = decode_scheme s in
+      let+ t', (u', ty) =
+        make_let s wt (has_type env t wt)
+        @@ let+ u' = has_type inner_env u w
+           and+ _vs, ty = decode_scheme s in
+           (u', ty)
+      in
       STLC.Let (x, ty, t', u')
     | Untyped.Annot (t, ty) ->
       (* [[(t : ty) : w]] := ∃(wt = ty). [[t : wt]] /\ [[wt = w]] *)

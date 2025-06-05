@@ -109,11 +109,6 @@ module Make (T : Utils.Functor) = struct
 
         match res with
         | NErr e -> NErr e
-        | NDo p ->
-          ndo
-          @@
-          let+ c = p in
-          Conj (c, d)
         | nc -> begin
           let res =
             match (nc, eval d) with
