@@ -2,9 +2,9 @@ open STLC
 
 let print_quantifier (quantifiers : TyVar.t list) : PPrint.document =
   let open PPrint in
-  List.fold_left
-    (fun acc var -> acc ^^ string "∀" ^^ STLC.TyVar.print var ^^ string ". ")
-    empty quantifiers
+  concat_map
+    (fun var -> string "∀" ^^ STLC.TyVar.print var ^^ string ". ")
+    quantifiers
 
 let print_ty : ty -> PPrint.document =
   let rec print t =

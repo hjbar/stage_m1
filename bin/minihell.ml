@@ -80,14 +80,11 @@ let call_typer ~config (term : Untyped.term) =
     if config.log_solver then prerr_newline ();
     p
   in
-  let result =
-    match nf with
-    | NRet v -> Ok (v (Decode.decode env ()))
-    | NErr e -> Error e
-    | NDo _ -> .
-  in
 
-  result
+  match nf with
+  | NRet v -> Ok (v (Decode.decode env ()))
+  | NErr e -> Error e
+  | NDo _ -> .
 
 let print_result ~config result =
   match result with

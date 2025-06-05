@@ -176,9 +176,6 @@ module Make (T : Utils.Functor) = struct
       | Decode v -> nret @@ fun sol -> sol v
       | Do p -> NDo p
       | DecodeScheme sch_var -> begin
-        Format.eprintf "Looking for the scheme of sch_var : %s\n%!"
-          (sch_var |> Constraint.SVar.print |> Utils.string_of_doc);
-
         let scheme = SEnv.find sch_var !solver_env in
 
         let body sol = sol @@ Generalization.body scheme in
@@ -197,7 +194,6 @@ module Make (T : Utils.Functor) = struct
       | Instance (sch_var, w) -> begin
         let sch = SEnv.find sch_var !solver_env in
 
-        Format.eprintf "Before instantiate\n%!";
         Debug.print_header "DEBUG ENV" (Unif.Env.debug !unif_env);
 
         match Generalization.instantiate sch w !unif_env with
@@ -205,10 +201,11 @@ module Make (T : Utils.Functor) = struct
           unif_env := new_unif_env;
           add_to_log !unif_env;
 
-          Format.eprintf "After instantiate (%s <= %s) at level %d\n%!"
-            (Constraint.SVar.print sch_var |> Utils.string_of_doc)
-            (Constraint.Var.print w |> Utils.string_of_doc)
-            (Unif.Env.get_young !unif_env);
+          Debug.print_message
+          @@ Format.sprintf "After instantiate (%s <= %s) at level %d\n%!"
+               (Constraint.SVar.print sch_var |> Utils.string_of_doc)
+               (Constraint.Var.print w |> Utils.string_of_doc)
+               (Unif.Env.get_young !unif_env);
           Debug.print_header "DEBUG ENV" (Unif.Env.debug !unif_env);
 
           nret @@ fun sol -> List.map sol witnesses
@@ -218,8 +215,6 @@ module Make (T : Utils.Functor) = struct
           nerr @@ Clash (decoder y1, decoder y2)
       end
       | Let (sch_var, var, c1, c2) -> begin
-        Format.eprintf "New_scheme_var appears : %s\n%!"
-          (sch_var |> Constraint.SVar.print |> Utils.string_of_doc);
         unif_env := Generalization.enter !unif_env;
 
         if not @@ Unif.Env.mem var !unif_env then begin
@@ -227,12 +222,8 @@ module Make (T : Utils.Functor) = struct
           add_to_log !unif_env
         end;
 
-        Format.eprintf "Let.eval c1...\n%!";
-
         match eval c1 with
         | NRet r1 -> begin
-          Format.eprintf "Let : successfully eval c1 !\n%!";
-
           let new_unif_env, _gammas, schemes =
             Generalization.exit [ var ] !unif_env
           in
@@ -248,12 +239,8 @@ module Make (T : Utils.Functor) = struct
           Debug.print_header "DEBUG SCHEME" (Generalization.debug_scheme scheme);
 
           solver_env := SEnv.add sch_var scheme !solver_env;
-          Format.eprintf "Add in solver_env sch_var : %s\n%!"
-            (sch_var |> Constraint.SVar.print |> Utils.string_of_doc);
 
           let res =
-            Format.eprintf "Let.eval c2...\n%!";
-
             match eval c2 with
             | NRet r2 -> nret @@ fun on_sol -> (r1 on_sol, r2 on_sol)
             | NErr e -> NErr e
@@ -266,26 +253,14 @@ module Make (T : Utils.Functor) = struct
 
           res
         end
-        | NErr e ->
-          Format.eprintf "Let : error during eval c1 !\n%!";
-          NErr e
+        | NErr e -> NErr e
         | NDo p ->
-          Format.eprintf "Let : do during eval c1\n%!";
           ndo
           @@
           let+ c1 = p in
           Let (sch_var, var, c1, c2)
       end
     in
-
-    begin
-      Format.eprintf "\n%!";
-      c0 |> SatConstraint.erase
-      |> ConstraintSimplifier.simplify !unif_env
-      |> ConstraintPrinter.print_sat_constraint |> Utils.string_of_doc
-      |> prerr_endline;
-      Format.eprintf "\n%!"
-    end;
 
     add_to_log !unif_env;
     match eval c0 with
