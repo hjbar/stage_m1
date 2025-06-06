@@ -21,6 +21,8 @@ module Make (T : Utils.Functor) = struct
   let make_logger c0 =
     let c0_erased = SatConstraint.erase c0 in
     fun env ->
+      Debug.print_header "DEBUG ENV" @@ Unif.Env.debug_env env;
+      Debug.print_header "DEBUG POOL" @@ Unif.Env.debug_pool env;
       c0_erased
       |> ConstraintSimplifier.simplify env
       |> ConstraintPrinter.print_sat_constraint |> Utils.string_of_doc
@@ -71,67 +73,55 @@ module Make (T : Utils.Functor) = struct
     let rec eval : type a e. (a, e) Constraint.t -> (a, e) normal_constraint =
       let open Constraint in
       let ( let+ ) nf f = T.map f nf in
+      Debug.print_header "DEBUG ENV" @@ Unif.Env.debug_env !unif_env;
+      Debug.print_header "DEBUG POOL" @@ Unif.Env.debug_pool !unif_env;
 
       function
       | Loc (loc, c) -> begin try eval c with exn -> locate_exn loc exn end
       | Ret v -> NRet v
       | Err e -> NErr e
       | Map (c, f) -> begin
-        let res =
-          match eval c with
-          | NRet v -> nret @@ fun sol -> f @@ v sol
-          | NErr e -> NErr e
-          | NDo p ->
-            ndo
-            @@
-            let+ c = p in
-            Map (c, f)
-        in
-
-        res
+        match eval c with
+        | NRet v -> nret @@ fun sol -> f @@ v sol
+        | NErr e -> NErr e
+        | NDo p ->
+          ndo
+          @@
+          let+ c = p in
+          Map (c, f)
       end
       | MapErr (c, f) -> begin
-        let res =
-          match eval c with
-          | NRet v -> NRet v
-          | NErr e -> nerr @@ f e
-          | NDo p ->
+        match eval c with
+        | NRet v -> NRet v
+        | NErr e -> nerr @@ f e
+        | NDo p ->
+          ndo
+          @@
+          let+ c = p in
+          MapErr (c, f)
+      end
+      | Conj (c, d) -> begin
+        match eval c with
+        | NErr e -> NErr e
+        | nc -> begin
+          match (nc, eval d) with
+          | NErr e, _ | _, NErr e -> NErr e
+          | NRet v, NRet w -> nret @@ fun sol -> (v sol, w sol)
+          | NRet v, NDo q ->
+            ndo
+            @@
+            let+ d = q in
+            Conj (Ret v, d)
+          | NDo p, NRet w ->
             ndo
             @@
             let+ c = p in
-            MapErr (c, f)
-        in
-
-        res
-      end
-      | Conj (c, d) -> begin
-        let res = eval c in
-
-        match res with
-        | NErr e -> NErr e
-        | nc -> begin
-          let res =
-            match (nc, eval d) with
-            | NErr e, _ | _, NErr e -> NErr e
-            | NRet v, NRet w -> nret @@ fun sol -> (v sol, w sol)
-            | NRet v, NDo q ->
-              ndo
-              @@
-              let+ d = q in
-              Conj (Ret v, d)
-            | NDo p, NRet w ->
-              ndo
-              @@
-              let+ c = p in
-              Conj (c, Ret w)
-            | NDo p, NDo q ->
-              ndo
-              @@
-              let+ c = p in
-              Conj (c, Do q)
-          in
-
-          res
+            Conj (c, Ret w)
+          | NDo p, NDo q ->
+            ndo
+            @@
+            let+ c = p in
+            Conj (c, Do q)
         end
       end
       | Eq (x1, x2) -> begin
@@ -139,8 +129,7 @@ module Make (T : Utils.Functor) = struct
         | Ok new_env ->
           unif_env := new_env;
           add_to_log !unif_env;
-          if Constraint.Var.name x1 = "wu" then
-            Debug.print_header "UNIF ENV" (Unif.Env.debug !unif_env);
+
           nret @@ fun _sol -> ()
         | Error (Cycle cy) -> nerr @@ Cycle cy
         | Error (Clash (y1, y2)) ->
@@ -160,18 +149,14 @@ module Make (T : Utils.Functor) = struct
           add_to_log !unif_env
         end;
 
-        let res =
-          match eval c with
-          | NRet v -> NRet v
-          | NErr e -> NErr e
-          | NDo p ->
-            ndo
-            @@
-            let+ c = p in
-            Exist (x, s, c)
-        in
-
-        res
+        match eval c with
+        | NRet v -> NRet v
+        | NErr e -> NErr e
+        | NDo p ->
+          ndo
+          @@
+          let+ c = p in
+          Exist (x, s, c)
       end
       | Decode v -> nret @@ fun sol -> sol v
       | Do p -> NDo p
@@ -194,19 +179,10 @@ module Make (T : Utils.Functor) = struct
       | Instance (sch_var, w) -> begin
         let sch = SEnv.find sch_var !solver_env in
 
-        Debug.print_header "DEBUG ENV" (Unif.Env.debug !unif_env);
-
         match Generalization.instantiate sch w !unif_env with
         | Ok (new_unif_env, witnesses) ->
           unif_env := new_unif_env;
           add_to_log !unif_env;
-
-          Debug.print_message
-          @@ Format.sprintf "After instantiate (%s <= %s) at level %d\n%!"
-               (Constraint.SVar.print sch_var |> Utils.string_of_doc)
-               (Constraint.Var.print w |> Utils.string_of_doc)
-               (Unif.Env.get_young !unif_env);
-          Debug.print_header "DEBUG ENV" (Unif.Env.debug !unif_env);
 
           nret @@ fun sol -> List.map sol witnesses
         | Error (Cycle cy) -> nerr @@ Cycle cy
@@ -215,54 +191,61 @@ module Make (T : Utils.Functor) = struct
           nerr @@ Clash (decoder y1, decoder y2)
       end
       | Let (sch_var, var, c1, c2) -> begin
-        unif_env := Generalization.enter !unif_env;
+        let solve_c2 r1 () =
+          match eval c2 with
+          | NRet r2 -> nret @@ fun on_sol -> (r1 on_sol, r2 on_sol)
+          | NErr e -> NErr e
+          | NDo p ->
+            ndo
+            @@
+            let+ c2 = p in
+            Let (sch_var, var, Ret r1, c2)
+        in
 
-        if not @@ Unif.Env.mem var !unif_env then begin
-          unif_env := Unif.Env.add_flexible var None !unif_env;
-          add_to_log !unif_env
-        end;
+        let solve_c1 () =
+          if not @@ Unif.Env.mem var !unif_env then begin
+            unif_env := Generalization.enter !unif_env;
+            unif_env := Unif.Env.add_flexible var None !unif_env;
+            add_to_log !unif_env
+          end;
 
-        match eval c1 with
-        | NRet r1 -> begin
-          let new_unif_env, _gammas, schemes =
-            Generalization.exit [ var ] !unif_env
-          in
-          unif_env := new_unif_env;
-          add_to_log !unif_env;
+          match eval c1 with
+          | NRet r1 -> begin
+            let new_unif_env, _gammas, schemes =
+              Generalization.exit [ var ] !unif_env
+            in
+            unif_env := new_unif_env;
+            add_to_log !unif_env;
 
-          let scheme =
             assert (List.length schemes = 1);
-            List.hd schemes
-          in
+            let scheme = List.hd schemes in
 
-          Debug.print_header "DEBUG ENV" (Unif.Env.debug !unif_env);
-          Debug.print_header "DEBUG SCHEME" (Generalization.debug_scheme scheme);
+            Debug.print_header "DEBUG SCHEME"
+            @@ Generalization.debug_scheme scheme;
 
-          solver_env := SEnv.add sch_var scheme !solver_env;
+            solver_env := SEnv.add sch_var scheme !solver_env;
 
-          let res =
-            match eval c2 with
-            | NRet r2 -> nret @@ fun on_sol -> (r1 on_sol, r2 on_sol)
-            | NErr e -> NErr e
-            | NDo p ->
-              ndo
-              @@
-              let+ c2 = p in
-              Let (sch_var, var, Ret r1, c2)
-          in
+            solve_c2 r1 ()
+          end
+          | NErr e -> NErr e
+          | NDo p ->
+            ndo
+            @@
+            let+ c1 = p in
+            Let (sch_var, var, c1, c2)
+        in
 
-          res
-        end
-        | NErr e -> NErr e
-        | NDo p ->
-          ndo
-          @@
-          let+ c1 = p in
-          Let (sch_var, var, c1, c2)
+        match SEnv.mem sch_var !solver_env with
+        | false -> solve_c1 ()
+        | true ->
+          let r1 = match c1 with Ret r1 -> r1 | _ -> assert false in
+          solve_c2 r1 ()
       end
     in
 
+    Debug.print_message "New evaluation of the Solver";
     add_to_log !unif_env;
+
     match eval c0 with
     | exception Located (loc, exn, bt) ->
       Printf.eprintf "Error at %s" @@ MenhirLib.LexerUtil.range loc;

@@ -1,12 +1,26 @@
 module Make (M : Utils.MonadPlus) = struct
   module Untyped = Untyped.Make (M)
   module Constraint = Constraint.Make (M)
+  module SatConstraint = SatConstraint.Make (M)
+  module ConstraintSimplifier = ConstraintSimplifier.Make (M)
+  module ConstraintPrinter = ConstraintPrinter.Make (M)
   module Infer = Infer.Make (M)
   module Solver = Solver.Make (M)
   module TeVarSet = Untyped.Var.Set
   module TyVarSet = STLC.TyVar.Set
 
   (* Helpers *)
+
+  let print_constr ?(simplify = true) env cstr =
+    match simplify with
+    | false ->
+      cstr |> ConstraintPrinter.print_constraint
+      |> Debug.print_header "DEBUG CONSTRAINT (DEFAULT)"
+    | true ->
+      cstr |> SatConstraint.erase
+      |> ConstraintSimplifier.simplify env
+      |> ConstraintPrinter.print_sat_constraint
+      |> Debug.print_header "DEBUG CONSTRAINT (SIMPLIFIED)"
 
   let make_do t = Untyped.Do t
 
@@ -22,6 +36,8 @@ module Make (M : Utils.MonadPlus) = struct
 
     let bind_tevar x env = { env with tevars = TeVarSet.add x env.tevars }
   end
+
+  (* Untyped term with do nodes *)
 
   let untyped : Untyped.term =
     let open Untyped in
@@ -54,7 +70,7 @@ module Make (M : Utils.MonadPlus) = struct
         let x = new_var () in
         let inner_env = Env.bind_tevar x env in
 
-        M.return @@ Let (x, gen env, gen @@ inner_env)
+        M.return @@ Let (x, gen env, gen inner_env)
       in
 
       let tuple_size = M.one_of [| 2 |] in
@@ -80,6 +96,8 @@ module Make (M : Utils.MonadPlus) = struct
     in
 
     gen (Env.empty ())
+
+  (* Constraint-wrapper *)
 
   let constraint_ : (STLC.term * STLC.scheme, Infer.err) Constraint.t =
     let s = Constraint.SVar.fresh "final_scheme" in
@@ -112,13 +130,23 @@ module Make (M : Utils.MonadPlus) = struct
     let rec loop : type a e. fuel:int -> env -> (a, e) Constraint.t -> a M.t =
      fun ~fuel env cstr ->
       if fuel = -1 then M.fail
-      else
+      else begin
+        print_constr env cstr;
         let env, nf = Solver.eval ~log:false env cstr in
 
         match nf with
-        | NRet v when fuel = 0 -> M.return @@ v (Decode.decode env ())
+        | NRet v when fuel = 0 ->
+          Debug.print_message "START - DEBUG RET";
+          Debug.print_header "DEBUG ENV" @@ Unif.Env.debug_env env;
+          Debug.print_header "DEBUG POOL" @@ Unif.Env.debug_pool env;
+          print_constr ~simplify:false env cstr;
+          print_constr ~simplify:true env cstr;
+          Debug.print_message "END - DEBUG RET";
+
+          M.return @@ v (Decode.decode env ())
         | NDo p when fuel > 0 -> M.bind p @@ loop ~fuel:(fuel - 1) env
         | _ -> M.fail
+      end
     in
 
     loop ~fuel:size Unif.Env.empty constraint_

@@ -163,13 +163,13 @@ module Env = struct
     |> List.sort (fun (_, o1) (_, o2) -> Int.compare o1 o2)
     |> List.map fst
 
-  let debug (env : t) =
+  let debug_env (env : t) =
     let open PPrint in
     env.map |> Constraint.Var.Map.bindings |> List.map fst
     |> List.map (fun v -> debug_var v @@ repr v env)
     |> sort_debug_vars |> separate hardline
 
-  let debug_pool_assoc env =
+  let debug_pool env =
     let open PPrint in
     env.pool |> IntMap.bindings
     |> List.map

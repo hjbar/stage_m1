@@ -43,7 +43,7 @@ module Make (T : Utils.Functor) = struct
 
     (* Bind existential v to the constraint and remove v from the free variables of the constraint *)
     let exist v s (fvs, c) : VarSet.t * sat_constraint =
-      assert (Var.eq v (normalize v));
+      assert (Var.eq v @@ normalize v);
 
       let s =
         match Unif.Env.repr v env with

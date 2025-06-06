@@ -1,6 +1,6 @@
 (* Global variables *)
 
-let debug = false
+let debug = true
 
 let run_test f = if debug then f ()
 
@@ -21,7 +21,7 @@ let get_sub_header sub_header doc = get_block '-' sub_header doc
 (* One-line functions *)
 
 let print_document doc =
-  run_test @@ fun () -> doc |> Utils.string_of_doc |> prerr_endline
+  run_test @@ fun () -> doc |> Utils.string_of_doc |> Format.eprintf "%s\n%!"
 
 let print_header header doc =
   run_test @@ fun () -> doc |> get_header header |> print_document

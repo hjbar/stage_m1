@@ -80,9 +80,9 @@ module Env : sig
 
   (* DEBUG *)
 
-  val debug : t -> PPrint.document
+  val debug_env : t -> PPrint.document
 
-  val debug_pool_assoc : t -> PPrint.document
+  val debug_pool : t -> PPrint.document
 end
 
 (** Unification errors:
