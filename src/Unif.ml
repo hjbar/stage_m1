@@ -147,32 +147,43 @@ module Env = struct
       , order )
     end
 
+  let sort_debug_vars l =
+    l
+    |> List.map
+         begin
+           fun (doc, order) ->
+             let cmp =
+               match order with
+               | `Non_repr -> min_int
+               | `Rank n -> n
+               | `Generic -> max_int
+             in
+             (doc, cmp)
+         end
+    |> List.sort (fun (_, o1) (_, o2) -> Int.compare o1 o2)
+    |> List.map fst
+
   let debug (env : t) =
     let open PPrint in
-    env.map |> Constraint.Var.Map.bindings
-    |> List.map (fun (v, _uv) ->
-         let doc, order = debug_var v (repr v env) in
-         ( doc
-         , match order with
-           | `Non_repr -> -10
-           | `Rank n -> n
-           | `Generic -> max_int ) )
-    |> List.sort (fun (_, o1) (_, o2) -> Int.compare o1 o2)
-    |> concat_map (fun (doc, _order) -> doc ^^ hardline)
+    env.map |> Constraint.Var.Map.bindings |> List.map fst
+    |> List.map (fun v -> debug_var v @@ repr v env)
+    |> sort_debug_vars |> separate hardline
 
   let debug_pool_assoc env =
     let open PPrint in
-    IntMap.fold
-      begin
-        fun rank variables acc ->
-          let variables_doc =
-            space ^^ separate_map space Constraint.Var.print variables
-          in
-          acc
-          ^^ string (Format.sprintf "%d |--> " rank)
-          ^^ variables_doc ^^ break 1
-      end
-      env.pool empty
+    env.pool |> IntMap.bindings
+    |> List.map
+         begin
+           fun (rank, variables) ->
+             let alinea = hardline ^^ space ^^ space ^^ space in
+             let variables_doc =
+               variables
+               |> List.map (fun v -> debug_var v @@ repr v env)
+               |> sort_debug_vars |> separate alinea
+             in
+             string (Format.sprintf "%d |-->" rank) ^^ alinea ^^ variables_doc
+         end
+    |> separate hardline
 end
 
 (* Errors check *)

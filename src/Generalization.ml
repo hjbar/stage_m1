@@ -256,9 +256,12 @@ let quantifiers { quantifiers; _ } = quantifiers
 
 let debug_scheme { root; quantifiers; _ } =
   let open PPrint in
-  string "forall "
-  ^^ separate_map space Constraint.Var.print quantifiers
-  ^^ dot ^^ space ^^ Constraint.Var.print root
+  let quantifiers_doc =
+    concat_map
+      (fun var -> string "∀" ^^ Constraint.Var.print var ^^ string ". ")
+      quantifiers
+  in
+  quantifiers_doc ^^ Constraint.Var.print root
 
 (* Return a monomorphic scheme whose root is the root *)
 

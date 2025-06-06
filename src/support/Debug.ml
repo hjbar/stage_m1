@@ -11,8 +11,8 @@ let get_block sep header doc =
   let long_sep = String.make (6 + String.length header + 6) sep in
 
   let open PPrint in
-  string (short_sep ^ " " ^ header ^ " " ^ short_sep)
-  ^^ break 1 ^^ doc ^^ string long_sep
+  string (Format.sprintf "%s %s %s" short_sep header short_sep)
+  ^^ hardline ^^ doc ^^ hardline ^^ string long_sep
 
 let get_header header doc = get_block '=' header doc
 
@@ -34,5 +34,5 @@ let print_message msg =
   let sep = String.make 5 '*' in
 
   let open PPrint in
-  string sep ^^ break 1 ^^ string msg ^^ break 1 ^^ string sep ^^ break 1
+  string sep ^^ hardline ^^ string msg ^^ hardline ^^ string sep
   |> print_document
