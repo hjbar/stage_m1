@@ -11,7 +11,7 @@ module Make (T : Utils.Functor) = struct
   module ConstraintPrinter = ConstraintPrinter.Make (T)
 
   module Env = struct
-    module SMap = Map.Make (Constraint.SVar)
+    module SMap = Constraint.SVar.Map
 
     type unif = Unif.Env.t
     type schemes = Generalization.scheme SMap.t
@@ -22,6 +22,23 @@ module Make (T : Utils.Functor) = struct
     }
 
     let empty = { unif = Unif.Env.empty; schemes = SMap.empty }
+
+    let debug_schemes schemes =
+      let open PPrint in
+      schemes
+      |> Constraint.SVar.Map.bindings
+      |> List.map (fun (s, sch) ->
+           Constraint.SVar.print s ^^ colon ^^ break 1 ^^ Generalization.debug_scheme sch
+         )
+      |> separate hardline
+
+    let debug { unif; schemes } =
+      let open PPrint in
+      debug_schemes schemes
+      ^^
+      Unif.Env.debug_env unif
+      ^^
+      Unif.Env.debug_pool unif
   end
   type env = Env.t
 
@@ -29,11 +46,10 @@ module Make (T : Utils.Functor) = struct
 
   let make_logger c0 =
     let c0_erased = SatConstraint.erase c0 in
-    fun env ->
-      Debug.print_header "DEBUG ENV" @@ Unif.Env.debug_env env;
-      Debug.print_header "DEBUG POOL" @@ Unif.Env.debug_pool env;
+    fun (env : Env.t) ->
+      Debug.print_header "DEBUG ENV" @@ Env.debug env;
       c0_erased
-      |> ConstraintSimplifier.simplify env
+      |> ConstraintSimplifier.simplify env.unif
       |> ConstraintPrinter.print_sat_constraint |> Utils.string_of_doc
       |> prerr_endline
 
@@ -53,7 +69,11 @@ module Make (T : Utils.Functor) = struct
 
   let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t) :
     env * (a, e) normal_constraint =
-    (* We recommend calling the function [add_to_log] above
+
+    let unif_env : Env.unif ref = ref env.unif in
+    let scheme_env : Env.schemes ref = ref env.schemes in
+
+    (* We recommend calling the function [add_to_log] below
          whenever you get an updated environment.
 
          $ dune exec -- minihell --log-solver foo.test
@@ -65,7 +85,10 @@ module Make (T : Utils.Functor) = struct
          (You can also tweak this code temporarily to print stuff on
          stderr right away if you need dirtier ways to debug.)
     *)
-    let add_to_log = if log then make_logger c0 else ignore in
+    let add_to_log =
+      let logger = if log then make_logger c0 else ignore in
+      fun () -> logger { unif = !unif_env; schemes = !scheme_env }
+    in
 
     let exception Located of Utils.loc * exn * Printexc.raw_backtrace in
     let locate_exn loc exn =
@@ -75,9 +98,6 @@ module Make (T : Utils.Functor) = struct
         let bt = Printexc.get_raw_backtrace () in
         raise @@ Located (loc, base_exn, bt)
     in
-
-    let unif_env : Env.unif ref = ref env.unif in
-    let scheme_env : Env.schemes ref = ref env.schemes in
 
     let rec eval : type a e. (a, e) Constraint.t -> (a, e) normal_constraint =
       let open Constraint in
@@ -137,7 +157,7 @@ module Make (T : Utils.Functor) = struct
         match Unif.unify !unif_env x1 x2 with
         | Ok new_env ->
           unif_env := new_env;
-          add_to_log !unif_env;
+          add_to_log ();
 
           nret @@ fun _sol -> ()
         | Error (Cycle cy) -> nerr @@ Cycle cy
@@ -155,7 +175,7 @@ module Make (T : Utils.Functor) = struct
         *)
         if not @@ Unif.Env.mem x !unif_env then begin
           unif_env := Unif.Env.add_flexible x s !unif_env;
-          add_to_log !unif_env
+          add_to_log ()
         end;
 
         match eval c with
@@ -191,7 +211,7 @@ module Make (T : Utils.Functor) = struct
         match Generalization.instantiate sch w !unif_env with
         | Ok (new_unif_env, witnesses) ->
           unif_env := new_unif_env;
-          add_to_log !unif_env;
+          add_to_log ();
 
           nret @@ fun sol -> List.map sol witnesses
         | Error (Cycle cy) -> nerr @@ Cycle cy
@@ -215,7 +235,7 @@ module Make (T : Utils.Functor) = struct
           if not @@ Unif.Env.mem var !unif_env then begin
             unif_env := Generalization.enter !unif_env;
             unif_env := Unif.Env.add_flexible var None !unif_env;
-            add_to_log !unif_env
+            add_to_log ()
           end;
 
           match eval c1 with
@@ -224,7 +244,7 @@ module Make (T : Utils.Functor) = struct
               Generalization.exit [ var ] !unif_env
             in
             unif_env := new_unif_env;
-            add_to_log !unif_env;
+            add_to_log ();
 
             assert (List.length schemes = 1);
             let scheme = List.hd schemes in
@@ -253,7 +273,7 @@ module Make (T : Utils.Functor) = struct
     in
 
     Debug.print_message "New evaluation of the Solver";
-    add_to_log !unif_env;
+    add_to_log ();
 
     match eval c0 with
     | exception Located (loc, exn, bt) ->

@@ -139,9 +139,7 @@ module Make (M : Utils.MonadPlus) = struct
         match nf with
         | NRet v when fuel = 0 ->
           Debug.print_message "START - DEBUG RET";
-          (* TODO: debug_env should also print the schemes *)
-          Debug.print_header "DEBUG ENV" @@ Unif.Env.debug_env env.unif;
-          Debug.print_header "DEBUG POOL" @@ Unif.Env.debug_pool env.unif;
+          Debug.print_header "DEBUG ENV" @@ Solver.Env.debug env;
           print_constr ~simplify:false env.unif cstr;
           print_constr ~simplify:true env.unif cstr;
           Debug.print_message "END - DEBUG RET";

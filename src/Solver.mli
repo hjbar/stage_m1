@@ -14,6 +14,8 @@ module Make (T : Utils.Functor) : sig
       }
 
     val empty : t
+
+    val debug : t -> PPrint.document
   end
 
   type log = PPrint.document list
