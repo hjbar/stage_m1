@@ -1,7 +1,18 @@
 module Make (T : Utils.Functor) : sig
   module Constraint := Constraint.Make(T)
 
+  module SEnv : Map.S with type key = Constraint.SVar.t
+
   type unif_env = Unif.Env.t
+
+  type scheme_env = Generalization.scheme SEnv.t
+
+  type env =
+    { unif : unif_env
+    ; schemes : scheme_env
+    }
+
+  val empty_env : env
 
   type log = PPrint.document list
 
@@ -27,8 +38,5 @@ module Make (T : Utils.Functor) : sig
       steps (obtained from the solver environment and the original constraint by
       constraint simplification) as the constraint-solving progresses. *)
   val eval :
-       log:bool
-    -> unif_env
-    -> ('a, 'e) Constraint.t
-    -> unif_env * ('a, 'e) normal_constraint
+    log:bool -> env -> ('a, 'e) Constraint.t -> env * ('a, 'e) normal_constraint
 end

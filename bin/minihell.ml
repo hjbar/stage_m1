@@ -76,13 +76,13 @@ let call_typer ~config (term : Untyped.term) =
 
   let env, nf =
     if config.log_solver then prerr_endline "Constraint solving log:";
-    let p = Solver.eval ~log:config.log_solver Unif.Env.empty cst in
+    let p = Solver.eval ~log:config.log_solver Solver.empty_env cst in
     if config.log_solver then prerr_newline ();
     p
   in
 
   match nf with
-  | NRet v -> Ok (v (Decode.decode env ()))
+  | NRet v -> Ok (v (Decode.decode env.unif ()))
   | NErr e -> Error e
   | NDo _ -> .
 

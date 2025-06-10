@@ -125,29 +125,32 @@ module Make (M : Utils.MonadPlus) = struct
   *)
   let typed ~size : (STLC.term * STLC.scheme) M.t =
     let open struct
-      type env = Solver.unif_env
+      type env = Solver.env
     end in
     let rec loop : type a e. fuel:int -> env -> (a, e) Constraint.t -> a M.t =
      fun ~fuel env cstr ->
       if fuel = -1 then M.fail
       else begin
-        print_constr env cstr;
+        (* TODO: the simplifier called by print_constr
+           should get the full environment as parameter. *)
+        print_constr env.unif cstr;
         let env, nf = Solver.eval ~log:false env cstr in
 
         match nf with
         | NRet v when fuel = 0 ->
           Debug.print_message "START - DEBUG RET";
-          Debug.print_header "DEBUG ENV" @@ Unif.Env.debug_env env;
-          Debug.print_header "DEBUG POOL" @@ Unif.Env.debug_pool env;
-          print_constr ~simplify:false env cstr;
-          print_constr ~simplify:true env cstr;
+          (* TODO: debug_env should also print the schemes *)
+          Debug.print_header "DEBUG ENV" @@ Unif.Env.debug_env env.unif;
+          Debug.print_header "DEBUG POOL" @@ Unif.Env.debug_pool env.unif;
+          print_constr ~simplify:false env.unif cstr;
+          print_constr ~simplify:true env.unif cstr;
           Debug.print_message "END - DEBUG RET";
 
-          M.return @@ v (Decode.decode env ())
+          M.return @@ v (Decode.decode env.unif ())
         | NDo p when fuel > 0 -> M.bind p @@ loop ~fuel:(fuel - 1) env
         | _ -> M.fail
       end
     in
 
-    loop ~fuel:size Unif.Env.empty constraint_
+    loop ~fuel:size Solver.empty_env constraint_
 end
