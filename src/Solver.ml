@@ -9,18 +9,21 @@ module Make (T : Utils.Functor) = struct
   module SatConstraint = SatConstraint.Make (T)
   module ConstraintSimplifier = ConstraintSimplifier.Make (T)
   module ConstraintPrinter = ConstraintPrinter.Make (T)
-  module SEnv = Map.Make (Constraint.SVar)
 
-  type unif_env = Unif.Env.t
+  module Env = struct
+    module SMap = Map.Make (Constraint.SVar)
 
-  type scheme_env = Generalization.scheme SEnv.t
+    type unif = Unif.Env.t
+    type schemes = Generalization.scheme SMap.t
 
-  type env =
-    { unif : unif_env
-    ; schemes : scheme_env
+    type t =
+    { unif : unif
+    ; schemes : schemes
     }
 
-  let empty_env = { unif = Unif.Env.empty; schemes = SEnv.empty }
+    let empty = { unif = Unif.Env.empty; schemes = SMap.empty }
+  end
+  type env = Env.t
 
   type log = PPrint.document list
 
@@ -73,8 +76,8 @@ module Make (T : Utils.Functor) = struct
         raise @@ Located (loc, base_exn, bt)
     in
 
-    let unif_env : unif_env ref = ref env.unif in
-    let scheme_env : scheme_env ref = ref env.schemes in
+    let unif_env : Env.unif ref = ref env.unif in
+    let scheme_env : Env.schemes ref = ref env.schemes in
 
     let rec eval : type a e. (a, e) Constraint.t -> (a, e) normal_constraint =
       let open Constraint in
@@ -167,7 +170,7 @@ module Make (T : Utils.Functor) = struct
       | Decode v -> nret @@ fun sol -> sol v
       | Do p -> NDo p
       | DecodeScheme sch_var -> begin
-        let scheme = SEnv.find sch_var !scheme_env in
+        let scheme = Env.SMap.find sch_var !scheme_env in
 
         let body sol = sol @@ Generalization.body scheme in
         let quantifiers (sol : variable -> STLC.ty) : Structure.TyVar.t list =
@@ -183,7 +186,7 @@ module Make (T : Utils.Functor) = struct
         nret @@ fun sol -> (quantifiers sol, body sol)
       end
       | Instance (sch_var, w) -> begin
-        let sch = SEnv.find sch_var !scheme_env in
+        let sch = Env.SMap.find sch_var !scheme_env in
 
         match Generalization.instantiate sch w !unif_env with
         | Ok (new_unif_env, witnesses) ->
@@ -229,7 +232,7 @@ module Make (T : Utils.Functor) = struct
             Debug.print_header "DEBUG SCHEME"
             @@ Generalization.debug_scheme scheme;
 
-            scheme_env := SEnv.add sch_var scheme !scheme_env;
+            scheme_env := Env.SMap.add sch_var scheme !scheme_env;
 
             solve_c2 r1 ()
           end
@@ -241,7 +244,7 @@ module Make (T : Utils.Functor) = struct
             Let (sch_var, var, c1, c2)
         in
 
-        match SEnv.mem sch_var !scheme_env with
+        match Env.SMap.mem sch_var !scheme_env with
         | false -> solve_c1 ()
         | true ->
           let r1 = match c1 with Ret r1 -> r1 | _ -> assert false in
@@ -258,6 +261,6 @@ module Make (T : Utils.Functor) = struct
       Printexc.raise_with_backtrace exn bt
     | exception exn -> raise exn
     | result ->
-      let env = { unif = !unif_env; schemes = !scheme_env } in
+      let env = { Env.unif = !unif_env; schemes = !scheme_env } in
       (env, result)
 end

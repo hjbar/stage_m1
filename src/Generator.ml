@@ -125,7 +125,7 @@ module Make (M : Utils.MonadPlus) = struct
   *)
   let typed ~size : (STLC.term * STLC.scheme) M.t =
     let open struct
-      type env = Solver.env
+      type env = Solver.Env.t
     end in
     let rec loop : type a e. fuel:int -> env -> (a, e) Constraint.t -> a M.t =
      fun ~fuel env cstr ->
@@ -152,5 +152,5 @@ module Make (M : Utils.MonadPlus) = struct
       end
     in
 
-    loop ~fuel:size Solver.empty_env constraint_
+    loop ~fuel:size Solver.Env.empty constraint_
 end

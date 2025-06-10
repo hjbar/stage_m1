@@ -76,7 +76,7 @@ let call_typer ~config (term : Untyped.term) =
 
   let env, nf =
     if config.log_solver then prerr_endline "Constraint solving log:";
-    let p = Solver.eval ~log:config.log_solver Solver.empty_env cst in
+    let p = Solver.eval ~log:config.log_solver Solver.Env.empty cst in
     if config.log_solver then prerr_newline ();
     p
   in
