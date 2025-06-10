@@ -1,6 +1,12 @@
 (* Global variables *)
 
-let debug = false
+let debug = match Sys.getenv "DEBUG" with
+  | "1" | "yes" | "true" | "Y" -> true
+  | exception Not_found -> false
+  | "0" | "no" | "false" | "N" -> false
+  | other ->
+    Printf.ksprintf invalid_arg
+      "Unknown value for DEBUG environment variable: %S" other
 
 let run_test f = if debug then f ()
 
