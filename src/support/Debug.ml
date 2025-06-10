@@ -1,6 +1,6 @@
 (* Global variables *)
 
-let debug = true
+let debug = false
 
 let run_test f = if debug then f ()
 
