@@ -6,4 +6,4 @@ exec > >(tee debug.log) 2>&1
 dune clean &&
 dune fmt &&
 dune build &&
-OCAMLRUNPARAM=b DEBUG=Y dune exec -- minigen --exhaustive --types --size 7 --count 1
+OCAMLRUNPARAM=b DEBUG=N dune exec -- minigen --exhaustive --types --size 10 --count 1

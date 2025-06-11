@@ -1020,3 +1020,5 @@ An example of random sampling output at higher size.
     in let (x/109d : β/bff) = w/109c in x/109d
   
   Inferred type : ∀γ/bff. ∀β/bff. {γ/bff * β/bff} -> β/bff
+
+  $ dune exec -- minigen --exhaustive --types --size 6 --count 247
