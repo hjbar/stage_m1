@@ -315,7 +315,7 @@ let exit (roots : roots) (env : env) : env * quantifiers * schemes =
   (env, quantifiers, schemes)
 
 let instantiate ({ root; generics; quantifiers } : scheme) (var : variable)
-  (env : env) : (env * quantifiers, err) result =
+  (env : env) : env * (quantifiers, err) result =
   (* Create a flexible copy without structure of each generic variable *)
   let (env : env), (mapping : (variable, variable) Hashtbl.t) =
     let ht = Hashtbl.create 16 in
@@ -370,5 +370,7 @@ let instantiate ({ root; generics; quantifiers } : scheme) (var : variable)
   let copy_root = copy env root in
 
   match Unif.unify env copy_root var with
-  | Ok new_env -> Ok (new_env, List.map (copy env) quantifiers)
-  | Error err -> Error err
+  | Ok new_env ->
+    let copy_quantifiers = List.map (copy env) quantifiers in
+    (new_env, Ok copy_quantifiers)
+  | Error err -> (env, Error err)

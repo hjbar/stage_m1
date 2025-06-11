@@ -110,6 +110,7 @@ to the bin/dune content.)
 
 
 
+
   $ minihell $FLAGS id_poly2.test
   Input term:
     lambda y. let id = lambda x. x in id y
@@ -137,6 +138,7 @@ to the bin/dune content.)
   Elaborated term:
     lambda (y : α). let (id : β -> β) = lambda (x : β). x in id y
   
+
 
 
 
@@ -168,6 +170,7 @@ type, this is just an abstract/rigid type variable: `Constr
 
 
 
+
   $ minihell $FLAGS let_easy.test
   Input term:
     let x = lambda y. y in x
@@ -189,6 +192,7 @@ type, this is just an abstract/rigid type variable: `Constr
   Elaborated term:
     let (x : β -> β) = lambda (y : β). y in x
   
+
 
 
 
@@ -229,6 +233,7 @@ type, this is just an abstract/rigid type variable: `Constr
 
 
 
+
   $ minihell $FLAGS uncurry.test
   Input term:
     lambda f. lambda p. let (x, y) = p in f x y
@@ -260,6 +265,7 @@ type, this is just an abstract/rigid type variable: `Constr
     (f : β -> γ -> α).
       lambda (p : {β * γ}). let ((x : β), (y : γ)) = p in f x y
   
+
 
 
 
@@ -300,6 +306,7 @@ type, this is just an abstract/rigid type variable: `Constr
     (a : α).
       let (id : β -> β) = lambda (x : β). x in let (r : α) = id a in r
   
+
 
 
 
@@ -360,6 +367,7 @@ type, this is just an abstract/rigid type variable: `Constr
       (a : α).
         lambda (b : β). let (l : α) = id a in let (r : β) = id b in (l, r)
   
+
 
 
 
@@ -425,6 +433,7 @@ type, this is just an abstract/rigid type variable: `Constr
         (b : β).
           let (l : α) = id a in let (r : β) = id b in ((l : int), (r : bool))
   
+
 
 
 
@@ -530,6 +539,7 @@ the inference variables.
   Elaborated term:
     lambda (x : int). (x : int)
   
+
 
 
 
@@ -685,6 +695,7 @@ the inference variables.
 
 
 
+
 ## Cyclic types
 
 Unification can sometimes create cyclic types. We decide to reject
@@ -784,6 +795,7 @@ a lot of those.)
 
 
 
+
 ## Erroneous programs
 
   $ minihell $FLAGS --log-solver error_poly_def.test
@@ -820,94 +832,191 @@ There are not many programs with size 3, 4 and 5.
 
   $ minigen --exhaustive --types --size 4 --count 100
   lambda
-  (x/10 : δ/11). lambda (y/14 : γ/11). lambda (x/15 : β/11). x/10
-
+  (x/10 : β/11). lambda (y/14 : δ/11). lambda (x/15 : γ/11). x/10
+  
+  Inferred type : ∀δ/11. ∀β/11. ∀γ/11. β/11
+  ->
+  δ/11 -> γ/11 -> β/11
+  
+  
+  
   lambda
-  (x/10 : γ/12). lambda (y/14 : β/12). lambda (x/15 : α/12). y/14
-
+  (x/10 : γ/12). lambda (y/14 : α/12). lambda (x/15 : β/12). y/14
+  
+  Inferred type : ∀α/12. ∀γ/12. ∀β/12. γ/12
+  ->
+  α/12 -> β/12 -> α/12
+  
+  
+  
   lambda
   (x/10 : β/13). lambda (y/14 : α/13). lambda (x/15 : δ/12). x/15
-
-  lambda (x/10 : γ/14). let (z/18 : γ/14) = x/10 in x/10
-
-  lambda (x/10 : δ/14). let (z/18 : δ/14) = x/10 in z/18
-
-  lambda (x/10 : α/17). (x/10, x/10)
-
+  
+  Inferred type : ∀α/13. ∀β/13. ∀δ/12. β/13
+  ->
+  α/13 -> δ/12 -> δ/12
+  
+  
+  
+  lambda (x/10 : γ/14). let (z/18 : δ/14) = x/10 in x/10
+  
+  Inferred type : ∀γ/14. γ/14 -> γ/14
+  
+  
+  
+  lambda (x/10 : α/15). let (z/18 : α/15) = x/10 in z/18
+  
+  Inferred type : ∀α/15. α/15 -> α/15
+  
+  
+  
+  lambda (x/10 : β/17). (x/10, x/10)
+  
+  Inferred type : ∀β/17. β/17 -> {β/17 * β/17}
+  
+  
+  
   lambda
-  (x/10 : {γ/19 * β/19}).
-    let ((w/21 : γ/19), (x/22 : β/19)) = x/10 in x/10
-
+  (x/10 : {γ/19 * δ/19}).
+    let ((w/21 : γ/19), (x/22 : δ/19)) = x/10 in x/10
+  
+  Inferred type : ∀γ/19. ∀δ/19. {γ/19 * δ/19} -> {γ/19 * δ/19}
+  
+  
+  
   lambda
-  (x/10 : {α/1a * δ/19}).
-    let ((w/21 : α/1a), (x/22 : δ/19)) = x/10 in w/21
-
+  (x/10 : {α/1a * β/1a}).
+    let ((w/21 : α/1a), (x/22 : β/1a)) = x/10 in w/21
+  
+  Inferred type : ∀α/1a. ∀β/1a. {α/1a * β/1a} -> α/1a
+  
+  
+  
   lambda
-  (x/10 : {γ/1a * β/1a}).
-    let ((w/21 : γ/1a), (x/22 : β/1a)) = x/10 in x/22
-
-  let (y/26 : β/21 -> β/21) = lambda (v/29 : β/21). v/29 in y/26
+  (x/10 : {δ/1a * γ/1a}).
+    let ((w/21 : δ/1a), (x/22 : γ/1a)) = x/10 in x/22
+  
+  Inferred type : ∀δ/1a. ∀γ/1a. {δ/1a * γ/1a} -> γ/1a
+  
+  
+  
+  let (y/26 : δ/21 -> δ/21) = lambda (v/29 : δ/21). v/29 in y/26
+  
+  Inferred type : γ/21 -> γ/21
 
 
 An example of random sampling output at higher size.
 
   $ minigen --seed 42 --types --size 6 --count 10
   lambda
-  (v/3 : δ/27a).
-    (lambda (y/34f : γ/27a). v/3, lambda (z/34f : β/27a). z/34f)
-
+  (v/3 : β/27a).
+    (lambda (y/34f : γ/27a). v/3, lambda (z/34f : δ/27a). z/34f)
+  
+  Inferred type : ∀γ/27a. ∀β/27a. ∀δ/27a. β/27a
+  ->
+  {γ/27a -> β/27a * δ/27a -> δ/27a}
+  
+  
+  
   lambda
   (v/3 : α/298).
     (lambda (y/65 : α/298). lambda (x/8f : δ/297). x/8f) v/3
-
+  
+  Inferred type : ∀α/298. ∀δ/297. α/298 -> δ/297 -> δ/297
+  
+  
+  
   lambda
-  (v/3 : {β/3cc * α/3cc}).
+  (v/3 : {α/3cd * δ/3cc}).
     let
-    ((z/533 : β/3cc), (u/533 : α/3cc))
+    ((z/533 : α/3cd), (u/533 : δ/3cc))
     =
-    let ((v/533 : β/3cc), (w/533 : α/3cc)) = v/3 in v/3
+    let ((v/533 : α/3cd), (w/533 : δ/3cc)) = v/3 in v/3
     in u/533
-
+  
+  Inferred type : ∀α/3cd. ∀δ/3cc. {α/3cd * δ/3cc} -> δ/3cc
+  
+  
+  
   lambda
-  (v/3 : (γ/3de -> δ/3de) -> α/3df).
-    lambda (u/22 : δ/3de). v/3 (lambda (w/473 : γ/3de). u/22)
-
+  (v/3 : (δ/3df -> γ/3df) -> β/3df).
+    lambda (u/22 : γ/3df). v/3 (lambda (w/473 : δ/3df). u/22)
+  
+  Inferred type : ∀γ/3df. ∀δ/3df. ∀β/3df. ((δ/3df -> γ/3df)
+  ->
+  β/3df)
+  ->
+  γ/3df -> β/3df
+  
+  
+  
   let
-  (w/2 : β/419 -> {β/419 * β/419})
+  (w/2 : β/41a -> {β/41a * β/41a})
   =
-  lambda (u/d : β/419). (u/d, u/d)
+  lambda (u/d : β/41a). (u/d, u/d)
   in w/2
-
+  
+  Inferred type : α/41a -> {α/41a * α/41a}
+  
+  
+  
   lambda
-  (v/3 : {γ/4f0 * δ/4f0}).
+  (v/3 : {γ/4f1 * δ/4f1}).
     let
-    ((x/6c6 : γ/4f0), (y/6c6 : δ/4f0))
+    ((x/6c6 : γ/4f1), (y/6c6 : δ/4f1))
     =
     v/3
-    in let (z/6c6 : {γ/4f0 * δ/4f0}) = v/3 in z/6c6
-
+    in let (z/6c6 : {γ/4f1 * δ/4f1}) = v/3 in z/6c6
+  
+  Inferred type : ∀γ/4f1. ∀δ/4f1. {γ/4f1 * δ/4f1}
+  ->
+  {γ/4f1 * δ/4f1}
+  
+  
+  
   lambda
-  (v/3 : {α/74f * β/74f}).
+  (v/3 : {α/750 * β/750}).
     let
-    (w/11 : {α/74f * β/74f})
+    (w/11 : {α/750 * β/750})
     =
-    let ((y/a19 : α/74f), (z/a19 : β/74f)) = v/3 in v/3
+    let ((y/a19 : α/750), (z/a19 : β/750)) = v/3 in v/3
     in w/11
-
+  
+  Inferred type : ∀α/750. ∀β/750. {α/750 * β/750}
+  ->
+  {α/750 * β/750}
+  
+  
+  
   lambda
-  (v/3 : γ/839).
-    lambda (u/22 : β/839). (lambda (y/b57 : α/839). v/3, u/22)
-
+  (v/3 : α/83a).
+    lambda (u/22 : γ/83a). (lambda (y/b57 : β/83a). v/3, u/22)
+  
+  Inferred type : ∀γ/83a. ∀α/83a. ∀β/83a. α/83a
+  ->
+  γ/83a -> {β/83a -> α/83a * γ/83a}
+  
+  
+  
   let
-  (w/2 : β/b56 -> α/b56 -> α/b56)
+  (w/2 : β/b57 -> α/b57 -> α/b57)
   =
-  lambda (u/d : β/b56). lambda (v/58 : α/b56). v/58
-  in lambda (u/75 : δ/b55). u/75
+  lambda (u/d : β/b57). lambda (v/58 : α/b57). v/58
+  in lambda (u/75 : δ/b56). u/75
+  
+  Inferred type : ∀δ/b56. δ/b56 -> δ/b56
 
+
+  
   lambda
   (v/3 : {γ/bfe * β/bfe}).
+  (v/3 : {γ/bff * β/bff}).
     let
     ((v/109c : γ/bfe), (w/109c : β/bfe))
-    =
+    ((v/109c : γ/bff), (w/109c : β/bff))
+     =
     v/3
     in let (x/109d : β/bfe) = w/109c in x/109d
+    in let (x/109d : β/bff) = w/109c in x/109d
+  
+  Inferred type : ∀γ/bff. ∀β/bff. {γ/bff * β/bff} -> β/bff

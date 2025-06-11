@@ -40,4 +40,4 @@ val enter : env -> env
 
 val exit : roots -> env -> env * quantifiers * schemes
 
-val instantiate : scheme -> variable -> env -> (env * quantifiers, err) result
+val instantiate : scheme -> variable -> env -> env * (quantifiers, err) result

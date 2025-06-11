@@ -18,7 +18,7 @@ let decode (env : env) () : decoder =
 
       match Hashtbl.find table repr.var with
       | Done ty -> ty
-      | Ongoing -> raise (Found_cycle (Utils.Cycle repr.var))
+      | Ongoing -> raise @@ Found_cycle (Utils.Cycle repr.var)
       | exception Not_found ->
         Hashtbl.replace table repr.var Ongoing;
 

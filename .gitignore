@@ -1,5 +1,4 @@
 _build
-*.sh
 *.log
 *tmp
 tmp*

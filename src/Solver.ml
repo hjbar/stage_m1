@@ -14,32 +14,33 @@ module Make (T : Utils.Functor) = struct
     module SMap = Constraint.SVar.Map
 
     type unif = Unif.Env.t
+
     type schemes = Generalization.scheme SMap.t
 
     type t =
-    { unif : unif
-    ; schemes : schemes
-    }
+      { unif : unif
+      ; schemes : schemes
+      }
 
     let empty = { unif = Unif.Env.empty; schemes = SMap.empty }
 
     let debug_schemes schemes =
       let open PPrint in
-      schemes
-      |> Constraint.SVar.Map.bindings
-      |> List.map (fun (s, sch) ->
-           Constraint.SVar.print s ^^ colon ^^ break 1 ^^ Generalization.debug_scheme sch
-         )
+      schemes |> Constraint.SVar.Map.bindings
+      |> List.map
+           begin
+             fun (s, sch) ->
+               Constraint.SVar.print s ^^ colon ^^ break 1
+               ^^ Generalization.debug_scheme sch
+           end
       |> separate hardline
 
     let debug { unif; schemes } =
       let open PPrint in
-      debug_schemes schemes
-      ^^
-      Unif.Env.debug_env unif
-      ^^
-      Unif.Env.debug_pool unif
+      debug_schemes schemes ^^ Unif.Env.debug_env unif
+      ^^ Unif.Env.debug_pool unif
   end
+
   type env = Env.t
 
   type log = PPrint.document list
@@ -69,7 +70,6 @@ module Make (T : Utils.Functor) = struct
 
   let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t) :
     env * (a, e) normal_constraint =
-
     let unif_env : Env.unif ref = ref env.unif in
     let scheme_env : Env.schemes ref = ref env.schemes in
 
@@ -209,14 +209,14 @@ module Make (T : Utils.Functor) = struct
         let sch = Env.SMap.find sch_var !scheme_env in
 
         match Generalization.instantiate sch w !unif_env with
-        | Ok (new_unif_env, witnesses) ->
+        | new_unif_env, Ok witnesses ->
           unif_env := new_unif_env;
           add_to_log ();
 
           nret @@ fun sol -> List.map sol witnesses
-        | Error (Cycle cy) -> nerr @@ Cycle cy
-        | Error (Clash (y1, y2)) ->
-          let decoder = Decode.decode !unif_env () in
+        | _, Error (Cycle cy) -> nerr @@ Cycle cy
+        | new_unif_env, Error (Clash (y1, y2)) ->
+          let decoder = Decode.decode new_unif_env () in
           nerr @@ Clash (decoder y1, decoder y2)
       end
       | Let (sch_var, var, c1, c2) -> begin

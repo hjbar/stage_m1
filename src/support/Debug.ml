@@ -1,6 +1,7 @@
 (* Global variables *)
 
-let debug = match Sys.getenv "DEBUG" with
+let debug =
+  match Sys.getenv "DEBUG" with
   | "1" | "yes" | "true" | "Y" -> true
   | exception Not_found -> false
   | "0" | "no" | "false" | "N" -> false
