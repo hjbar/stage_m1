@@ -939,11 +939,11 @@ An example of random sampling output at higher size.
   =
   lambda (u/d : γ/373). u/d
   in w/2 w/2
-
+  
   Inferred type : β/373 -> β/373
-
-
-
+  
+  
+  
   lambda
   (v/3 : {α/3cd * δ/3cc}).
     let
