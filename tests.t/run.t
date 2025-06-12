@@ -136,7 +136,7 @@ to the bin/dune content.)
     ∀α. α -> α
   
   Elaborated term:
-    lambda (y : α). let (id : β -> β) = lambda (x : β). x in id y
+    lambda (y : α). let (id : ∀β. β -> β) = lambda (x : β). x in id y
   
 
 
@@ -190,7 +190,7 @@ type, this is just an abstract/rigid type variable: `Constr
     α -> α
   
   Elaborated term:
-    let (x : β -> β) = lambda (y : β). y in x
+    let (x : ∀β. β -> β) = lambda (y : β). y in x
   
 
 
@@ -304,7 +304,11 @@ type, this is just an abstract/rigid type variable: `Constr
   Elaborated term:
     lambda
     (a : α).
-      let (id : β -> β) = lambda (x : β). x in let (r : α) = id a in r
+      let
+      (id : ∀β. β -> β)
+      =
+      lambda (x : β). x
+      in let (r : α) = id a in r
   
 
 
@@ -359,7 +363,7 @@ type, this is just an abstract/rigid type variable: `Constr
   
   Elaborated term:
     let
-    (id : γ -> γ)
+    (id : ∀γ. γ -> γ)
     =
     lambda (x : γ). x
     in
@@ -423,7 +427,7 @@ type, this is just an abstract/rigid type variable: `Constr
   
   Elaborated term:
     let
-    (id : γ -> γ)
+    (id : ∀γ. γ -> γ)
     =
     lambda (x : γ). x
     in
@@ -900,7 +904,11 @@ There are not many programs with size 3, 4 and 5.
   
   
   
-  let (y/26 : δ/21 -> δ/21) = lambda (v/29 : δ/21). v/29 in y/26
+  let
+  (y/26 : ∀δ/21. δ/21 -> δ/21)
+  =
+  lambda (v/29 : δ/21). v/29
+  in y/26
   
   Inferred type : γ/21 -> γ/21
 
@@ -926,6 +934,16 @@ An example of random sampling output at higher size.
   
   
   
+  let
+  (w/2 : ∀γ/373. γ/373 -> γ/373)
+  =
+  lambda (u/d : γ/373). u/d
+  in w/2 w/2
+
+  Inferred type : β/373 -> β/373
+
+
+
   lambda
   (v/3 : {α/3cd * δ/3cc}).
     let
@@ -951,7 +969,7 @@ An example of random sampling output at higher size.
   
   
   let
-  (w/2 : β/41a -> {β/41a * β/41a})
+  (w/2 : ∀β/41a. β/41a -> {β/41a * β/41a})
   =
   lambda (u/d : β/41a). (u/d, u/d)
   in w/2
@@ -999,26 +1017,12 @@ An example of random sampling output at higher size.
   
   
   let
-  (w/2 : β/b57 -> α/b57 -> α/b57)
+  (w/2 : ∀β/b57. ∀α/b57. β/b57 -> α/b57 -> α/b57)
   =
   lambda (u/d : β/b57). lambda (v/58 : α/b57). v/58
   in lambda (u/75 : δ/b56). u/75
   
   Inferred type : ∀δ/b56. δ/b56 -> δ/b56
 
+  $ dune exec -- minigen --exhaustive --types --size 10 --count 1
 
-  
-  lambda
-  (v/3 : {γ/bfe * β/bfe}).
-  (v/3 : {γ/bff * β/bff}).
-    let
-    ((v/109c : γ/bfe), (w/109c : β/bfe))
-    ((v/109c : γ/bff), (w/109c : β/bff))
-     =
-    v/3
-    in let (x/109d : β/bfe) = w/109c in x/109d
-    in let (x/109d : β/bff) = w/109c in x/109d
-  
-  Inferred type : ∀γ/bff. ∀β/bff. {γ/bff * β/bff} -> β/bff
-
-  $ dune exec -- minigen --exhaustive --types --size 6 --count 247

@@ -28,6 +28,9 @@ let print_scheme ((quantifiers, ty) : scheme) : PPrint.document =
 
 let print_term : term -> PPrint.document =
   let print_binding x tau = Printer.annot (TeVar.print x) (print_ty tau) in
+  let print_let_binding x scheme =
+    Printer.annot (TeVar.print x) (print_scheme scheme)
+  in
 
   let rec print_top t = print_left_open t
   and print_left_open t =
@@ -39,9 +42,10 @@ let print_term : term -> PPrint.document =
     match t with
     | Abs (x, tau, t) ->
       Printer.lambda ~input:(print_binding x tau) ~body:(print_self t)
-    | Let (x, tau, t, u) ->
-      Printer.let_ ~var:(print_binding x tau) ~def:(print_top t)
-        ~body:(print_self u)
+    | Let (x, scheme, t, u) ->
+      Printer.let_
+        ~var:(print_let_binding x scheme)
+        ~def:(print_top t) ~body:(print_self u)
     | LetTuple (xtaus, t, u) ->
       Printer.let_
         ~var:(Printer.tuple (fun (x, tau) -> print_binding x tau) xtaus)

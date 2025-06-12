@@ -35,13 +35,13 @@ module Make (T : Utils.Functor) = struct
 
   let eq v1 v2 = Eq (v1, v2)
 
+  let exist v s c = Exist (v, s, c)
+
+  let let_ s v c1 c2 = Let (s, v, c1, c2)
+
   let decode v = MapErr (Decode v, fun e -> Cycle e)
 
   let decode_scheme s = MapErr (DecodeScheme s, fun e -> Cycle e)
-
-  let exist v s c = Exist (v, s, c)
-
-  let make_let s v c1 c2 = Let (s, v, c1, c2)
 
   let fresh_name = Constraint.Var.fresh
 
@@ -49,15 +49,11 @@ module Make (T : Utils.Functor) = struct
 
   let fresh_scheme = Constraint.SVar.fresh
 
-  let _find_mono x (mono_env, _poly_env) = Env.find x mono_env
-
   let findopt_mono x (mono_env, _poly_env) = Env.find_opt x mono_env
 
   let add_mono x v (mono_env, poly_env) = (Env.add x v mono_env, poly_env)
 
   let find_poly x (_mono_env, poly_env) = Env.find x poly_env
-
-  let _findopt_poly x (_mono_env, poly_env) = Env.find_opt x poly_env
 
   let add_poly x v (mono_env, poly_env) = (mono_env, Env.add x v poly_env)
 
@@ -167,13 +163,13 @@ module Make (T : Utils.Functor) = struct
 
       let inner_env = add_poly x s env in
 
-      let+ t', (u', ty) =
-        make_let s wt (has_type env t wt)
+      let+ t', (u', scheme) =
+        let_ s wt (has_type env t wt)
         @@ let+ u' = has_type inner_env u w
-           and+ _vs, ty = decode_scheme s in
-           (u', ty)
+           and+ scheme = decode_scheme s in
+           (u', scheme)
       in
-      STLC.Let (x, ty, t', u')
+      STLC.Let (x, scheme, t', u')
     | Untyped.Annot (t, ty) ->
       (* [[(t : ty) : w]] := ∃(wt = ty). [[t : wt]] /\ [[wt = w]] *)
       bind ty @@ fun wt ->
