@@ -68,7 +68,8 @@ module Make (T : Utils.Functor) = struct
 
   let ndo t = NDo t
 
-  let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t) :
+  let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t)
+    (k : (a, e) normal_constraint -> (a, e) normal_constraint) :
     env * (a, e) normal_constraint =
     let unif_env : Env.unif ref = ref env.unif in
     let scheme_env : Env.schemes ref = ref env.schemes in
@@ -99,183 +100,196 @@ module Make (T : Utils.Functor) = struct
         raise @@ Located (loc, base_exn, bt)
     in
 
-    let rec eval : type a e. (a, e) Constraint.t -> (a, e) normal_constraint =
+    let rec eval : type a b e f.
+         (a, e) Constraint.t
+      -> ((a, e) normal_constraint -> (b, f) normal_constraint)
+      -> (b, f) normal_constraint =
       let open Constraint in
       let ( let+ ) nf f = T.map f nf in
       Debug.print_header "DEBUG ENV" @@ Unif.Env.debug_env !unif_env;
       Debug.print_header "DEBUG POOL" @@ Unif.Env.debug_pool !unif_env;
 
-      function
-      | Loc (loc, c) -> begin try eval c with exn -> locate_exn loc exn end
-      | Ret v -> NRet v
-      | Err e -> NErr e
-      | Map (c, f) -> begin
-        match eval c with
-        | NRet v -> nret @@ fun sol -> f @@ v sol
-        | NErr e -> NErr e
-        | NDo p ->
-          ndo
-          @@
-          let+ c = p in
-          Map (c, f)
-      end
-      | MapErr (c, f) -> begin
-        match eval c with
-        | NRet v -> NRet v
-        | NErr e -> nerr @@ f e
-        | NDo p ->
-          ndo
-          @@
-          let+ c = p in
-          MapErr (c, f)
-      end
-      | Conj (c, d) -> begin
-        match eval c with
-        | NErr e -> NErr e
-        | nc -> begin
-          match (nc, eval d) with
-          | NErr e, _ | _, NErr e -> NErr e
-          | NRet v, NRet w -> nret @@ fun sol -> (v sol, w sol)
-          | NRet v, NDo q ->
-            ndo
-            @@
-            let+ d = q in
-            Conj (Ret v, d)
-          | NDo p, NRet w ->
-            ndo
+      fun c k ->
+        match c with
+        | Loc (loc, c) -> begin try eval c k with exn -> locate_exn loc exn end
+        | Ret v -> k @@ NRet v
+        | Err e -> k @@ NErr e
+        | Map (c, f) -> begin
+          eval c @@ fun nc ->
+          match nc with
+          | NRet v -> k @@ nret @@ fun sol -> f @@ v sol
+          | NErr e -> k @@ NErr e
+          | NDo p ->
+            k @@ ndo
             @@
             let+ c = p in
-            Conj (c, Ret w)
-          | NDo p, NDo q ->
-            ndo
-            @@
-            let+ c = p in
-            Conj (c, Do q)
+            Map (c, f)
         end
-      end
-      | Eq (x1, x2) -> begin
-        match Unif.unify !unif_env x1 x2 with
-        | Ok new_env ->
-          unif_env := new_env;
-          add_to_log ();
+        | MapErr (c, f) -> begin
+          eval c @@ fun nc ->
+          match nc with
+          | NRet v -> k @@ NRet v
+          | NErr e -> k @@ nerr @@ f e
+          | NDo p ->
+            k @@ ndo
+            @@
+            let+ c = p in
+            MapErr (c, f)
+        end
+        | Conj (c, d) -> begin
+          eval c @@ fun nc ->
+          match nc with
+          | NErr e -> k @@ NErr e
+          | nc -> begin
+            eval d @@ fun nd ->
+            match (nc, nd) with
+            | NErr e, _ | _, NErr e -> k @@ NErr e
+            | NRet v, NRet w -> k @@ nret @@ fun sol -> (v sol, w sol)
+            | NRet v, NDo q ->
+              k @@ ndo
+              @@
+              let+ d = q in
+              Conj (Ret v, d)
+            | NDo p, NRet w ->
+              k @@ ndo
+              @@
+              let+ c = p in
+              Conj (c, Ret w)
+            | NDo p, NDo q ->
+              k @@ ndo
+              @@
+              let+ c = p in
+              Conj (c, Do q)
+          end
+        end
+        | Eq (x1, x2) -> begin
+          match Unif.unify !unif_env x1 x2 with
+          | Ok new_env ->
+            unif_env := new_env;
+            add_to_log ();
 
-          nret @@ fun _sol -> ()
-        | Error (Cycle cy) -> nerr @@ Cycle cy
-        | Error (Clash (y1, y2)) ->
-          let decoder = Decode.decode !unif_env () in
-          nerr @@ Clash (decoder y1, decoder y2)
-      end
-      | Exist (x, s, c) -> begin
-        (*
+            k @@ nret @@ fun _sol -> ()
+          | Error (Cycle cy) -> k @@ nerr @@ Cycle cy
+          | Error (Clash (y1, y2)) ->
+            let decoder = Decode.decode !unif_env () in
+            k @@ nerr @@ Clash (decoder y1, decoder y2)
+        end
+        | Exist (x, s, c) -> begin
+          (*
           Our solver may re-enter existentials that
           it has already traversed. In this case we
           do not want to re-bind them in the environment,
           but reuse the previous binding which accumulated
           information through unifications.
         *)
-        if not @@ Unif.Env.mem x !unif_env then begin
-          unif_env := Unif.Env.add_flexible x s !unif_env;
-          add_to_log ()
-        end;
-
-        match eval c with
-        | NRet v -> NRet v
-        | NErr e -> NErr e
-        | NDo p ->
-          ndo
-          @@
-          let+ c = p in
-          Exist (x, s, c)
-      end
-      | Decode v -> nret @@ fun sol -> sol v
-      | Do p -> NDo p
-      | DecodeScheme sch_var -> begin
-        let scheme = Env.SMap.find sch_var !scheme_env in
-
-        let body sol = sol @@ Generalization.body scheme in
-        let quantifiers (sol : variable -> STLC.ty) : Structure.TyVar.t list =
-          scheme |> Generalization.quantifiers
-          |> List.map
-               begin
-                 fun var ->
-                   let (Constr ty) = sol var in
-                   match ty with Var v -> v | Arrow _ | Prod _ -> assert false
-               end
-        in
-
-        nret @@ fun sol -> (quantifiers sol, body sol)
-      end
-      | Instance (sch_var, w) -> begin
-        let sch = Env.SMap.find sch_var !scheme_env in
-
-        match Generalization.instantiate sch w !unif_env with
-        | new_unif_env, Ok witnesses ->
-          unif_env := new_unif_env;
-          add_to_log ();
-
-          nret @@ fun sol -> List.map sol witnesses
-        | _, Error (Cycle cy) -> nerr @@ Cycle cy
-        | new_unif_env, Error (Clash (y1, y2)) ->
-          let decoder = Decode.decode new_unif_env () in
-          nerr @@ Clash (decoder y1, decoder y2)
-      end
-      | Let (sch_var, var, c1, c2) -> begin
-        let solve_c2 r1 () =
-          match eval c2 with
-          | NRet r2 -> nret @@ fun on_sol -> (r1 on_sol, r2 on_sol)
-          | NErr e -> NErr e
-          | NDo p ->
-            ndo
-            @@
-            let+ c2 = p in
-            Let (sch_var, var, Ret r1, c2)
-        in
-
-        let solve_c1 () =
-          if not @@ Unif.Env.mem var !unif_env then begin
-            unif_env := Generalization.enter !unif_env;
-            unif_env := Unif.Env.add_flexible var None !unif_env;
+          if not @@ Unif.Env.mem x !unif_env then begin
+            unif_env := Unif.Env.add_flexible x s !unif_env;
             add_to_log ()
           end;
 
-          match eval c1 with
-          | NRet r1 -> begin
-            let new_unif_env, _gammas, schemes =
-              Generalization.exit [ var ] !unif_env
-            in
+          eval c @@ fun nc ->
+          match nc with
+          | NRet v -> k @@ NRet v
+          | NErr e -> k @@ NErr e
+          | NDo p ->
+            k @@ ndo
+            @@
+            let+ c = p in
+            Exist (x, s, c)
+        end
+        | Decode v -> k @@ nret @@ fun sol -> sol v
+        | Do p -> k @@ NDo p
+        | DecodeScheme sch_var -> begin
+          let scheme = Env.SMap.find sch_var !scheme_env in
+
+          let body sol = sol @@ Generalization.body scheme in
+          let quantifiers (sol : variable -> STLC.ty) : Structure.TyVar.t list =
+            scheme |> Generalization.quantifiers
+            |> List.map
+                 begin
+                   fun var ->
+                     let (Constr ty) = sol var in
+                     match ty with
+                     | Var v -> v
+                     | Arrow _ | Prod _ -> assert false
+                 end
+          in
+
+          k @@ nret @@ fun sol -> (quantifiers sol, body sol)
+        end
+        | Instance (sch_var, w) -> begin
+          let sch = Env.SMap.find sch_var !scheme_env in
+
+          match Generalization.instantiate sch w !unif_env with
+          | new_unif_env, Ok witnesses ->
             unif_env := new_unif_env;
             add_to_log ();
 
-            assert (List.length schemes = 1);
-            let scheme = List.hd schemes in
+            k @@ nret @@ fun sol -> List.map sol witnesses
+          | _, Error (Cycle cy) -> k @@ nerr @@ Cycle cy
+          | new_unif_env, Error (Clash (y1, y2)) ->
+            let decoder = Decode.decode new_unif_env () in
+            k @@ nerr @@ Clash (decoder y1, decoder y2)
+        end
+        | Let (sch_var, var, c1, c2) -> begin
+          let solve_c2 r1 k =
+            eval c2 @@ fun nc2 ->
+            match nc2 with
+            | NRet r2 -> k @@ nret @@ fun on_sol -> (r1 on_sol, r2 on_sol)
+            | NErr e -> k @@ NErr e
+            | NDo p ->
+              k @@ ndo
+              @@
+              let+ c2 = p in
+              Let (sch_var, var, Ret r1, c2)
+          in
 
-            Debug.print_header "DEBUG SCHEME"
-            @@ Generalization.debug_scheme scheme;
+          let solve_c1 k =
+            if not @@ Unif.Env.mem var !unif_env then begin
+              unif_env := Generalization.enter !unif_env;
+              unif_env := Unif.Env.add_flexible var None !unif_env;
+              add_to_log ()
+            end;
 
-            scheme_env := Env.SMap.add sch_var scheme !scheme_env;
+            eval c1 @@ fun nc1 ->
+            match nc1 with
+            | NRet r1 -> begin
+              let new_unif_env, _gammas, schemes =
+                Generalization.exit [ var ] !unif_env
+              in
+              unif_env := new_unif_env;
+              add_to_log ();
 
-            solve_c2 r1 ()
-          end
-          | NErr e -> NErr e
-          | NDo p ->
-            ndo
-            @@
-            let+ c1 = p in
-            Let (sch_var, var, c1, c2)
-        in
+              assert (List.length schemes = 1);
+              let scheme = List.hd schemes in
 
-        match Env.SMap.mem sch_var !scheme_env with
-        | false -> solve_c1 ()
-        | true ->
-          let r1 = match c1 with Ret r1 -> r1 | _ -> assert false in
-          solve_c2 r1 ()
-      end
+              Debug.print_header "DEBUG SCHEME"
+              @@ Generalization.debug_scheme scheme;
+
+              scheme_env := Env.SMap.add sch_var scheme !scheme_env;
+
+              solve_c2 r1 k
+            end
+            | NErr e -> k @@ NErr e
+            | NDo p ->
+              k @@ ndo
+              @@
+              let+ c1 = p in
+              Let (sch_var, var, c1, c2)
+          in
+
+          match Env.SMap.mem sch_var !scheme_env with
+          | false -> solve_c1 k
+          | true ->
+            let r1 = match c1 with Ret r1 -> r1 | _ -> assert false in
+            solve_c2 r1 k
+        end
     in
 
     Debug.print_message "New evaluation of the Solver";
     add_to_log ();
 
-    match eval c0 with
+    match eval c0 k with
     | exception Located (loc, exn, bt) ->
       Printf.eprintf "Error at %s" @@ MenhirLib.LexerUtil.range loc;
       Printexc.raise_with_backtrace exn bt

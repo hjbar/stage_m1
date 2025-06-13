@@ -119,6 +119,13 @@ let update_ranks (generation : generation) (env : env) : env =
     let rec traverse (var : variable) (env : env) : env * rank =
       (* To get the repr of the variable & check its status *)
       let data = Env.repr var env in
+      Debug.print_header "DEBUG UNIF ENV" @@ Unif.Env.debug_env env;
+      Debug.print_header "DEBUG UNIF POOL" @@ Unif.Env.debug_pool env;
+      Constraint.Var.(
+        Debug.print_message
+        @@ Format.sprintf "%s |--> %s"
+             (var |> print |> Utils.string_of_doc)
+             (data.var |> print |> Utils.string_of_doc) );
       assert (data.status <> Generic);
 
       (* If we already this variable, stop *)

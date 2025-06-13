@@ -45,5 +45,6 @@ module Make (T : Utils.Functor) : sig
        log:bool
     -> Env.t
     -> ('a, 'e) Constraint.t
+    -> (('a, 'e) normal_constraint -> ('a, 'e) normal_constraint)
     -> Env.t * ('a, 'e) normal_constraint
 end
