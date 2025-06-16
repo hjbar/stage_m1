@@ -22,12 +22,12 @@ module Make (T : Utils.Functor) : sig
 
   (** Normal constraints are the result of solving constraints without computing
       inside [Do p] nodes. *)
-  type ('a, 'e) normal_constraint =
-    | NRet of 'a Constraint.on_sol
+  type ('ok, 'err) normal_constraint =
+    | NRet : 'a Constraint.on_sol -> ('a, 'e) normal_constraint
       (** A succesfully elaborated value. (See Constraint.ml for exaplanations
           on [on_sol].) *)
-    | NErr of 'e  (** A failed/false constraint. *)
-    | NDo of ('a, 'e) Constraint.t T.t
+    | NErr : 'e -> ('a, 'e) normal_constraint  (** A failed/false constraint. *)
+    | NDo : ('a, 'e) Constraint.t T.t -> ('a, 'e) normal_constraint
       (** A constraint whose evaluation encountered an effectful constraint in a
           [Do p] node.
 
@@ -38,6 +38,9 @@ module Make (T : Utils.Functor) : sig
           operation [E[_] : ('a1, 'e1) Constraint.t -> ('a2, 'e2) Constraint.t]
       *)
 
+  and ('a, 'e) cont =
+    Env.t * ('a, 'e) normal_constraint -> Env.t * ('a, 'e) normal_constraint
+
   (** If [~log:true] is passed in input, print to stderr a list of intermediate
       steps (obtained from the solver environment and the original constraint by
       constraint simplification) as the constraint-solving progresses. *)
@@ -45,6 +48,6 @@ module Make (T : Utils.Functor) : sig
        log:bool
     -> Env.t
     -> ('a, 'e) Constraint.t
-    -> (('a, 'e) normal_constraint -> ('a, 'e) normal_constraint)
+    -> ('a, 'e) cont
     -> Env.t * ('a, 'e) normal_constraint
 end

@@ -22,7 +22,7 @@ module Make (M : Utils.MonadPlus) = struct
       |> ConstraintPrinter.print_sat_constraint
       |> Debug.print_header "DEBUG CONSTRAINT (SIMPLIFIED)"
 
-  let make_do t = Untyped.Do t
+  let do_ t = Untyped.Do t
 
   let ( let+ ) s f = M.map f s
 
@@ -48,7 +48,7 @@ module Make (M : Utils.MonadPlus) = struct
         env.Env.tevars |> TeVarSet.to_seq |> Array.of_seq |> M.one_of
       in
 
-      make_do @@ M.delay
+      do_ @@ M.delay
       @@ fun () ->
       let rule_var =
         let+ x = fvars in
@@ -127,34 +127,21 @@ module Make (M : Utils.MonadPlus) = struct
     let open struct
       type env = Solver.Env.t
     end in
-    let rec loop : type a e.
-         fuel:int
-      -> env
-      -> (a, e) Constraint.t
-      -> ((a, e) Solver.normal_constraint -> (a, e) Solver.normal_constraint)
-      -> a M.t =
-     fun ~fuel env cstr k ->
+    let rec loop : type a e. fuel:int -> env -> (a, e) Constraint.t -> a M.t =
+     fun ~fuel env cstr ->
       if fuel = -1 then M.fail
       else begin
         (* TODO: the simplifier called by print_constr
            should get the full environment as parameter. *)
         print_constr env.unif cstr;
-        let env, nf = Solver.eval ~log:false env cstr k in
+        let env, nf = Solver.eval ~log:false env cstr Fun.id in
 
         match nf with
-        | NRet v when fuel = 0 ->
-          Debug.print_message "START - DEBUG RET";
-          Debug.print_header "DEBUG ENV" @@ Solver.Env.debug env;
-          print_constr ~simplify:false env.unif cstr;
-          print_constr ~simplify:true env.unif cstr;
-          Debug.print_message "END - DEBUG RET";
-
-          M.return @@ v (Decode.decode env.unif ())
-        | NDo p when fuel > 0 ->
-          M.bind p @@ fun c -> loop ~fuel:(fuel - 1) env c k
+        | NRet v when fuel = 0 -> M.return @@ v (Decode.decode env.unif ())
+        | NDo p when fuel > 0 -> M.bind p @@ loop ~fuel:(fuel - 1) env
         | _ -> M.fail
       end
     in
 
-    loop ~fuel:size Solver.Env.empty constraint_ Fun.id
+    loop ~fuel:size Solver.Env.empty constraint_
 end
