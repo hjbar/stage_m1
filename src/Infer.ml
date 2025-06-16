@@ -129,8 +129,8 @@ module Make (T : Utils.Functor) = struct
       | None ->
         let sch = find_poly x env in
 
-        let+ _tys = Instance (sch, w) in
-        STLC.Var x
+        let+ tys = Instance (sch, w) in
+        STLC.VarApp (x, tys)
     end
     | Untyped.App (t, u) ->
       (* [[t u : w]] := ∃wu. [[t : wu -> w]] ∧ [[u : wu]] *)

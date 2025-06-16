@@ -136,7 +136,8 @@ to the bin/dune content.)
     ∀α. α -> α
   
   Elaborated term:
-    lambda (y : α). let (id : ∀β. β -> β) = lambda (x : β). x in id y
+    lambda
+    (y : α). let Λβ. (id : β -> β) = lambda (x : β). x in id[α] y
   
 
 
@@ -190,7 +191,7 @@ type, this is just an abstract/rigid type variable: `Constr
     α -> α
   
   Elaborated term:
-    let (x : ∀β. β -> β) = lambda (y : β). y in x
+    let Λβ. (x : β -> β) = lambda (y : β). y in x[α]
   
 
 
@@ -305,10 +306,10 @@ type, this is just an abstract/rigid type variable: `Constr
     lambda
     (a : α).
       let
-      (id : ∀β. β -> β)
+      Λβ. (id : β -> β)
       =
       lambda (x : β). x
-      in let (r : α) = id a in r
+      in let (r : α) = id[α] a in r
   
 
 
@@ -363,13 +364,14 @@ type, this is just an abstract/rigid type variable: `Constr
   
   Elaborated term:
     let
-    (id : ∀γ. γ -> γ)
+    Λγ. (id : γ -> γ)
     =
     lambda (x : γ). x
     in
       lambda
       (a : α).
-        lambda (b : β). let (l : α) = id a in let (r : β) = id b in (l, r)
+        lambda
+        (b : β). let (l : α) = id[α] a in let (r : β) = id[β] b in (l, r)
   
 
 
@@ -427,7 +429,7 @@ type, this is just an abstract/rigid type variable: `Constr
   
   Elaborated term:
     let
-    (id : ∀γ. γ -> γ)
+    Λγ. (id : γ -> γ)
     =
     lambda (x : γ). x
     in
@@ -435,7 +437,11 @@ type, this is just an abstract/rigid type variable: `Constr
       (a : α).
         lambda
         (b : β).
-          let (l : α) = id a in let (r : β) = id b in ((l : int), (r : bool))
+          let
+          (l : α)
+          =
+          id[α] a
+          in let (r : β) = id[β] b in ((l : int), (r : bool))
   
 
 
@@ -905,10 +911,10 @@ There are not many programs with size 3, 4 and 5.
   
   
   let
-  (y/26 : ∀δ/21. δ/21 -> δ/21)
+  Λδ/21. (y/26 : δ/21 -> δ/21)
   =
   lambda (v/29 : δ/21). v/29
-  in y/26
+  in y/26[γ/21]
   
   Inferred type : γ/21 -> γ/21
 
@@ -935,10 +941,10 @@ An example of random sampling output at higher size.
   
   
   let
-  (w/2 : ∀γ/373. γ/373 -> γ/373)
+  Λγ/373. (w/2 : γ/373 -> γ/373)
   =
   lambda (u/d : γ/373). u/d
-  in w/2 w/2
+  in w/2[δ/373] w/2[β/373]
   
   Inferred type : β/373 -> β/373
   
@@ -969,10 +975,10 @@ An example of random sampling output at higher size.
   
   
   let
-  (w/2 : ∀β/41a. β/41a -> {β/41a * β/41a})
+  Λβ/41a. (w/2 : β/41a -> {β/41a * β/41a})
   =
   lambda (u/d : β/41a). (u/d, u/d)
-  in w/2
+  in w/2[α/41a]
   
   Inferred type : α/41a -> {α/41a * α/41a}
   
@@ -1017,7 +1023,7 @@ An example of random sampling output at higher size.
   
   
   let
-  (w/2 : ∀β/b57. ∀α/b57. β/b57 -> α/b57 -> α/b57)
+  Λβ/b57. Λα/b57. (w/2 : β/b57 -> α/b57 -> α/b57)
   =
   lambda (u/d : β/b57). lambda (v/58 : α/b57). v/58
   in lambda (u/75 : δ/b56). u/75
@@ -1025,4 +1031,3 @@ An example of random sampling output at higher size.
   Inferred type : ∀δ/b56. δ/b56 -> δ/b56
 
   $ dune exec -- minigen --exhaustive --types --size 10 --count 1
-

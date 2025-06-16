@@ -1,10 +1,7 @@
 open STLC
 
 let print_quantifier (quantifiers : TyVar.t list) : PPrint.document =
-  let open PPrint in
-  concat_map
-    (fun var -> string "∀" ^^ STLC.TyVar.print var ^^ string ". ")
-    quantifiers
+  quantifiers |> List.map STLC.TyVar.print |> Printer.print_quantifier
 
 let print_ty : ty -> PPrint.document =
   let rec print t =
@@ -28,8 +25,16 @@ let print_scheme ((quantifiers, ty) : scheme) : PPrint.document =
 
 let print_term : term -> PPrint.document =
   let print_binding x tau = Printer.annot (TeVar.print x) (print_ty tau) in
-  let print_let_binding x scheme =
-    Printer.annot (TeVar.print x) (print_scheme scheme)
+  let print_let_binding x (quantifiers, ty) =
+    Printer.let_binding
+      (List.map STLC.TyVar.print quantifiers)
+      (TeVar.print x) (print_ty ty)
+  in
+  let print_var_app x = function
+    | [] -> TeVar.print x
+    | tys ->
+      Printer.var_app (TeVar.print x)
+        (PPrint.separate_map PPrint.(comma ^^ space) print_ty tys)
   in
 
   let rec print_top t = print_left_open t
@@ -65,6 +70,7 @@ let print_term : term -> PPrint.document =
     @@
     match t with
     | Var x -> TeVar.print x
+    | VarApp (x, tys) -> print_var_app x tys
     | Annot (t, ty) -> Printer.annot (print_top t) (print_ty ty)
     | Tuple ts -> Printer.tuple print_top ts
     | (App _ | Abs _ | Let _ | LetTuple _) as other ->

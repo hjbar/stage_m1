@@ -15,6 +15,19 @@ let product ts = group @@ braces (separate (break 1 ^^ star ^^ space) ts)
 (** ($term : $ty) *)
 let annot term ty = group @@ surround 2 0 lparen (term ^/^ colon ^//^ ty) rparen
 
+(** ∀$ty1. ∀$ty2. ... *)
+let print_quantifier quantifiers =
+  concat_map (fun var -> string "∀" ^^ var ^^ string ". ") quantifiers
+
+(** x[$ty1, $ty2, ...] *)
+let var_app x tys = group @@ x ^^ lbracket ^^ tys ^^ rbracket
+
+(** Λ$ty1. Λ$ty2. ... (x : ty) *)
+let let_binding quantifiers x ty =
+  group
+  @@ concat_map (fun var -> string "Λ" ^^ var ^^ dot ^^ space) quantifiers
+  ^^ lparen ^^ x ^^ space ^^ colon ^^ space ^^ ty ^^ rparen
+
 (** lambda $input. $body *)
 let lambda ~input ~body =
   group @@ string "lambda" ^/^ input ^^ string "." ^//^ body

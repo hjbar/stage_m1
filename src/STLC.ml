@@ -16,6 +16,7 @@ module TeVar = Utils.Variables ()
 
 type term =
   | Var of TeVar.t
+  | VarApp of TeVar.t * ty list
   | App of term * term
   | Abs of TeVar.t * ty * term
   | Let of TeVar.t * scheme * term * term
