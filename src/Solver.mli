@@ -22,14 +22,14 @@ module Make (T : Utils.Functor) : sig
 
   (** Normal constraints are the result of solving constraints without computing
       inside [Do (p, k)] nodes. *)
-  type ('ok, 'err) constraint_result =
-    | RRet : 'a -> ('a, 'e) constraint_result
+  type ('ok, 'err) normal_constraint =
+    | NRet : 'a Constraint.on_sol -> ('a, 'e) normal_constraint
       (** A succesfully elaborated value. (See Constraint.ml for exaplanations
           on [on_sol].) *)
-    | RErr : 'e -> ('a, 'e) constraint_result  (** A failed/false constraint. *)
-    | RDo :
+    | NErr : 'e -> ('a, 'e) normal_constraint  (** A failed/false constraint. *)
+    | NDo :
         ('a, 'e) Constraint.t T.t * ('a, 'e, 'ok, 'err) cont
-        -> ('ok, 'err) constraint_result
+        -> ('ok, 'err) normal_constraint
       (** A constraint whose evaluation encountered an effectful constraint in a
           [Do (p, k)] node.
 
@@ -41,9 +41,30 @@ module Make (T : Utils.Functor) : sig
           context-plugging operation
           [E[_] : ('a1, 'e1) Constraint.t -> ('a2, 'e2) Constraint.t] *)
 
-  and ('a, 'e, 'ok, 'err) cont
+  and ('ok1, 'err1, 'ok, 'err) cont_frame =
+    | KMap : ('ok1 -> 'ok2) -> ('ok1, 'err, 'ok2, 'err) cont_frame
+    | KMapErr : ('err1 -> 'err2) -> ('ok, 'err1, 'ok, 'err2) cont_frame
+    | KConj1 :
+        ('ok2, 'err) Constraint.t
+        -> ('ok1, 'err, 'ok1 * 'ok2, 'err) cont_frame
+    | KConj2 :
+        'ok1 Constraint.on_sol
+        -> ('ok2, 'err, 'ok1 * 'ok2, 'err) cont_frame
+    | KExist : Constraint.variable -> ('ok, 'err, 'ok, 'err) cont_frame
+    | KLet1 :
+        Constraint.scheme_variable
+        * Constraint.variable
+        * ('ok2, 'err) Constraint.t
+        -> ('ok1, 'err, 'ok1 * 'ok2, 'err) cont_frame
+    | KLet2 :
+        'ok1 Constraint.on_sol
+        -> ('ok2, 'err, 'ok1 * 'ok2, 'err) cont_frame
 
-  val cont_done : ('ok, 'err, 'ok, 'err) cont
+  and ('ok1, 'err1, 'ok, 'err) cont =
+    | Done : ('ok, 'err, 'ok, 'err) cont
+    | Next :
+        ('ok1, 'err1, 'ok2, 'err2) cont_frame * ('ok2, 'err2, 'ok, 'err) cont
+        -> ('ok1, 'err1, 'ok, 'err) cont
 
   (** If [~log:true] is passed in input, print to stderr a list of intermediate
       steps (obtained from the solver environment and the original constraint by
@@ -53,5 +74,5 @@ module Make (T : Utils.Functor) : sig
     -> Env.t
     -> ('a1, 'e1) Constraint.t
     -> ('a1, 'e1, 'a, 'e) cont
-    -> Env.t * ('a, 'e) constraint_result
+    -> Env.t * ('a, 'e) normal_constraint
 end

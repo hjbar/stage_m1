@@ -57,17 +57,8 @@ module Make (T : Utils.Functor) = struct
   (** See [../README.md] ("High-level description") or [Solver.mli] for a
       description of normal constraints and our expectations regarding the
       [eval] function. *)
-  type ('ok, 'err) constraint_result =
-    | RRet : 'a -> ('a, 'e) constraint_result
-      (** A succesfully elaborated value. (See Constraint.ml for exaplanations
-          on [on_sol].) *)
-    | RErr : 'e -> ('a, 'e) constraint_result  (** A failed/false constraint. *)
-    | RDo :
-        ('a, 'e) Constraint.t T.t * ('a, 'e, 'ok, 'err) cont
-        -> ('ok, 'err) constraint_result
-
-  and ('ok, 'err) normal_constraint =
-    | NRet : 'a on_sol -> ('a, 'e) normal_constraint
+  type ('ok, 'err) normal_constraint =
+    | NRet : 'a Constraint.on_sol -> ('a, 'e) normal_constraint
     | NErr : 'e -> ('a, 'e) normal_constraint
     | NDo :
         ('a, 'e) Constraint.t T.t * ('a, 'e, 'ok, 'err) cont
@@ -79,14 +70,18 @@ module Make (T : Utils.Functor) = struct
     | KConj1 :
         ('ok2, 'err) Constraint.t
         -> ('ok1, 'err, 'ok1 * 'ok2, 'err) cont_frame
-    | KConj2 : 'ok1 on_sol -> ('ok2, 'err, 'ok1 * 'ok2, 'err) cont_frame
+    | KConj2 :
+        'ok1 Constraint.on_sol
+        -> ('ok2, 'err, 'ok1 * 'ok2, 'err) cont_frame
     | KExist : Constraint.variable -> ('ok, 'err, 'ok, 'err) cont_frame
     | KLet1 :
         Constraint.scheme_variable
         * Constraint.variable
         * ('ok2, 'err) Constraint.t
         -> ('ok1, 'err, 'ok1 * 'ok2, 'err) cont_frame
-    | KLet2 : 'ok1 on_sol -> ('ok2, 'err, 'ok1 * 'ok2, 'err) cont_frame
+    | KLet2 :
+        'ok1 Constraint.on_sol
+        -> ('ok2, 'err, 'ok1 * 'ok2, 'err) cont_frame
 
   and ('ok1, 'err1, 'ok, 'err) cont =
     | Done : ('ok, 'err, 'ok, 'err) cont
@@ -94,12 +89,8 @@ module Make (T : Utils.Functor) = struct
         ('ok1, 'err1, 'ok2, 'err2) cont_frame * ('ok2, 'err2, 'ok, 'err) cont
         -> ('ok1, 'err1, 'ok, 'err) cont
 
-  and 'a on_sol = Unif.Env.t -> 'a
-
-  let cont_done = Done
-
   let eval (type a1 e1 a e) ~log (env : env) (c0 : (a1, e1) Constraint.t)
-    (k : (a1, e1, a, e) cont) : env * (a, e) constraint_result =
+    (k : (a1, e1, a, e) cont) : env * (a, e) normal_constraint =
     (* We recommend calling the function [add_to_log] below
          whenever you get an updated environment.
 
@@ -136,7 +127,7 @@ module Make (T : Utils.Functor) = struct
       | Loc (loc, c) -> begin
         try eval env c k with exn -> locate_exn loc exn
       end
-      | Ret v -> continue env (Ok (fun _unif_env -> v)) k
+      | Ret v -> continue env (Ok v) k
       | Err e -> continue env (Error e) k
       | Map (c, f) -> eval env c (Next (KMap f, k))
       | MapErr (c, f) -> eval env c (Next (KMapErr f, k))
@@ -147,7 +138,7 @@ module Make (T : Utils.Functor) = struct
           let env = { env with unif } in
           add_to_log env;
 
-          continue env (Ok (fun _unif_env -> ())) k
+          continue env (Ok (fun _sol -> ())) k
         | Error (Cycle cy) -> continue env (Error (Constraint.Cycle cy)) k
         | Error (Clash (y1, y2)) ->
           let decoder = Decode.decode env.unif () in
@@ -159,28 +150,24 @@ module Make (T : Utils.Functor) = struct
         add_to_log env;
 
         eval env c (Next (KExist x, k))
-      | Decode v ->
-        continue env (Ok (fun unif_env -> Decode.decode unif_env () v)) k
+      | Decode v -> continue env (Ok (fun sol -> sol v)) k
       | Do p -> (env, NDo (p, k))
       | DecodeScheme sch_var -> begin
         let scheme = Env.SMap.find sch_var env.schemes in
 
-        let body unif_env =
-          Decode.decode unif_env () @@ Generalization.body scheme
-        in
-        let quantifiers unif_env =
+        let body sol = sol @@ Generalization.body scheme in
+        let quantifiers (sol : Constraint.variable -> STLC.ty) :
+          Structure.TyVar.t list =
           scheme |> Generalization.quantifiers
           |> List.map
                begin
                  fun var ->
-                   let (Constr ty) = Decode.decode unif_env () var in
+                   let (Constr ty) = sol var in
                    match ty with Var v -> v | Arrow _ | Prod _ -> assert false
                end
         in
 
-        continue env
-          (Ok (fun unif_env -> (quantifiers unif_env, body unif_env)))
-          k
+        continue env (Ok (fun sol -> (quantifiers sol, body sol))) k
       end
       | Instance (sch_var, w) -> begin
         let sch = Env.SMap.find sch_var env.schemes in
@@ -192,8 +179,7 @@ module Make (T : Utils.Functor) = struct
 
         let res =
           match result with
-          | Ok witnesses ->
-            Ok (fun unif_env -> List.map (Decode.decode unif_env ()) witnesses)
+          | Ok witnesses -> Ok (fun sol -> List.map sol witnesses)
           | Error (Cycle cy) -> Error (Constraint.Cycle cy)
           | Error (Clash (y1, y2)) ->
             let decoder = Decode.decode env.unif () in
@@ -211,7 +197,7 @@ module Make (T : Utils.Functor) = struct
         eval env c1 (Next (KLet1 (sch_var, var, c2), k))
     and continue : type a1 e1 a e.
          env
-      -> (a1 on_sol, e1) result
+      -> (a1 Constraint.on_sol, e1) result
       -> (a1, e1, a, e) cont
       -> env * (a, e) normal_constraint =
      fun env res k ->
@@ -230,11 +216,9 @@ module Make (T : Utils.Functor) = struct
       | Ok v -> begin
         match k with
         | Done -> (env, NRet v)
-        | Next (KMap f, k) ->
-          continue env (Ok (fun unif_env -> f @@ v unif_env)) k
+        | Next (KMap f, k) -> continue env (Ok (fun sol -> f @@ v sol)) k
         | Next (KConj1 c, k) -> eval env c (Next (KConj2 v, k))
-        | Next (KConj2 w, k) ->
-          continue env (Ok (fun unif_env -> (w unif_env, v unif_env))) k
+        | Next (KConj2 w, k) -> continue env (Ok (fun sol -> (w sol, v sol))) k
         | Next (KExist x, k) ->
           let unif = Unif.Env.unbind x env.unif in
           let env = { env with unif } in
@@ -253,8 +237,7 @@ module Make (T : Utils.Functor) = struct
           let env = { env with schemes } in
 
           eval env c (Next (KLet2 v, k))
-        | Next (KLet2 w, k) ->
-          continue env (Ok (fun unif_env -> (w unif_env, v unif_env))) k
+        | Next (KLet2 w, k) -> continue env (Ok (fun sol -> (w sol, v sol))) k
         | Next (KMapErr _, k) -> continue env (Ok v) k
       end
     in
@@ -266,12 +249,5 @@ module Make (T : Utils.Functor) = struct
       Printf.eprintf "Error at %s" @@ MenhirLib.LexerUtil.range loc;
       Printexc.raise_with_backtrace exn bt
     | exception exn -> raise exn
-    | env, res ->
-      let nf =
-        match res with
-        | NRet v -> RRet (v env.unif)
-        | NErr e -> RErr e
-        | NDo (p, k) -> RDo (p, k)
-      in
-      (env, nf)
+    | result -> result
 end

@@ -139,12 +139,12 @@ module Make (M : Utils.MonadPlus) = struct
         let env, nf = Solver.eval ~log:false env cstr k in
 
         match nf with
-        | RRet v when fuel = 0 -> M.return v
-        | RDo (p, k) when fuel > 0 ->
+        | NRet v when fuel = 0 -> M.return @@ v @@ Decode.decode env.unif ()
+        | NDo (p, k) when fuel > 0 ->
           M.bind p @@ fun c -> loop ~fuel:(fuel - 1) env c k
         | _ -> M.fail
       end
     in
 
-    loop ~fuel:size Solver.Env.empty constraint_ Solver.cont_done
+    loop ~fuel:size Solver.Env.empty constraint_ Solver.Done
 end

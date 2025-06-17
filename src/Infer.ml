@@ -230,7 +230,7 @@ module Make (T : Utils.Functor) = struct
       @@
       let+ bindings =
         let rec loop = function
-          | [] -> Ret []
+          | [] -> Ret (fun _sol -> [])
           | (x, w) :: ws ->
             let+ bindings = loop ws
             and+ ty = decode w in
