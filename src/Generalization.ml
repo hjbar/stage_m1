@@ -64,25 +64,29 @@ type generation =
       (* true if v is the same equivalence class as some young variable v' *)
   }
 
-(* To know which variable is young *)
-module VarSet = Set.Make (Var)
-
 (* Before we want to exit, create a generation describing the young generation *)
 
 let discover_young_generation (env : env) : generation =
+  Debug.print_message "DEBUG DISCOVER_YOUNG_GENERATION";
+  Debug.print_header "DEBUG ENV" @@ Unif.Env.debug_env env;
+  Debug.print_header "DEBUG POOL" @@ Unif.Env.debug_pool env;
+
   (* Young of the env *)
   let state_young = Env.get_young env in
 
   (* The most recent pool holds a list of all variables in the young generation *)
   let inhabitants = Env.get_pool state_young env in
 
+  (* To mark which equivalence classes are young *)
+  let cache = Hashtbl.create 16 in
+
   (* Compute the elements of the young generation *)
-  let by_rank, set =
+  let by_rank =
     List.fold_left
       begin
-        fun (by_rank, set) var ->
+        fun by_rank var ->
           let data = Env.repr var env in
-          let set = VarSet.add var set in
+          Hashtbl.replace cache data.var ();
 
           let r = data.rank in
 
@@ -92,14 +96,13 @@ let discover_young_generation (env : env) : generation =
           let l = Option.value ~default:[] @@ IntMap.find_opt r by_rank in
           let by_rank = IntMap.add r (var :: l) by_rank in
 
-          (by_rank, set)
+          by_rank
       end
-      (IntMap.empty, VarSet.empty)
-      inhabitants
+      IntMap.empty inhabitants
   in
 
   (* Returns true if var is young, false otherwise *)
-  let is_young var = VarSet.mem var set in
+  let is_young var = Hashtbl.mem cache (Env.repr var env).var in
 
   (* Result *)
   { inhabitants; by_rank; is_young }
@@ -107,6 +110,24 @@ let discover_young_generation (env : env) : generation =
 (* updates the rank of every variables in the young generation *)
 
 let update_ranks (generation : generation) (env : env) : env =
+  Debug.print_message "generation by ranks :";
+
+  Debug.print_message
+  @@ IntMap.fold
+       begin
+         fun rank vars acc ->
+           acc
+           ^ Format.sprintf "%d |-->\n" rank
+           ^ List.fold_left
+               begin
+                 fun acc var ->
+                   acc ^ Format.sprintf "\t%s\n" @@ Utils.string_of_doc
+                   @@ Constraint.Var.print var
+               end
+               "" vars
+       end
+       generation.by_rank "";
+
   (* To mark visited variable *)
   let cache = Hashtbl.create 16 in
 
@@ -119,14 +140,27 @@ let update_ranks (generation : generation) (env : env) : env =
     let rec traverse (var : variable) (env : env) : env * rank =
       (* To get the repr of the variable & check its status *)
       let data = Env.repr var env in
+
       Debug.print_header "DEBUG UNIF ENV" @@ Unif.Env.debug_env env;
       Debug.print_header "DEBUG UNIF POOL" @@ Unif.Env.debug_pool env;
+
       Constraint.Var.(
         Debug.print_message
         @@ Format.sprintf "%s |--> %s"
              (var |> print |> Utils.string_of_doc)
              (data.var |> print |> Utils.string_of_doc) );
+
+      Debug.print_message
+      @@ Format.sprintf "%s : %s"
+           (data.var |> Constraint.Var.print |> Utils.string_of_doc)
+           ( match data.status with
+           | Generic -> "Generic"
+           | Flexible -> "Flexible" );
+
       assert (data.status <> Generic);
+
+      Debug.print_header "DEBUG UNIF ENV" @@ Unif.Env.debug_env env;
+      Debug.print_header "DEBUG UNIF POOL" @@ Unif.Env.debug_pool env;
 
       (* If we already this variable, stop *)
       if Hashtbl.mem cache data.var then begin
@@ -162,10 +196,10 @@ let update_ranks (generation : generation) (env : env) : env =
             in
 
             (* Adjust the rank of var with the max rank of its children *)
-            let env, _data = adjust_rank data max_rank env in
+            let env, data = adjust_rank data max_rank env in
 
             (* Return the new env *)
-            (env, max_rank)
+            (env, data.rank)
           end
         end
       end

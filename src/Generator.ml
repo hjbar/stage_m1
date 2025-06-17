@@ -124,11 +124,12 @@ module Make (M : Utils.MonadPlus) = struct
      > this typically gives a worse generator.)
   *)
   let typed ~size : (STLC.term * STLC.scheme) M.t =
-    let open struct
-      type env = Solver.Env.t
-    end in
-    let rec loop : type a e.
-      fuel:int -> env -> (a, e) Constraint.t -> Solver.cont -> a M.t =
+    let rec loop : type a1 e1 a e.
+         fuel:int
+      -> Solver.Env.t
+      -> (a1, e1) Constraint.t
+      -> (a1, e1, a, e) Solver.cont
+      -> a M.t =
      fun ~fuel env cstr k ->
       if fuel = -1 then M.fail
       else begin
@@ -138,12 +139,12 @@ module Make (M : Utils.MonadPlus) = struct
         let env, nf = Solver.eval ~log:false env cstr k in
 
         match nf with
-        | NRet v when fuel = 0 -> M.return @@ v (Decode.decode env.unif ())
-        | NDo p when fuel > 0 ->
-          M.bind p @@ fun c -> loop ~fuel:(fuel - 1) env c []
+        | RRet v when fuel = 0 -> M.return v
+        | RDo (p, k) when fuel > 0 ->
+          M.bind p @@ fun c -> loop ~fuel:(fuel - 1) env c k
         | _ -> M.fail
       end
     in
 
-    loop ~fuel:size Solver.Env.empty constraint_ []
+    loop ~fuel:size Solver.Env.empty constraint_ Solver.cont_done
 end

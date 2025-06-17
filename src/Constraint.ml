@@ -49,7 +49,7 @@ module Make (T : Utils.Functor) = struct
       https://v2.ocaml.org/releases/5.1/htmlman/gadts-tutorial.html *)
   type ('ok, 'err) t =
     | Loc : Utils.loc * ('a, 'e) t -> ('a, 'e) t
-    | Ret : 'a on_sol -> ('a, 'e) t
+    | Ret : 'a -> ('a, 'e) t
     | Err : 'e -> ('a, 'e) t
     | Map : ('a, 'e) t * ('a -> 'b) -> ('b, 'e) t
     | MapErr : ('a, 'e) t * ('e -> 'f) -> ('a, 'f) t
@@ -81,7 +81,6 @@ module Make (T : Utils.Functor) = struct
       when resolving other parts of the whole constraint that handle the
       application of [0]. We have to solve the whole constraint, and then come
       back to elaborate an explictly-typed term [lambda (y : int). 42]. *)
-  and 'a on_sol = (variable -> STLC.ty) -> 'a
 
   let ( let+ ) c f = Map (c, f)
 

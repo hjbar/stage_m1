@@ -123,10 +123,12 @@ module Env = struct
     | var_repr -> Constraint.Var.eq var var_repr.var
     | exception Not_found -> true
 
+  let unbind var env = { env with map = Constraint.Var.Map.remove var env.map }
+
   let debug_var var uvar =
     let module PP = PPrint in
     let ( ^^ ) = PP.( ^^ ) in
-    if var <> uvar.var then
+    if not @@ Constraint.Var.eq var uvar.var then
       (* not representative *)
       ( Constraint.Var.print var ^^ PP.string " |--> "
         ^^ Constraint.Var.print uvar.var
@@ -163,7 +165,7 @@ module Env = struct
     |> List.sort (fun (_, o1) (_, o2) -> Int.compare o1 o2)
     |> List.map fst
 
-  let debug_env (env : t) =
+  let debug_env env =
     let open PPrint in
     env.map |> Constraint.Var.Map.bindings |> List.map fst
     |> List.map (fun v -> debug_var v @@ repr v env)

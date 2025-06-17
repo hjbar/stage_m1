@@ -74,17 +74,16 @@ let call_typer ~config (term : Untyped.term) =
     print_section "Generated constraint"
       (ConstraintPrinter.print_constraint cst);
 
-  let env, nf =
+  let _env, nf =
     if config.log_solver then prerr_endline "Constraint solving log:";
-    let p = Solver.eval ~log:config.log_solver Solver.Env.empty cst [] in
+    let p =
+      Solver.eval ~log:config.log_solver Solver.Env.empty cst Solver.cont_done
+    in
     if config.log_solver then prerr_newline ();
     p
   in
 
-  match nf with
-  | NRet v -> Ok (v (Decode.decode env.unif ()))
-  | NErr e -> Error e
-  | NDo _ -> .
+  match nf with RRet v -> Ok v | RErr e -> Error e | RDo _ -> .
 
 let print_result ~config result =
   match result with

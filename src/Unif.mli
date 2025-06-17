@@ -71,6 +71,8 @@ module Env : sig
 
   val add_flexible : var -> structure -> t -> t
 
+  val unbind : var -> t -> t
+
   (** [repr x env] gets the representant of [x] in [env].
 
       @raise [Not_found] if [x] is not bound in [env]. *)
