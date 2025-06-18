@@ -91,7 +91,7 @@ module Env = struct
 
   let mem var env = Constraint.Var.Map.mem var env.map
 
-  let add_repr repr env =
+  let unode_of_repr repr env =
     let var = repr.var in
     let data =
       Option.map (Structure.map @@ fun v -> uvar v env) repr.structure
@@ -99,8 +99,28 @@ module Env = struct
     let status = repr.status in
     let rank = repr.rank in
 
-    let uvar = UF.make env.store { var; data; status; rank } in
+    { var; data; status; rank }
+
+  let add repr env =
+    let var = repr.var in
+    let unode = unode_of_repr repr env in
+
+    assert (not @@ Constraint.Var.Map.mem var env.map);
+
+    let uvar = UF.make env.store unode in
     { env with map = Constraint.Var.Map.add var uvar env.map }
+
+  let set repr env =
+    let env = { env with store = UF.copy env.store } in
+
+    let var = repr.var in
+    let unode = unode_of_repr repr env in
+
+    assert (Constraint.Var.Map.mem var env.map);
+    let node = Constraint.Var.Map.find var env.map in
+
+    UF.set env.store node unode;
+    env
 
   let register var ~rank env =
     let l =
@@ -114,7 +134,7 @@ module Env = struct
     let status = Flexible in
     let rank = env.young in
 
-    env |> add_repr { var; structure; status; rank } |> register var ~rank
+    env |> add { var; structure; status; rank } |> register var ~rank
 
   let repr var env =
     let { var; data; status; rank } = UF.get env.store @@ uvar var env in
@@ -129,19 +149,25 @@ module Env = struct
 
   let unbind var env = { env with map = Constraint.Var.Map.remove var env.map }
 
-  let debug_var var uvar =
+  let debug_uvar var uvar =
     let module PP = PPrint in
     let ( ^^ ) = PP.( ^^ ) in
+
     if not @@ Constraint.Var.eq var uvar.var then
       (* not representative *)
       ( Constraint.Var.print var ^^ PP.string " |--> "
         ^^ Constraint.Var.print uvar.var
       , `Non_repr )
     else begin
-      let rank_doc, order =
+      let order =
         match uvar.status with
-        | Flexible -> (PP.string (string_of_int uvar.rank), `Rank uvar.rank)
-        | Generic -> (PP.string "G", `Generic)
+        | Flexible -> `Rank uvar.rank
+        | Generic -> `Generic
+      in
+      let rank_doc =
+        match uvar.status with
+        | Flexible -> PP.string (string_of_int uvar.rank)
+        | Generic -> PP.string "G"
       in
       let structure_doc =
         match uvar.structure with
@@ -152,6 +178,8 @@ module Env = struct
         ^^ structure_doc
       , order )
     end
+
+  let debug_var var env = debug_uvar var (repr var env) |> fst
 
   let sort_debug_vars l =
     l
@@ -172,7 +200,7 @@ module Env = struct
   let debug_env env =
     let open PPrint in
     env.map |> Constraint.Var.Map.bindings |> List.map fst
-    |> List.map (fun v -> debug_var v @@ repr v env)
+    |> List.map (fun v -> debug_uvar v @@ repr v env)
     |> sort_debug_vars |> separate hardline
 
   let debug_pool env =
@@ -184,7 +212,7 @@ module Env = struct
              let alinea = hardline ^^ space ^^ space ^^ space in
              let variables_doc =
                variables
-               |> List.map (fun v -> debug_var v @@ repr v env)
+               |> List.map (fun v -> debug_uvar v @@ repr v env)
                |> sort_debug_vars |> separate alinea
              in
              string (Format.sprintf "%d |-->" rank) ^^ alinea ^^ variables_doc

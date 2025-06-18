@@ -32,7 +32,7 @@ let adjust_rank (data : data) (k : rank) (env : env) : env * data =
   assert (data.status <> Generic);
 
   let data = { data with rank = min data.rank k } in
-  let env = Env.add_repr data env in
+  let env = Env.set data env in
 
   (env, data)
 
@@ -121,15 +121,17 @@ let update_ranks (generation : generation) (env : env) : env =
       (* *)
       (* DEBUG START *)
       (* *)
-      Debug.print_sub_header "DEBUG CURRENT ENV" @@ Unif.Env.debug_env env;
-      Debug.print_sub_header "DEBUG CURRENT POOL" @@ Unif.Env.debug_pool env;
+      if data.status = Generic then begin
+        Debug.print_sub_header "DEBUG CURRENT ENV" @@ Unif.Env.debug_env env;
+        Debug.print_sub_header "DEBUG CURRENT POOL" @@ Unif.Env.debug_pool env;
 
-      Utils.(
-        Constraint.Var.(
-          Format.sprintf "(var) %s |--> %s (repr)"
-            (var |> print |> string_of_doc)
-            (data.var |> print |> string_of_doc)
-          |> Debug.print_message ) );
+        Utils.(
+          Constraint.Var.(
+            Format.sprintf "(var) %s |--> %s (repr)"
+              (var |> print |> string_of_doc)
+              (data.var |> print |> string_of_doc)
+            |> Debug.print_message ) )
+      end;
       (* *)
       (* DEBUG END *)
       (* *)
@@ -218,7 +220,7 @@ let generalize (generation : generation) (env : env) : env * variable list =
                  assert (rank = state_young);
 
                  let data = { data with status = Generic } in
-                 env := Env.add_repr data !env;
+                 env := Env.set data !env;
 
                  data.structure = None
                end
@@ -255,21 +257,15 @@ let body { root; _ } = root
 
 let quantifiers { quantifiers; _ } = quantifiers
 
-let debug_scheme { root; quantifiers; _ } =
+let debug_scheme { root; quantifiers; generics } =
   let open PPrint in
   let quantifiers_doc =
     concat_map
       (fun var -> string "∀" ^^ Constraint.Var.print var ^^ string ". ")
       quantifiers
   in
-  quantifiers_doc ^^ Constraint.Var.print root
-
-(* Return a monomorphic scheme whose root is the root *)
-
-let trivial (root : variable) : scheme =
-  let generics = [] in
-  let quantifiers = [] in
-  { root; generics; quantifiers }
+  quantifiers_doc ^^ Constraint.Var.print root ^^ space
+  ^^ brackets (separate_map space Constraint.Var.print generics)
 
 (* Transform root into a scheme -- assert : calls after generalization *)
 
@@ -280,18 +276,23 @@ let schemify (root : variable) (env : env) : scheme =
   let rec traverse (var : variable) (acc : variable list) : variable list =
     let data = Env.repr var env in
 
+    Unif.Env.debug_var var env |> Utils.string_of_doc |> Debug.print_message;
+    ( match data.status with
+    | Generic -> Debug.print_message "Generic"
+    | Flexible -> Debug.print_message "Flexible" );
+
     if data.status <> Generic || Hashtbl.mem cache data.var then acc
     else begin
       Hashtbl.replace cache data.var ();
-      let acc = var :: acc in
+      let acc = data.var :: acc in
 
       match data.structure with
-      | None -> List.rev acc
+      | None -> acc
       | Some structure -> Structure.fold (Fun.flip traverse) acc structure
     end
   in
 
-  let generics = traverse root [] in
+  let generics = List.rev @@ traverse root [] in
 
   (* Compute quantifiers *)
   let has_no_structure var = (Env.repr var env).structure = None in
@@ -322,6 +323,8 @@ let exit (roots : roots) (env : env) : env * quantifiers * schemes =
   let schemes = List.map (Fun.flip schemify @@ env) roots in
 
   (* Clean the environment *)
+  Debug.print_header "DEBUG EXIT POOL" @@ Unif.Env.debug_pool env;
+
   let env = Env.clean_pool state_young env in
   let env = Env.decr_young env in
 
@@ -377,7 +380,7 @@ let instantiate ({ root; generics; quantifiers } : scheme) (var : variable)
             { (Env.repr var_copy env) with structure = structure_copy }
           in
 
-          Env.add_repr copy_data env
+          Env.set copy_data env
       end
       env generics
   in

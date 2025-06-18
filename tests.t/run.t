@@ -176,7 +176,7 @@ type, this is just an abstract/rigid type variable: `Constr
     in decode_scheme ?scheme_final_scheme
   
   Inferred type:
-    α -> α
+    ∀α. α -> α
   
   Elaborated term:
     let Λβ. (x : β -> β) = lambda (y : β). y in x[α]
@@ -212,7 +212,7 @@ type, this is just an abstract/rigid type variable: `Constr
     in decode_scheme ?scheme_final_scheme
   
   Inferred type:
-    ∀β. ∀γ. ∀α. ({γ * β} -> α) -> γ -> β -> α
+    ∀γ. ∀β. ∀α. ({γ * β} -> α) -> γ -> β -> α
   
   Elaborated term:
     lambda (f : {γ * β} -> α). lambda (x : γ). lambda (y : β). f (x, y)
@@ -243,7 +243,7 @@ type, this is just an abstract/rigid type variable: `Constr
     in decode_scheme ?scheme_final_scheme
   
   Inferred type:
-    ∀γ. ∀β. ∀α. (β -> γ -> α) -> {β * γ} -> α
+    ∀β. ∀γ. ∀α. (β -> γ -> α) -> {β * γ} -> α
   
   Elaborated term:
     lambda
@@ -372,16 +372,16 @@ type, this is just an abstract/rigid type variable: `Constr
     in decode_scheme ?scheme_final_scheme
   
   Inferred type:
-    ∀α. ∀β. α -> β -> {α * β}
+    int -> bool -> {int * bool}
   
   Elaborated term:
-    let Λγ. (id : γ -> γ) = lambda (x : γ). x in
+    let Λα. (id : α -> α) = lambda (x : α). x in
       lambda
-      (a : α).
+      (a : int).
         lambda
-        (b : β).
-          let (l : α) = id[α] a in
-            let (r : β) = id[β] b in ((l : int), (r : bool))
+        (b : bool).
+          let (l : int) = id[int] a in
+            let (r : bool) = id[bool] b in ((l : int), (r : bool))
   
 
 
@@ -408,7 +408,7 @@ the inference variables.
     in decode_scheme ?scheme_final_scheme
   
   Constraint solving log:
-  - hole {}
+  ->hole {}
     (
       let ?scheme_final_scheme : ?final_term =
         ∃?x ?wt (?warr = ?x -> ?wt).
@@ -417,7 +417,7 @@ the inference variables.
           ∧ decode ?x
       in decode_scheme ?scheme_final_scheme
     )
-  - hole
+  ->hole
     {
       Env :
         final_term(0)
@@ -433,7 +433,7 @@ the inference variables.
           ∧ decode ?x
       in decode_scheme ?scheme_final_scheme
     )
-  - let ?scheme_final_scheme : ?final_term =
+  ->let ?scheme_final_scheme : ?final_term =
       hole
       {
         Env :
@@ -451,7 +451,7 @@ the inference variables.
           ∧ decode ?x
       )
     in decode_scheme ?scheme_final_scheme
-  - ∃?x.
+  ->∃?x.
       let ?scheme_final_scheme : ?final_term =
         hole
         {
@@ -472,7 +472,7 @@ the inference variables.
             ∧ decode ?x
         )
       in decode_scheme ?scheme_final_scheme
-  - ∃?wt.
+  ->∃?wt.
       ∃?x.
         let ?scheme_final_scheme : ?final_term =
           hole
@@ -495,7 +495,7 @@ the inference variables.
             ∧ decode ?x
           )
         in decode_scheme ?scheme_final_scheme
-  - ∃?warr.
+  ->∃?warr.
       ∃?wt.
         ∃?x.
           let ?scheme_final_scheme : ?final_term =
@@ -517,7 +517,7 @@ the inference variables.
           in decode_scheme ?scheme_final_scheme
     ∧ decode ?x
     ∧ ∃(?int = int). ?int = ?wt ∧ ?int = ?x
-  - ⊤
+  ->⊤
     ∧ ∃?warr.
       ∃?wt.
         ∃?x.
@@ -541,7 +541,7 @@ the inference variables.
             (?int = ?wt ∧ ?int = ?x)
           in decode_scheme ?scheme_final_scheme
     ∧ decode ?x
-  - ∃?int.
+  ->∃?int.
       ⊤
       ∧ ∃?warr.
         ∃?wt.
@@ -567,7 +567,7 @@ the inference variables.
             in decode_scheme ?scheme_final_scheme
       ∧ decode ?x
     ∧ ?int = ?x
-  - ⊤
+  ->⊤
     ∧ ∃?int.
       ⊤
       ∧ ∃?warr.
@@ -593,9 +593,11 @@ the inference variables.
               (?int = ?x)
             in decode_scheme ?scheme_final_scheme
       ∧ decode ?x
-  - let ?scheme_final_scheme : ?final_term =
+  <-let ?scheme_final_scheme : ?final_term =
       hole
       {
+        Schemes :
+          final_scheme: final_term [final_term int]
         Env :
           warr |--> final_term
           wt |--> int
@@ -639,7 +641,7 @@ the inference variables.
     in decode_scheme ?scheme_final_scheme
   
   Constraint solving log:
-  - hole {}
+  ->hole {}
     (
       let ?scheme_final_scheme : ?final_term =
         ∃?wu (?wt = ?wu -> ?final_term).
@@ -649,7 +651,7 @@ the inference variables.
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
       in decode_scheme ?scheme_final_scheme
     )
-  - hole
+  ->hole
     {
       Env :
         final_term(0)
@@ -666,7 +668,7 @@ the inference variables.
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
       in decode_scheme ?scheme_final_scheme
     )
-  - let ?scheme_final_scheme : ?final_term =
+  ->let ?scheme_final_scheme : ?final_term =
       hole
       {
         Env :
@@ -685,7 +687,7 @@ the inference variables.
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
       )
     in decode_scheme ?scheme_final_scheme
-  - ∃?wu.
+  ->∃?wu.
       let ?scheme_final_scheme : ?final_term =
         hole
         {
@@ -706,7 +708,7 @@ the inference variables.
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
         )
       in decode_scheme ?scheme_final_scheme
-  - ∃?wt.
+  ->∃?wt.
       ∃?wu.
         let ?scheme_final_scheme : ?final_term =
           hole
@@ -730,7 +732,7 @@ the inference variables.
         in decode_scheme ?scheme_final_scheme
     ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
       ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-  - ∃?x.
+  ->∃?x.
       ∃?wt.
         ∃?wu.
           let ?scheme_final_scheme : ?final_term =
@@ -759,7 +761,7 @@ the inference variables.
           in decode_scheme ?scheme_final_scheme
       ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
         ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-  - ∃?wt/1.
+  ->∃?wt/1.
       ∃?x.
         ∃?wt.
           ∃?wu.
@@ -790,7 +792,7 @@ the inference variables.
             in decode_scheme ?scheme_final_scheme
         ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
           ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-  - ∃?warr.
+  ->∃?warr.
       ∃?wt/1.
         ∃?x.
           ∃?wt.
@@ -820,7 +822,7 @@ the inference variables.
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
     ∧ decode ?x
     ∧ ∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x
-  - ⊤
+  ->⊤
     ∧ ∃?warr.
       ∃?wt/1.
         ∃?x.
@@ -852,7 +854,7 @@ the inference variables.
           ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
     ∧ decode ?x
-  - ∃?int.
+  ->∃?int.
       ⊤
       ∧ ∃?warr.
         ∃?wt/1.
@@ -886,7 +888,7 @@ the inference variables.
               ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
       ∧ decode ?x
     ∧ ?int = ?x
-  - ⊤
+  ->⊤
     ∧ ∃?int.
       ⊤
       ∧ ∃?warr.
@@ -920,7 +922,7 @@ the inference variables.
             ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
               ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
       ∧ decode ?x
-  - ⊤
+  ->⊤
     ∧ ∃?wt.
       ∃?wu.
         let ?scheme_final_scheme : ?final_term =
@@ -948,7 +950,7 @@ the inference variables.
           }
           (∃?wt/2 (?warr/1 = ?y -> ?wt/2). ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
         in decode_scheme ?scheme_final_scheme
-  - ∃?y.
+  ->∃?y.
       ⊤
       ∧ ∃?wt.
         ∃?wu.
@@ -979,7 +981,7 @@ the inference variables.
             }
             (∃(?warr/1 = ?y -> ?wt/2). ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
           in decode_scheme ?scheme_final_scheme
-  - ∃?wt/2.
+  ->∃?wt/2.
       ∃?y.
         ⊤
         ∧ ∃?wt.
@@ -1047,7 +1049,7 @@ a lot of those.)
     in decode_scheme ?scheme_final_scheme
   
   Constraint solving log:
-  - hole {}
+  ->hole {}
     (
       let ?scheme_final_scheme : ?final_term =
         ∃?x ?wt (?warr = ?x -> ?wt).
@@ -1056,7 +1058,7 @@ a lot of those.)
           ∧ decode ?x
       in decode_scheme ?scheme_final_scheme
     )
-  - hole
+  ->hole
     {
       Env :
         final_term(0)
@@ -1072,7 +1074,7 @@ a lot of those.)
           ∧ decode ?x
       in decode_scheme ?scheme_final_scheme
     )
-  - let ?scheme_final_scheme : ?final_term =
+  ->let ?scheme_final_scheme : ?final_term =
       hole
       {
         Env :
@@ -1090,7 +1092,7 @@ a lot of those.)
           ∧ decode ?x
       )
     in decode_scheme ?scheme_final_scheme
-  - ∃?x.
+  ->∃?x.
       let ?scheme_final_scheme : ?final_term =
         hole
         {
@@ -1111,7 +1113,7 @@ a lot of those.)
             ∧ decode ?x
         )
       in decode_scheme ?scheme_final_scheme
-  - ∃?wt.
+  ->∃?wt.
       ∃?x.
         let ?scheme_final_scheme : ?final_term =
           hole
@@ -1134,7 +1136,7 @@ a lot of those.)
             ∧ decode ?x
           )
         in decode_scheme ?scheme_final_scheme
-  - ∃?warr.
+  ->∃?warr.
       ∃?wt.
         ∃?x.
           let ?scheme_final_scheme : ?final_term =
@@ -1156,7 +1158,7 @@ a lot of those.)
           in decode_scheme ?scheme_final_scheme
     ∧ decode ?x
     ∧ ∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x
-  - ⊤
+  ->⊤
     ∧ ∃?warr.
       ∃?wt.
         ∃?x.
@@ -1180,7 +1182,7 @@ a lot of those.)
             (∃(?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
           in decode_scheme ?scheme_final_scheme
     ∧ decode ?x
-  - ∃?wu.
+  ->∃?wu.
       ⊤
       ∧ ∃?warr.
         ∃?wt.
@@ -1207,7 +1209,7 @@ a lot of those.)
               (?wt/1 = ?x ∧ ?wu = ?x)
             in decode_scheme ?scheme_final_scheme
       ∧ decode ?x
-  - ∃?wt/1.
+  ->∃?wt/1.
       ∃?wu.
         ⊤
         ∧ ∃?warr.
@@ -1284,68 +1286,68 @@ There are not many programs with size 3, 4 and 5.
   $ minigen --exhaustive --types --size 4 --count 100
   lambda (v/14 : α/7). lambda (u/19 : γ/7). lambda (z/1a : β/7). v/14
   
-  Inferred type : ∀γ/7. ∀α/7. ∀β/7. α/7 -> γ/7 -> β/7 -> α/7
+  Inferred type : ∀α/7. ∀γ/7. ∀β/7. α/7 -> γ/7 -> β/7 -> α/7
   
   
   
   lambda (v/14 : β/8). lambda (u/19 : δ/7). lambda (z/1a : α/8). u/19
   
-  Inferred type : ∀δ/7. ∀β/8. ∀α/8. β/8 -> δ/7 -> α/8 -> δ/7
+  Inferred type : ∀β/8. ∀δ/7. ∀α/8. β/8 -> δ/7 -> α/8 -> δ/7
   
   
   
   lambda (v/14 : α/9). lambda (u/19 : δ/8). lambda (z/1a : γ/8). z/1a
   
-  Inferred type : ∀δ/8. ∀α/9. ∀γ/8. α/9 -> δ/8 -> γ/8 -> γ/8
+  Inferred type : ∀α/9. ∀δ/8. ∀γ/8. α/9 -> δ/8 -> γ/8 -> γ/8
   
   
   
-  lambda (v/14 : β/a). let (v/1d : γ/a) = v/14 in v/14
+  lambda (v/14 : β/a). let (v/1d : β/a) = v/14 in v/14
   
   Inferred type : ∀β/a. β/a -> β/a
   
   
   
-  lambda (v/14 : δ/a). let (v/1d : δ/a) = v/14 in v/1d
+  lambda (v/14 : γ/a). let (v/1d : γ/a) = v/14 in v/1d
   
-  Inferred type : ∀δ/a. δ/a -> δ/a
-  
-  
-  
-  lambda (v/14 : α/c). (v/14, v/14)
-  
-  Inferred type : ∀α/c. α/c -> {α/c * α/c}
+  Inferred type : ∀γ/a. γ/a -> γ/a
   
   
   
-  lambda
-  (v/14 : {β/d * γ/d}).
-    let ((y/27 : β/d), (z/27 : γ/d)) = v/14 in v/14
+  lambda (v/14 : δ/b). (v/14, v/14)
   
-  Inferred type : ∀β/d. ∀γ/d. {β/d * γ/d} -> {β/d * γ/d}
+  Inferred type : ∀δ/b. δ/b -> {δ/b * δ/b}
   
   
   
   lambda
-  (v/14 : {δ/d * α/e}).
-    let ((y/27 : δ/d), (z/27 : α/e)) = v/14 in y/27
+  (v/14 : {α/d * β/d}).
+    let ((y/27 : α/d), (z/27 : β/d)) = v/14 in v/14
   
-  Inferred type : ∀δ/d. ∀α/e. {δ/d * α/e} -> δ/d
+  Inferred type : ∀α/d. ∀β/d. {α/d * β/d} -> {α/d * β/d}
   
   
   
   lambda
-  (v/14 : {γ/e * β/e}).
-    let ((y/27 : γ/e), (z/27 : β/e)) = v/14 in z/27
+  (v/14 : {γ/d * δ/d}).
+    let ((y/27 : γ/d), (z/27 : δ/d)) = v/14 in y/27
   
-  Inferred type : ∀γ/e. ∀β/e. {γ/e * β/e} -> β/e
+  Inferred type : ∀γ/d. ∀δ/d. {γ/d * δ/d} -> γ/d
   
   
   
-  let Λα/12. (u/2b : α/12 -> α/12) = lambda (v/2f : α/12). v/2f in
-    u/2b[δ/11]
+  lambda
+  (v/14 : {β/e * α/e}).
+    let ((y/27 : β/e), (z/27 : α/e)) = v/14 in z/27
   
-  Inferred type : δ/11 -> δ/11
+  Inferred type : ∀β/e. ∀α/e. {β/e * α/e} -> α/e
+  
+  
+  
+  let Λδ/11. (u/2b : δ/11 -> δ/11) = lambda (v/2f : δ/11). v/2f in
+    u/2b[γ/11]
+  
+  Inferred type : ∀γ/11. γ/11 -> γ/11
 
 
 An example of random sampling output at higher size.
@@ -1355,7 +1357,7 @@ An example of random sampling output at higher size.
   (z/7 : δ/128).
     (lambda (v/364 : α/129). z/7, lambda (w/364 : β/129). w/364)
   
-  Inferred type : ∀α/129. ∀δ/128. ∀β/129. δ/128
+  Inferred type : ∀δ/128. ∀α/129. ∀β/129. δ/128
   ->
   {α/129 -> δ/128 * β/129 -> β/129}
   
@@ -1370,98 +1372,98 @@ An example of random sampling output at higher size.
   
   
   let Λβ/187. (w/2 : β/187 -> β/187) = lambda (z/e : β/187). z/e in
-    w/2[γ/187] w/2[α/187]
+    w/2[α/187 -> α/187] w/2[α/187]
   
-  Inferred type : α/187 -> α/187
+  Inferred type : ∀α/187. α/187 -> α/187
   
   
   
   lambda
-  (z/7 : {δ/1b0 * α/1b1}).
-    let ((w/551 : δ/1b0), (x/552 : α/1b1)) =
-      let ((y/552 : δ/1b0), (z/552 : α/1b1)) = z/7 in z/7
+  (z/7 : {γ/1b0 * δ/1b0}).
+    let ((w/551 : γ/1b0), (x/552 : δ/1b0)) =
+      let ((y/552 : γ/1b0), (z/552 : δ/1b0)) = z/7 in z/7
     in
       w/551
   
-  Inferred type : ∀δ/1b0. ∀α/1b1. {δ/1b0 * α/1b1} -> δ/1b0
+  Inferred type : ∀γ/1b0. ∀δ/1b0. {γ/1b0 * δ/1b0} -> γ/1b0
   
   
   
   lambda
-  (z/7 : {α/228 * β/228}).
-    let ((z/6ed : α/228), (u/6ed : β/228)) = z/7 in
-      let (v/6ed : {α/228 * β/228}) = z/7 in z/6ed
+  (z/7 : {δ/227 * α/228}).
+    let ((z/6ed : δ/227), (u/6ed : α/228)) = z/7 in
+      let (v/6ed : {δ/227 * α/228}) = z/7 in z/6ed
   
-  Inferred type : ∀α/228. ∀β/228. {α/228 * β/228} -> α/228
+  Inferred type : ∀δ/227. ∀α/228. {δ/227 * α/228} -> δ/227
   
   
   
   (
-    lambda (x/788 : γ/259). lambda (y/788 : β/259). y/788,
-    lambda (z/788 : δ/259). z/788
+    lambda (x/788 : β/259). lambda (y/788 : α/259). y/788,
+    lambda (z/788 : γ/259). z/788
   )
   
-  Inferred type : ∀β/259. ∀γ/259. ∀δ/259. {γ/259
+  Inferred type : ∀β/259. ∀α/259. ∀γ/259. {β/259
   ->
-  β/259 -> β/259
-  * δ/259 -> δ/259}
+  α/259 -> α/259
+  * γ/259 -> γ/259}
   
   
   
   lambda
-  (z/7 : α/25a).
-    lambda (z/18 : β/25a). lambda (w/21 : γ/25a). (z/7, z/18)
+  (z/7 : δ/259).
+    lambda (z/18 : α/25a). lambda (w/21 : β/25a). (z/7, z/18)
   
-  Inferred type : ∀β/25a. ∀α/25a. ∀γ/25a. α/25a
+  Inferred type : ∀δ/259. ∀α/25a. ∀β/25a. δ/259
   ->
-  β/25a -> γ/25a -> {α/25a * β/25a}
+  α/25a -> β/25a -> {δ/259 * α/25a}
   
   
   
   lambda
-  (z/7 : {γ/35d * δ/35d}).
-    let (z/f : {γ/35d * δ/35d}) =
-      let ((x/a61 : γ/35d), (y/a61 : δ/35d)) = z/7 in z/7
+  (z/7 : {β/35d * γ/35d}).
+    let (z/f : {β/35d * γ/35d}) =
+      let ((x/a61 : β/35d), (y/a61 : γ/35d)) = z/7 in z/7
     in
       z/f
   
-  Inferred type : ∀γ/35d. ∀δ/35d. {γ/35d * δ/35d}
+  Inferred type : ∀β/35d. ∀γ/35d. {β/35d * γ/35d}
   ->
-  {γ/35d * δ/35d}
+  {β/35d * γ/35d}
   
   
   
   lambda
-  (z/7 : {β/515 * γ/515}).
-    (z/7, let ((v/fa0 : β/515), (w/fa0 : γ/515)) = z/7 in z/7)
+  (z/7 : {α/515 * β/515}).
+    (z/7, let ((v/fa0 : α/515), (w/fa0 : β/515)) = z/7 in z/7)
   
-  Inferred type : ∀β/515. ∀γ/515. {β/515 * γ/515}
+  Inferred type : ∀α/515. ∀β/515. {α/515 * β/515}
   ->
-  {{β/515 * γ/515} * {β/515 * γ/515}}
+  {{α/515 * β/515} * {α/515 * β/515}}
   
   
   
-  let Λγ/548. Λβ/548. (w/2 : γ/548 -> β/548 -> β/548) =
-    lambda (z/e : γ/548). lambda (w/24 : β/548). w/24
+  let Λβ/548. Λα/548. (w/2 : β/548 -> α/548 -> α/548) =
+    lambda (z/e : β/548). lambda (w/24 : α/548). w/24
   in
-    lambda (y/a5 : α/548). y/a5
+    lambda (y/a5 : δ/547). y/a5
   
-  Inferred type : ∀α/548. α/548 -> α/548
+  Inferred type : ∀δ/547. δ/547 -> δ/547
 
   $ dune exec -- minigen --exhaustive --types --size 10 --count 1
   (lambda
   (
-    z/4557
+    z/4553
     :
-      (γ/1d14 -> α/1d15 -> δ/1d14 -> γ/1d14)
+      (γ/1d49 -> α/1d4a -> δ/1d49 -> γ/1d49)
       ->
-      γ/1d14 -> α/1d15 -> δ/1d14 -> γ/1d14
-  ). z/4557)
-    (lambda (w/478c : γ/1d14 -> α/1d15 -> δ/1d14 -> γ/1d14). w/478c)
+      γ/1d49 -> α/1d4a -> δ/1d49 -> γ/1d49
+  ). z/4553)
+    (lambda (w/4788 : γ/1d49 -> α/1d4a -> δ/1d49 -> γ/1d49). w/4788)
     (lambda
-    (v/47a1 : γ/1d14).
-      lambda (u/47a6 : α/1d15). lambda (z/47a7 : δ/1d14). v/47a1)
+    (v/479d : γ/1d49).
+      lambda (u/47a2 : α/1d4a). lambda (z/47a3 : δ/1d49). v/479d)
   
-  Inferred type : ∀α/1d15. ∀γ/1d14. ∀δ/1d14. γ/1d14
+  Inferred type : ∀γ/1d49. ∀α/1d4a. ∀δ/1d49. γ/1d49
   ->
-  α/1d15 -> δ/1d14 -> γ/1d14
+  α/1d4a -> δ/1d49 -> γ/1d49
