@@ -29,15 +29,44 @@ module Make (T : Utils.Functor) = struct
       |> List.map
            begin
              fun (s, sch) ->
-               Constraint.SVar.print s ^^ colon ^^ break 1
+               Constraint.SVar.print s ^^ colon ^^ space
                ^^ Generalization.debug_scheme sch
            end
       |> separate hardline
 
     let debug { unif; schemes } =
       let open PPrint in
-      debug_schemes schemes ^^ Unif.Env.debug_env unif
-      ^^ Unif.Env.debug_pool unif
+      let has_schemes, schemes_doc =
+        match SMap.is_empty schemes with
+        | true -> (false, empty)
+        | false ->
+          ( true
+          , group @@ string "Schemes :"
+            ^^ nest 2 (hardline ^^ debug_schemes schemes) )
+      in
+
+      let has_env, env_doc =
+        match Unif.Env.map_is_empty unif with
+        | true -> (false, empty)
+        | false ->
+          ( true
+          , group @@ string "Env :"
+            ^^ nest 2 (hardline ^^ Unif.Env.debug_env unif) )
+      in
+
+      let pool_doc =
+        match Unif.Env.pool_is_empty unif with
+        | true -> empty
+        | false ->
+          group @@ string "Pool :"
+          ^^ nest 2 (hardline ^^ Unif.Env.debug_pool unif)
+      in
+
+      schemes_doc
+      ^^ (if has_schemes then hardline else empty)
+      ^^ env_doc
+      ^^ (if has_env then hardline else empty)
+      ^^ pool_doc
   end
 
   type env = Env.t

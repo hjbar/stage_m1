@@ -67,13 +67,17 @@ module Env = struct
     let young = base_rank - 1 in
     { store; map; pool; young }
 
+  let map_is_empty env = Constraint.Var.Map.is_empty env.map
+
+  let pool_is_empty env = IntMap.is_empty env.pool
+
   let get_young env = env.young
 
   let incr_young env = { env with young = env.young + 1 }
 
   let decr_young env = { env with young = env.young - 1 }
 
-  let pool_is_empty rank env =
+  let pool_k_is_empty rank env =
     match IntMap.find_opt rank env.pool with
     | None | Some [] -> true
     | Some _ -> false
