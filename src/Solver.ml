@@ -219,10 +219,15 @@ module Make (T : Utils.Functor) = struct
         | Next (KMap f, k) -> continue env (Ok (fun sol -> f @@ v sol)) k
         | Next (KConj1 c, k) -> eval env c (Next (KConj2 v, k))
         | Next (KConj2 w, k) -> continue env (Ok (fun sol -> (w sol, v sol))) k
-        | Next (KExist x, k) ->
-          let unif = Unif.Env.unbind x env.unif in
-          let env = { env with unif } in
-
+        | Next (KExist _x, k) ->
+          (* We could in theory remove [x] from the solver environment
+             at this point, as it is not in scope for the rest of the
+             constraint. But our notion of "solution" for the whole
+             constraint expects a map with witnesses for all
+             variables, even those that are bound locally with an
+             existential. We must those keep these variables in the
+             environment to be able to provide the solution at the
+             end. *)
           continue env res k
         | Next (KLet1 (sch_var, var, c), k) ->
           let unif, _gammas, schemes = Generalization.exit [ var ] env.unif in
