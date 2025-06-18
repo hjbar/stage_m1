@@ -27,7 +27,8 @@ module Make (T : Utils.Functor) = struct
         in
 
         let bindings, body = peel ac in
-        Printer.exist bindings body
+        if List.is_empty bindings then body
+        else Printer.exist bindings body
     and print_conj =
       let _print_self = print_conj
       and print_next = print_atom in
