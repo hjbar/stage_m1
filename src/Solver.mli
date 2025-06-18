@@ -34,12 +34,10 @@ module Make (T : Utils.Functor) : sig
           [Do (p, k)] node.
 
           We propose an evaluation rule of the form
-          [eval E[Do (p, k)] = NDo E[(p, k)]] where a
+          [eval E[Do p] = NDo (p, E)] where a
           [Do (p : ('a1, 'e1) Constraint.t T.t) (k : cont)] node placed inside
-          an evaluation context [E] bubbles "all the way to the top" in the
-          result. [E[p]] is defined by using [T.map] to lift the
-          context-plugging operation
-          [E[_] : ('a1, 'e1) Constraint.t -> ('a2, 'e2) Constraint.t] *)
+          an constraint context [E] bubbles "all the way to the top" in the
+          result. *)
 
   and ('ok1, 'err1, 'ok, 'err) cont_frame =
     | KMap : ('ok1 -> 'ok2) -> ('ok1, 'err, 'ok2, 'err) cont_frame
