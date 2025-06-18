@@ -2,7 +2,6 @@ module Make (M : Utils.MonadPlus) = struct
   module Untyped = Untyped.Make (M)
   module Constraint = Constraint.Make (M)
   module SatConstraint = SatConstraint.Make (M)
-  module ConstraintSimplifier = ConstraintSimplifier.Make (M)
   module ConstraintPrinter = ConstraintPrinter.Make (M)
   module Infer = Infer.Make (M)
   module Solver = Solver.Make (M)
@@ -10,17 +9,6 @@ module Make (M : Utils.MonadPlus) = struct
   module TyVarSet = STLC.TyVar.Set
 
   (* Helpers *)
-
-  let print_constr ?(simplify = true) env cstr =
-    match simplify with
-    | false ->
-      cstr |> ConstraintPrinter.print_constraint
-      |> Debug.print_header "DEBUG CONSTRAINT (DEFAULT)"
-    | true ->
-      cstr |> SatConstraint.erase
-      |> ConstraintSimplifier.simplify env
-      |> ConstraintPrinter.print_sat_constraint
-      |> Debug.print_header "DEBUG CONSTRAINT (SIMPLIFIED)"
 
   let make_do t = Untyped.Do t
 
@@ -133,9 +121,10 @@ module Make (M : Utils.MonadPlus) = struct
      fun ~fuel env cstr k ->
       if fuel = -1 then M.fail
       else begin
-        (* TODO: the simplifier called by print_constr
-             should get the full environment as parameter. *)
-        print_constr env.unif cstr;
+        ConstraintPrinter.print_constraint_in_context
+          ~env:(Solver.Env.debug env) cstr k
+        |> Debug.print_header "DEBUG GEN"        
+        ;
         let env, nf = Solver.eval ~log:false env cstr k in
 
         match nf with

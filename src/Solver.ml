@@ -7,7 +7,6 @@
 module Make (T : Utils.Functor) = struct
   module Constraint = Constraint.Make (T)
   module SatConstraint = SatConstraint.Make (T)
-  module ConstraintSimplifier = ConstraintSimplifier.Make (T)
   module ConstraintPrinter = ConstraintPrinter.Make (T)
 
   module Env = struct
@@ -45,14 +44,15 @@ module Make (T : Utils.Functor) = struct
 
   type log = PPrint.document list
 
-  let make_logger c0 =
-    let c0_erased = SatConstraint.erase c0 in
-    fun (env : env) ->
-      Debug.print_header "DEBUG ENV" @@ Env.debug env;
-      c0_erased
-      |> ConstraintSimplifier.simplify env.unif
-      |> ConstraintPrinter.print_sat_constraint |> Utils.string_of_doc
-      |> prerr_endline
+  let do_log env c k =
+    PPrint.(nest 2
+      (string "- " ^^
+        ConstraintPrinter.print_constraint_in_context
+          ~env:(Env.debug env)
+          c k
+    ))
+    |> Utils.string_of_doc
+    |> prerr_endline
 
   (** See [../README.md] ("High-level description") or [Solver.mli] for a
       description of normal constraints and our expectations regarding the
@@ -78,9 +78,8 @@ module Make (T : Utils.Functor) = struct
          (You can also tweak this code temporarily to print stuff on
          stderr right away if you need dirtier ways to debug.)
     *)
-    let add_to_log =
-      let logger = if log then make_logger c0 else ignore in
-      fun env -> logger env
+    let add_to_log env c k =
+      if log then do_log env c k
     in
 
     let exception Located of Utils.loc * exn * Printexc.raw_backtrace in
@@ -111,7 +110,7 @@ module Make (T : Utils.Functor) = struct
         match Unif.unify env.unif x1 x2 with
         | Ok unif ->
           let env = { env with unif } in
-          add_to_log env;
+          add_to_log env c k;
 
           continue env (Ok (fun _sol -> ())) k
         | Error (Cycle cy) -> continue env (Error (Constraint.Cycle cy)) k
@@ -122,7 +121,7 @@ module Make (T : Utils.Functor) = struct
       | Exist (x, s, c) ->
         let unif = Unif.Env.add_flexible x s env.unif in
         let env = { env with unif } in
-        add_to_log env;
+        add_to_log env c k;
 
         eval env c (Next (KExist x, k))
       | Decode v -> continue env (Ok (fun sol -> sol v)) k
@@ -150,7 +149,7 @@ module Make (T : Utils.Functor) = struct
         let unif, result = Generalization.instantiate sch w env.unif in
 
         let env = { env with unif } in
-        add_to_log env;
+        add_to_log env c k;
 
         let res =
           match result with
@@ -167,7 +166,7 @@ module Make (T : Utils.Functor) = struct
         let unif = Generalization.enter env.unif in
         let unif = Unif.Env.add_flexible var None unif in
         let env = { env with unif } in
-        add_to_log env;
+        add_to_log env c k;
 
         eval env c1 (Next (KLet1 (sch_var, var, c2), k))
     and continue : type a1 e1 a e.
@@ -204,11 +203,13 @@ module Make (T : Utils.Functor) = struct
              environment to be able to provide the solution at the
              end. *)
           continue env res k
-        | Next (KLet1 (sch_var, var, c), k) ->
+        | Next (KLet1 (sch_var, var, c), k) as k0 ->
           let unif, _gammas, schemes = Generalization.exit [ var ] env.unif in
 
           let env = { env with unif } in
-          add_to_log env;
+          add_to_log env
+            (match res with Ok v -> Ret v | Error e -> Err e)
+            k0;
 
           assert (List.length schemes = 1);
           let scheme = List.hd schemes in
@@ -222,7 +223,7 @@ module Make (T : Utils.Functor) = struct
       end
     in
 
-    add_to_log env;
+    add_to_log env c0 k;
 
     match eval env c0 k with
     | exception Located (loc, exn, bt) ->
