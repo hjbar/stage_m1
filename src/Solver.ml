@@ -73,13 +73,13 @@ module Make (T : Utils.Functor) = struct
 
   type log = PPrint.document list
 
-  let do_log env c k =
+  let do_log ~dir env c k =
     PPrint.(
       nest 2
-        ( string "- "
+        ( string (match dir with `Enter -> "->" | `Continue -> "<-")
         ^^ ConstraintPrinter.print_constraint_in_context ~env:(Env.debug env) c
              k ) )
-    |> Utils.string_of_doc |> prerr_endline
+    |> Utils.string_of_doc |> print_endline
 
   (** See [../README.md] ("High-level description") or [Solver.mli] for a
       description of normal constraints and our expectations regarding the
@@ -105,7 +105,9 @@ module Make (T : Utils.Functor) = struct
          (You can also tweak this code temporarily to print stuff on
          stderr right away if you need dirtier ways to debug.)
     *)
-    let add_to_log env c k = if log then do_log env c k in
+    let add_to_log ~dir env c k =
+      if log || Debug.debug then do_log ~dir env c k
+    in
 
     let exception Located of Utils.loc * exn * Printexc.raw_backtrace in
     let locate_exn loc exn =
@@ -122,6 +124,8 @@ module Make (T : Utils.Functor) = struct
       -> (a1, e1, a, e) Constraint.cont
       -> env * (a, e) normal_constraint =
      fun env c k ->
+      let dir = `Enter in
+
       match c with
       | Loc (loc, c) -> begin
         try eval env c k with exn -> locate_exn loc exn
@@ -135,7 +139,7 @@ module Make (T : Utils.Functor) = struct
         match Unif.unify env.unif x1 x2 with
         | Ok unif ->
           let env = { env with unif } in
-          add_to_log env c k;
+          add_to_log ~dir env c k;
 
           continue env (Ok (fun _sol -> ())) k
         | Error (Cycle cy) -> continue env (Error (Constraint.Cycle cy)) k
@@ -146,7 +150,7 @@ module Make (T : Utils.Functor) = struct
       | Exist (x, s, c) ->
         let unif = Unif.Env.add_flexible x s env.unif in
         let env = { env with unif } in
-        add_to_log env c k;
+        add_to_log ~dir env c k;
 
         eval env c (Next (KExist x, k))
       | Decode v -> continue env (Ok (fun sol -> sol v)) k
@@ -174,7 +178,7 @@ module Make (T : Utils.Functor) = struct
         let unif, result = Generalization.instantiate sch w env.unif in
 
         let env = { env with unif } in
-        add_to_log env c k;
+        add_to_log ~dir env c k;
 
         let res =
           match result with
@@ -191,7 +195,7 @@ module Make (T : Utils.Functor) = struct
         let unif = Generalization.enter env.unif in
         let unif = Unif.Env.add_flexible var None unif in
         let env = { env with unif } in
-        add_to_log env c k;
+        add_to_log ~dir env c k;
 
         eval env c1 (Next (KLet1 (sch_var, var, c2), k))
     and continue : type a1 e1 a e.
@@ -200,6 +204,8 @@ module Make (T : Utils.Functor) = struct
       -> (a1, e1, a, e) Constraint.cont
       -> env * (a, e) normal_constraint =
      fun env res k ->
+      let dir = `Continue in
+
       match res with
       | Error e -> begin
         match k with
@@ -230,9 +236,7 @@ module Make (T : Utils.Functor) = struct
           continue env res k
         | Next (KLet1 (sch_var, var, c), k) as k0 ->
           let unif, _gammas, schemes = Generalization.exit [ var ] env.unif in
-
           let env = { env with unif } in
-          add_to_log env (match res with Ok v -> Ret v | Error e -> Err e) k0;
 
           assert (List.length schemes = 1);
           let scheme = List.hd schemes in
@@ -240,13 +244,17 @@ module Make (T : Utils.Functor) = struct
           let schemes = Env.SMap.add sch_var scheme env.schemes in
           let env = { env with schemes } in
 
+          add_to_log ~dir env
+            (match res with Ok v -> Ret v | Error e -> Err e)
+            k0;
+
           eval env c (Next (KLet2 v, k))
         | Next (KLet2 w, k) -> continue env (Ok (fun sol -> (w sol, v sol))) k
         | Next (KMapErr _, k) -> continue env (Ok v) k
       end
     in
 
-    add_to_log env c0 k;
+    add_to_log ~dir:`Enter env c0 k;
 
     match eval env c0 k with
     | exception Located (loc, exn, bt) ->

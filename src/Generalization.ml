@@ -82,7 +82,7 @@ let discover_young_generation (env : env) : generation =
       begin
         fun by_rank var ->
           let data = Env.repr var env in
-          Hashtbl.replace cache data.var ();
+          Hashtbl.replace cache var ();
 
           let r = data.rank in
 
@@ -135,7 +135,7 @@ let update_ranks (generation : generation) (env : env) : env =
       (* *)
       assert (data.status <> Generic);
 
-      (* If we already this variable, stop *)
+      (* If we have already visited this variable, stop *)
       if Hashtbl.mem cache data.var then begin
         assert (data.rank <= k);
         (env, data.rank)
@@ -196,7 +196,7 @@ let generalize (generation : generation) (env : env) : env * variable list =
   let state_young = Env.get_young env in
   let env = ref env in
 
-  (* Compote generics *)
+  (* Compute generics *)
   let l =
     List.filter
       begin
@@ -213,7 +213,7 @@ let generalize (generation : generation) (env : env) : env * variable list =
                  env := Env.register var ~rank !env;
                  false
                end
-               (* r = state.young : make var Generic and grop it if var has no structure *)
+               (* r = state.young : make var Generic and drop it if var has no structure *)
                  else begin
                  assert (rank = state_young);
 
@@ -365,17 +365,19 @@ let instantiate ({ root; generics; quantifiers } : scheme) (var : variable)
     List.fold_left
       begin
         fun env var ->
-          let var_copy = Hashtbl.find mapping var in
+          let data = Env.repr var env in
+
+          let var_copy = Hashtbl.find mapping data.var in
 
           let structure_copy =
-            Option.map (Structure.map (copy env)) (Env.repr var env).structure
+            Option.map (Structure.map (copy env)) data.structure
           in
 
-          let data =
+          let copy_data =
             { (Env.repr var_copy env) with structure = structure_copy }
           in
 
-          Env.add_repr data env
+          Env.add_repr copy_data env
       end
       env generics
   in
