@@ -33,11 +33,10 @@ module Make (T : Utils.Functor) : sig
       (** A constraint whose evaluation encountered an effectful constraint in a
           [Do (p, k)] node.
 
-          We propose an evaluation rule of the form
-          [eval E[Do p] = NDo (p, E)] where a
-          [Do (p : ('a1, 'e1) Constraint.t T.t) (k : cont)] node placed inside
-          an constraint context [E] bubbles "all the way to the top" in the
-          result. *)
+          We propose an evaluation rule of the form [eval E[Do p] = NDo (p, E)]
+          where a [Do (p : ('a1, 'e1) Constraint.t T.t) (k : cont)] node placed
+          inside an constraint context [E] bubbles "all the way to the top" in
+          the result. *)
 
   (** If [~log:true] is passed in input, print to stderr a list of intermediate
       steps (obtained from the solver environment and the original constraint by

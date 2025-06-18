@@ -45,14 +45,12 @@ module Make (T : Utils.Functor) = struct
   type log = PPrint.document list
 
   let do_log env c k =
-    PPrint.(nest 2
-      (string "- " ^^
-        ConstraintPrinter.print_constraint_in_context
-          ~env:(Env.debug env)
-          c k
-    ))
-    |> Utils.string_of_doc
-    |> prerr_endline
+    PPrint.(
+      nest 2
+        ( string "- "
+        ^^ ConstraintPrinter.print_constraint_in_context ~env:(Env.debug env) c
+             k ) )
+    |> Utils.string_of_doc |> prerr_endline
 
   (** See [../README.md] ("High-level description") or [Solver.mli] for a
       description of normal constraints and our expectations regarding the
@@ -78,9 +76,7 @@ module Make (T : Utils.Functor) = struct
          (You can also tweak this code temporarily to print stuff on
          stderr right away if you need dirtier ways to debug.)
     *)
-    let add_to_log env c k =
-      if log then do_log env c k
-    in
+    let add_to_log env c k = if log then do_log env c k in
 
     let exception Located of Utils.loc * exn * Printexc.raw_backtrace in
     let locate_exn loc exn =
@@ -207,9 +203,7 @@ module Make (T : Utils.Functor) = struct
           let unif, _gammas, schemes = Generalization.exit [ var ] env.unif in
 
           let env = { env with unif } in
-          add_to_log env
-            (match res with Ok v -> Ret v | Error e -> Err e)
-            k0;
+          add_to_log env (match res with Ok v -> Ret v | Error e -> Err e) k0;
 
           assert (List.length schemes = 1);
           let scheme = List.hd schemes in

@@ -121,10 +121,6 @@ module Make (M : Utils.MonadPlus) = struct
      fun ~fuel env cstr k ->
       if fuel = -1 then M.fail
       else begin
-        ConstraintPrinter.print_constraint_in_context
-          ~env:(Solver.Env.debug env) cstr k
-        |> Debug.print_header "DEBUG GEN"        
-        ;
         let env, nf = Solver.eval ~log:false env cstr k in
 
         match nf with
