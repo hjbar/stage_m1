@@ -162,9 +162,8 @@ wrote naive implementations of two natural variants:
 
    + `minigen`: a toy generator of well-typed terms
 
-- `src/`: the bulk of the code.  `src/*.{ml,mli}` are the more
-   important/interesting modules. `src/support/*.{ml,mli}` has the
-   less interesting support code.
+- `src/`: the bulk of the code. The more important/interesting
+  modules are the following:
 
    + `Generator.ml,mli`: the random term generator
 
@@ -190,8 +189,7 @@ wrote naive implementations of two natural variants:
 
    + `Utils.ml`: useful bits and pieces.
 
-   + `support/`: the boring modules that help for debugging and
-      testing.
+   + the following modules help for debugging and testing.
      
      * `ConstraintPrinter.ml,mli`: a pretty-printer for constraints
 

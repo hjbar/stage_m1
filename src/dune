@@ -1,10 +1,12 @@
-(include_subdirs unqualified)
-
-;; also look in subdirectories
-
 (library
  (name constrained_generation)
  (public_name constrained_generation)
  (synopsis "A random program generator based on constraint solving")
  (libraries unionFind pprint menhirLib)
  (wrapped false))
+
+(ocamllex UntypedLexer)
+
+(menhir
+ (modules UntypedParser)
+ (flags --explain))
