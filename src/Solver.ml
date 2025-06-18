@@ -61,36 +61,11 @@ module Make (T : Utils.Functor) = struct
     | NRet : 'a Constraint.on_sol -> ('a, 'e) normal_constraint
     | NErr : 'e -> ('a, 'e) normal_constraint
     | NDo :
-        ('a, 'e) Constraint.t T.t * ('a, 'e, 'ok, 'err) cont
+        ('a, 'e) Constraint.t T.t * ('a, 'e, 'ok, 'err) Constraint.cont
         -> ('ok, 'err) normal_constraint
 
-  and ('ok1, 'err1, 'ok, 'err) cont_frame =
-    | KMap : ('ok1 -> 'ok2) -> ('ok1, 'err, 'ok2, 'err) cont_frame
-    | KMapErr : ('err1 -> 'err2) -> ('ok, 'err1, 'ok, 'err2) cont_frame
-    | KConj1 :
-        ('ok2, 'err) Constraint.t
-        -> ('ok1, 'err, 'ok1 * 'ok2, 'err) cont_frame
-    | KConj2 :
-        'ok1 Constraint.on_sol
-        -> ('ok2, 'err, 'ok1 * 'ok2, 'err) cont_frame
-    | KExist : Constraint.variable -> ('ok, 'err, 'ok, 'err) cont_frame
-    | KLet1 :
-        Constraint.scheme_variable
-        * Constraint.variable
-        * ('ok2, 'err) Constraint.t
-        -> ('ok1, 'err, 'ok1 * 'ok2, 'err) cont_frame
-    | KLet2 :
-        'ok1 Constraint.on_sol
-        -> ('ok2, 'err, 'ok1 * 'ok2, 'err) cont_frame
-
-  and ('ok1, 'err1, 'ok, 'err) cont =
-    | Done : ('ok, 'err, 'ok, 'err) cont
-    | Next :
-        ('ok1, 'err1, 'ok2, 'err2) cont_frame * ('ok2, 'err2, 'ok, 'err) cont
-        -> ('ok1, 'err1, 'ok, 'err) cont
-
   let eval (type a1 e1 a e) ~log (env : env) (c0 : (a1, e1) Constraint.t)
-    (k : (a1, e1, a, e) cont) : env * (a, e) normal_constraint =
+    (k : (a1, e1, a, e) Constraint.cont) : env * (a, e) normal_constraint =
     (* We recommend calling the function [add_to_log] below
          whenever you get an updated environment.
 
@@ -120,7 +95,7 @@ module Make (T : Utils.Functor) = struct
     let rec eval : type a1 e1 a e.
          env
       -> (a1, e1) Constraint.t
-      -> (a1, e1, a, e) cont
+      -> (a1, e1, a, e) Constraint.cont
       -> env * (a, e) normal_constraint =
      fun env c k ->
       match c with
@@ -198,7 +173,7 @@ module Make (T : Utils.Functor) = struct
     and continue : type a1 e1 a e.
          env
       -> (a1 Constraint.on_sol, e1) result
-      -> (a1, e1, a, e) cont
+      -> (a1, e1, a, e) Constraint.cont
       -> env * (a, e) normal_constraint =
      fun env res k ->
       match res with

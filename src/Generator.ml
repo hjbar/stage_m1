@@ -128,7 +128,7 @@ module Make (M : Utils.MonadPlus) = struct
          fuel:int
       -> Solver.Env.t
       -> (a1, e1) Constraint.t
-      -> (a1, e1, a, e) Solver.cont
+      -> (a1, e1, a, e) Constraint.cont
       -> a M.t =
      fun ~fuel env cstr k ->
       if fuel = -1 then M.fail
@@ -146,5 +146,5 @@ module Make (M : Utils.MonadPlus) = struct
       end
     in
 
-    loop ~fuel:size Solver.Env.empty constraint_ Solver.Done
+    loop ~fuel:size Solver.Env.empty constraint_ Constraint.Done
 end
