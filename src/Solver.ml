@@ -159,7 +159,7 @@ module Make (T : Utils.Functor) = struct
         let scheme = Env.SMap.find sch_var env.schemes in
 
         let body sol = sol @@ Generalization.body scheme in
-        let quantifiers (sol : Constraint.variable -> STLC.ty) :
+        let quantifiers (sol : Constraint.variable -> F.ty) :
           Structure.TyVar.t list =
           scheme |> Generalization.quantifiers
           |> List.map

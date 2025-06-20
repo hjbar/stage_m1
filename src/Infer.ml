@@ -26,7 +26,7 @@ module Make (T : Utils.Functor) = struct
   type env = mono * poly
 
   type err = eq_error =
-    | Clash of STLC.ty Utils.clash
+    | Clash of F.ty Utils.clash
     | Cycle of Constraint.variable Utils.cycle
 
   type 'a constraint_ = ('a, err) Constraint.t
@@ -69,7 +69,7 @@ module Make (T : Utils.Functor) = struct
       could be the constraint [∃(?w1 = ?v2 -> ?v3). ∃(?w2 = ?v1 -> ?w1). k ?w2],
       or equivalently [∃?w3 ?w4. ?w3 = ?v1 -> ?w4 ∧ ?w4 = ?v2 -> ?v3 ∧ k ?w3].
   *)
-  let rec bind (Constr ty : STLC.ty) (k : Constraint.variable -> ('a, 'e) t) :
+  let rec bind (Constr ty : F.ty) (k : Constraint.variable -> ('a, 'e) t) :
     ('a, 'e) t =
     match ty with
     | Var v ->
@@ -117,7 +117,7 @@ module Make (T : Utils.Functor) = struct
       Precondition: when calling [has_type env t], [env] must map each term
       variable that is free in [t] to an inference variable. *)
   let rec has_type (env : env) (t : Untyped.term) (w : variable) :
-    (STLC.term, err) t =
+    (F.term, err) t =
     match t with
     | Untyped.Loc (loc, t) -> Constraint.Loc (loc, has_type env t w)
     | Untyped.Var x -> begin
@@ -125,12 +125,12 @@ module Make (T : Utils.Functor) = struct
       match findopt_mono x env with
       | Some wx ->
         let+ () = eq w wx in
-        STLC.Var x
+        F.Var x
       | None ->
         let sch = find_poly x env in
 
         let+ tys = Instance (sch, w) in
-        STLC.VarApp (x, tys)
+        F.VarApp (x, tys)
     end
     | Untyped.App (t, u) ->
       (* [[t u : w]] := ∃wu. [[t : wu -> w]] ∧ [[u : wu]] *)
@@ -141,7 +141,7 @@ module Make (T : Utils.Functor) = struct
       @@ exist wt (Some (Arrow (wu, w)))
       @@ let+ t' = has_type env t wt
          and+ u' = has_type env u wu in
-         STLC.App (t', u')
+         F.App (t', u')
     | Untyped.Abs (x, t) ->
       (* [[fun x -> t : w]] := ∃wx wt. w = wx -> wt ∧ [[t : wt]](E,x↦wx) *)
       let wx = fresh_var x in
@@ -154,7 +154,7 @@ module Make (T : Utils.Functor) = struct
       @@ let+ () = eq w warr
          and+ t' = has_type env t wt
          and+ tyx = decode wx in
-         STLC.Abs (x, tyx, t')
+         F.Abs (x, tyx, t')
     | Untyped.Let (x, t, u) ->
       (* OLD : [[let x = t in u : w]] := ∃wt. [[t : wt]] ∧ [[u : w]](E,x↦wt)
          TODO : new doc *)
@@ -169,13 +169,13 @@ module Make (T : Utils.Functor) = struct
            and+ scheme = decode_scheme s in
            (u', scheme)
       in
-      STLC.Let (x, scheme, t', u')
+      F.Let (x, scheme, t', u')
     | Untyped.Annot (t, ty) ->
       (* [[(t : ty) : w]] := ∃(wt = ty). [[t : wt]] /\ [[wt = w]] *)
       bind ty @@ fun wt ->
       let+ () = eq wt w
       and+ t' = has_type env t wt in
-      STLC.Annot (t', ty)
+      F.Annot (t', ty)
     | Untyped.Tuple ts ->
       (* [[(t₁, t₂ ... tₙ) : w]] :=
          ∃w₁.
@@ -208,7 +208,7 @@ module Make (T : Utils.Functor) = struct
            []
       in
 
-      STLC.Tuple ts
+      F.Tuple ts
     | Untyped.LetTuple (xs, t, u) ->
       (* [[let (x₁, x₂ ... xₙ) = t in u : w]] :=
          ∃w₁, w₂... wₙ.
@@ -244,6 +244,6 @@ module Make (T : Utils.Functor) = struct
         has_type env u w
       in
 
-      STLC.LetTuple (bindings, t', u')
+      F.LetTuple (bindings, t', u')
     | Do p -> Do (T.map (fun t -> has_type env t w) p)
 end

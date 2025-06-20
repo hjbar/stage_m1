@@ -140,7 +140,7 @@ to the bin/dune content.)
 `id_int` is the monomorphic identity on the type `int`. Note
 that we have not implemented support for a built-in `int`
 type, this is just an abstract/rigid type variable: `Constr
-(Var ...)` at type `STLC.ty`.
+(Var ...)` at type `F.ty`.
 
   $ minihell $FLAGS id_int.test
   Input term:
@@ -1266,204 +1266,184 @@ fine if your own implementation produces different (sensible) results.
 There are not many programs with size 3, 4 and 5.
 
   $ minigen --exhaustive --types --size 2 --count 100
-  lambda (v : α). v
+  lambda (x/1 : α). x/1
   
   Inferred type : ∀α. α -> α
 
 
   $ minigen --exhaustive --types --size 3 --count 100
-  lambda (x/4 : β/1). lambda (w/4 : α/1). w/4
+  lambda (v : α). lambda (w : β). v
   
-  Inferred type : ∀β/1. ∀α/1. β/1 -> α/1 -> α/1
+  Inferred type : ∀α. ∀β. α -> β -> α
   
   
   
-  lambda (x/4 : γ/1). lambda (w/4 : δ/1). x/4
+  lambda (v : δ). lambda (w : γ). w
   
-  Inferred type : ∀γ/1. ∀δ/1. γ/1 -> δ/1 -> γ/1
+  Inferred type : ∀δ. ∀γ. δ -> γ -> γ
 
 
   $ minigen --exhaustive --types --size 4 --count 100
-  lambda (v/14 : α/7). lambda (u/19 : γ/7). lambda (z/1a : β/7). v/14
+  lambda (v/2 : α). lambda (y/5 : γ). lambda (z/4 : β). v/2
   
-  Inferred type : ∀α/7. ∀γ/7. ∀β/7. α/7 -> γ/7 -> β/7 -> α/7
-  
-  
-  
-  lambda (v/14 : β/8). lambda (u/19 : δ/7). lambda (z/1a : α/8). u/19
-  
-  Inferred type : ∀β/8. ∀δ/7. ∀α/8. β/8 -> δ/7 -> α/8 -> δ/7
+  Inferred type : ∀α. ∀γ. ∀β. α -> γ -> β -> α
   
   
   
-  lambda (v/14 : α/9). lambda (u/19 : δ/8). lambda (z/1a : γ/8). z/1a
+  lambda (v/2 : β/1). lambda (y/5 : α/1). lambda (z/4 : δ). z/4
   
-  Inferred type : ∀α/9. ∀δ/8. ∀γ/8. α/9 -> δ/8 -> γ/8 -> γ/8
-  
-  
-  
-  lambda (v/14 : β/a). let (v/1d : β/a) = v/14 in v/14
-  
-  Inferred type : ∀β/a. β/a -> β/a
+  Inferred type : ∀β/1. ∀α/1. ∀δ. β/1 -> α/1 -> δ -> δ
   
   
   
-  lambda (v/14 : γ/a). let (v/1d : γ/a) = v/14 in v/1d
+  lambda (v/2 : α/2). lambda (y/5 : γ/1). lambda (z/4 : δ/1). y/5
   
-  Inferred type : ∀γ/a. γ/a -> γ/a
-  
-  
-  
-  lambda (v/14 : δ/b). (v/14, v/14)
-  
-  Inferred type : ∀δ/b. δ/b -> {δ/b * δ/b}
+  Inferred type : ∀α/2. ∀γ/1. ∀δ/1. α/2 -> γ/1 -> δ/1 -> γ/1
   
   
   
-  lambda
-  (v/14 : {α/d * β/d}).
-    let ((y/27 : α/d), (z/27 : β/d)) = v/14 in v/14
+  lambda (v/2 : β/2). let (v/5 : β/2) = v/2 in v/2
   
-  Inferred type : ∀α/d. ∀β/d. {α/d * β/d} -> {α/d * β/d}
+  Inferred type : ∀β/2. β/2 -> β/2
+  
+  
+  
+  lambda (v/2 : γ/2). let (v/5 : γ/2) = v/2 in v/5
+  
+  Inferred type : ∀γ/2. γ/2 -> γ/2
+  
+  
+  
+  lambda (v/2 : δ/2). (v/2, v/2)
+  
+  Inferred type : ∀δ/2. δ/2 -> {δ/2 * δ/2}
   
   
   
   lambda
-  (v/14 : {γ/d * δ/d}).
-    let ((y/27 : γ/d), (z/27 : δ/d)) = v/14 in y/27
+  (v/2 : {α/3 * β/3}). let ((u/8 : α/3), (v/8 : β/3)) = v/2 in v/2
   
-  Inferred type : ∀γ/d. ∀δ/d. {γ/d * δ/d} -> γ/d
+  Inferred type : ∀α/3. ∀β/3. {α/3 * β/3} -> {α/3 * β/3}
   
   
   
   lambda
-  (v/14 : {β/e * α/e}).
-    let ((y/27 : β/e), (z/27 : α/e)) = v/14 in z/27
+  (v/2 : {γ/3 * δ/3}). let ((u/8 : γ/3), (v/8 : δ/3)) = v/2 in u/8
   
-  Inferred type : ∀β/e. ∀α/e. {β/e * α/e} -> α/e
-  
+  Inferred type : ∀γ/3. ∀δ/3. {γ/3 * δ/3} -> γ/3
   
   
-  let Λδ/11. (u/2b : δ/11 -> δ/11) = lambda (v/2f : δ/11). v/2f in
-    u/2b[γ/11]
   
-  Inferred type : ∀γ/11. γ/11 -> γ/11
+  lambda
+  (v/2 : {β/4 * α/4}). let ((u/8 : β/4), (v/8 : α/4)) = v/2 in v/8
+  
+  Inferred type : ∀β/4. ∀α/4. {β/4 * α/4} -> α/4
+  
+  
+  
+  let Λδ/4. (y/b : δ/4 -> δ/4) = lambda (x/c : δ/4). x/c in y/b[γ/4]
+  
+  Inferred type : ∀γ/4. γ/4 -> γ/4
 
 
 An example of random sampling output at higher size.
 
   $ minigen --seed 42 --types --size 6 --count 10
-  lambda
-  (z/7 : δ/128).
-    (lambda (v/364 : α/129). z/7, lambda (w/364 : β/129). w/364)
-  
-  Inferred type : ∀δ/128. ∀α/129. ∀β/129. δ/128
-  ->
-  {α/129 -> δ/128 * β/129 -> β/129}
-  
-  
-  
-  lambda
-  (z/7 : δ/135).
-    (lambda (u/64 : δ/135). lambda (u/392 : γ/135). u/392) z/7
-  
-  Inferred type : ∀δ/135. ∀γ/135. δ/135 -> γ/135 -> γ/135
-  
-  
-  
-  let Λβ/187. (w/2 : β/187 -> β/187) = lambda (z/e : β/187). z/e in
-    w/2[α/187 -> α/187] w/2[α/187]
-  
-  Inferred type : ∀α/187. α/187 -> α/187
-  
-  
-  
-  lambda
-  (z/7 : {γ/1b0 * δ/1b0}).
-    let ((w/551 : γ/1b0), (x/552 : δ/1b0)) =
-      let ((y/552 : γ/1b0), (z/552 : δ/1b0)) = z/7 in z/7
-    in
-      w/551
-  
-  Inferred type : ∀γ/1b0. ∀δ/1b0. {γ/1b0 * δ/1b0} -> γ/1b0
-  
-  
-  
-  lambda
-  (z/7 : {δ/227 * α/228}).
-    let ((z/6ed : δ/227), (u/6ed : α/228)) = z/7 in
-      let (v/6ed : {δ/227 * α/228}) = z/7 in z/6ed
-  
-  Inferred type : ∀δ/227. ∀α/228. {δ/227 * α/228} -> δ/227
-  
-  
-  
   (
-    lambda (x/788 : β/259). lambda (y/788 : α/259). y/788,
-    lambda (z/788 : γ/259). z/788
+    lambda (y/a : β/1). lambda (x/d : α/1). x/d,
+    lambda (w/3 : γ/1). w/3
   )
   
-  Inferred type : ∀β/259. ∀α/259. ∀γ/259. {β/259
-  ->
-  α/259 -> α/259
-  * γ/259 -> γ/259}
+  Inferred type : ∀β/1. ∀α/1. ∀γ/1. {β/1 -> α/1 -> α/1
+  * γ/1 -> γ/1}
+  
+  
+  
+  (
+    lambda (y/a : δ/1). lambda (x/d : α/2). y/a,
+    lambda (w/3 : β/2). w/3
+  )
+  
+  Inferred type : ∀δ/1. ∀α/2. ∀β/2. {δ/1 -> α/2 -> δ/1
+  * β/2 -> β/2}
+  
+  
+  
+  (
+    lambda (y/a : γ/2). y/a,
+    lambda (w/3 : δ/2). lambda (u/14 : α/3). w/3
+  )
+  
+  Inferred type : ∀γ/2. ∀δ/2. ∀α/3. {γ/2 -> γ/2
+  * δ/2 -> α/3 -> δ/2}
+  
+  
+  
+  (
+    lambda (y/a : β/3). y/a,
+    lambda (w/3 : δ/3). lambda (u/14 : γ/3). u/14
+  )
+  
+  Inferred type : ∀β/3. ∀δ/3. ∀γ/3. {β/3 -> β/3
+  * δ/3 -> γ/3 -> γ/3}
   
   
   
   lambda
-  (z/7 : δ/259).
-    lambda (z/18 : α/25a). lambda (w/21 : β/25a). (z/7, z/18)
+  (z/1d : α/4).
+    let Λδ/4. (u/1d : δ/4 -> α/4) = lambda (y/1f : δ/4). z/1d in
+      lambda (v/1e : γ/4). u/1d[β/4]
   
-  Inferred type : ∀δ/259. ∀α/25a. ∀β/25a. δ/259
-  ->
-  α/25a -> β/25a -> {δ/259 * α/25a}
-  
-  
-  
-  lambda
-  (z/7 : {β/35d * γ/35d}).
-    let (z/f : {β/35d * γ/35d}) =
-      let ((x/a61 : β/35d), (y/a61 : γ/35d)) = z/7 in z/7
-    in
-      z/f
-  
-  Inferred type : ∀β/35d. ∀γ/35d. {β/35d * γ/35d}
-  ->
-  {β/35d * γ/35d}
+  Inferred type : ∀α/4. ∀γ/4. ∀β/4. α/4 -> γ/4 -> β/4 -> α/4
   
   
   
   lambda
-  (z/7 : {α/515 * β/515}).
-    (z/7, let ((v/fa0 : α/515), (w/fa0 : β/515)) = z/7 in z/7)
+  (z/1d : α/5).
+    let Λγ/5. (u/1d : γ/5 -> α/5) = lambda (y/1f : γ/5). z/1d in
+      lambda (v/1e : β/5). z/1d
   
-  Inferred type : ∀α/515. ∀β/515. {α/515 * β/515}
-  ->
-  {{α/515 * β/515} * {α/515 * β/515}}
-  
+  Inferred type : ∀α/5. ∀β/5. α/5 -> β/5 -> α/5
   
   
-  let Λβ/548. Λα/548. (w/2 : β/548 -> α/548 -> α/548) =
-    lambda (z/e : β/548). lambda (w/24 : α/548). w/24
-  in
-    lambda (y/a5 : δ/547). y/a5
   
-  Inferred type : ∀δ/547. δ/547 -> δ/547
+  lambda
+  (z/1d : α/6).
+    let Λβ/6. (u/1d : β/6 -> α/6) = lambda (y/1f : β/6). z/1d in
+      lambda (v/1e : δ/5). v/1e
+  
+  Inferred type : ∀α/6. ∀δ/5. α/6 -> δ/5 -> δ/5
+  
+  
+  
+  lambda
+  (z/1d : δ/6).
+    let Λα/7. (u/1d : α/7 -> α/7) = lambda (y/1f : α/7). y/1f in
+      lambda (v/1e : γ/6). v/1e
+  
+  Inferred type : ∀δ/6. ∀γ/6. δ/6 -> γ/6 -> γ/6
+  
+  
+  
+  lambda
+  (z/1d : δ/7).
+    let Λα/8. (u/1d : α/8 -> α/8) = lambda (y/1f : α/8). y/1f in
+      lambda (v/1e : γ/7). u/1d[β/7]
+  
+  Inferred type : ∀δ/7. ∀γ/7. ∀β/7. δ/7 -> γ/7 -> β/7 -> β/7
+  
+  
+  
+  lambda
+  (z/1d : β/8).
+    let Λδ/8. (u/1d : δ/8 -> δ/8) = lambda (y/1f : δ/8). y/1f in
+      lambda (v/1e : γ/8). z/1d
+  
+  Inferred type : ∀β/8. ∀γ/8. β/8 -> γ/8 -> β/8
 
   $ dune exec -- minigen --exhaustive --types --size 10 --count 1
-  (lambda
-  (
-    z/4553
-    :
-      (γ/1d49 -> α/1d4a -> δ/1d49 -> γ/1d49)
-      ->
-      γ/1d49 -> α/1d4a -> δ/1d49 -> γ/1d49
-  ). z/4553)
-    (lambda (w/4788 : γ/1d49 -> α/1d4a -> δ/1d49 -> γ/1d49). w/4788)
-    (lambda
-    (v/479d : γ/1d49).
-      lambda (u/47a2 : α/1d4a). lambda (z/47a3 : δ/1d49). v/479d)
+  (lambda (v : α -> γ -> β -> α). v)
+    ((lambda (u/1 : α -> γ -> β -> α). u/1)
+      (lambda (z/4 : α). lambda (w/5 : γ). lambda (x/7 : β). z/4))
   
-  Inferred type : ∀γ/1d49. ∀α/1d4a. ∀δ/1d49. γ/1d49
-  ->
-  α/1d4a -> δ/1d49 -> γ/1d49
+  Inferred type : ∀α. ∀γ. ∀β. α -> γ -> β -> α

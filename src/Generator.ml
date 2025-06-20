@@ -5,7 +5,7 @@ module Make (M : Utils.MonadPlus) = struct
   module Solver = Solver.Make (M)
   module TeVar = Untyped.Var
   module TeVarSet = TeVar.Set
-  module TyVarSet = STLC.TyVar.Set
+  module TyVarSet = F.TyVar.Set
 
   let ret = M.return
 
@@ -131,7 +131,7 @@ module Make (M : Utils.MonadPlus) = struct
       | Do m -> Do (M.map (cut_size ~size) m)
       | Loc (loc, t) -> un ~size t (fun t' -> Loc (loc, t'))
 
-  let constraint_ untyped : (STLC.term * STLC.scheme, Infer.err) Constraint.t =
+  let constraint_ untyped : (F.term * F.scheme, Infer.err) Constraint.t =
     let s = Constraint.SVar.fresh "final_scheme" in
     let w = Constraint.Var.fresh "final_term" in
     Let
@@ -140,7 +140,7 @@ module Make (M : Utils.MonadPlus) = struct
       , Infer.has_type (Untyped.Var.Map.empty, Untyped.Var.Map.empty) untyped w
       , Infer.decode_scheme s )
 
-  let typed_cut_early ~size untyped : (STLC.term * STLC.scheme) M.t =
+  let typed_cut_early ~size untyped : (F.term * F.scheme) M.t =
     let rec loop : type a1 e1 a e.
          Solver.Env.t
       -> (a1, e1) Constraint.t
@@ -160,7 +160,7 @@ module Make (M : Utils.MonadPlus) = struct
     let constraint_ = untyped |> cut_size ~size |> constraint_ in
     loop Solver.Env.empty constraint_ Constraint.Done
 
-  let typed_cut_late ~size untyped : (STLC.term * STLC.scheme) M.t =
+  let typed_cut_late ~size untyped : (F.term * F.scheme) M.t =
     let rec loop : type a1 e1 a e.
          fuel:int
       -> Solver.Env.t

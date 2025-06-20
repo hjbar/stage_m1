@@ -92,16 +92,16 @@ let print_result ~config result =
   match result with
   | Ok (term, scheme) ->
     if config.show_type then
-      print_section "Inferred type" (STLCPrinter.print_scheme scheme);
+      print_section "Inferred type" (FPrinter.print_scheme scheme);
 
     if config.show_typed_term then
-      print_section "Elaborated term" (STLCPrinter.print_term term)
+      print_section "Elaborated term" (FPrinter.print_term term)
   | Error err -> begin
     print_section "Error"
     @@
     match err with
     | Infer.Clash (ty1, ty2) ->
-      Printer.incompatible (STLCPrinter.print_ty ty1) (STLCPrinter.print_ty ty2)
+      Printer.incompatible (FPrinter.print_ty ty1) (FPrinter.print_ty ty2)
     | Infer.Cycle (Utils.Cycle v) ->
       Printer.cycle @@ Printer.inference_variable @@ Constraint.Var.print v
   end

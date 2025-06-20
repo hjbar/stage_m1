@@ -32,7 +32,7 @@ module Make (T : Utils.Functor) = struct
   include Types
 
   type eq_error =
-    | Clash of STLC.ty Utils.clash
+    | Clash of F.ty Utils.clash
     | Cycle of variable Utils.cycle
 
   (** A value of type [('a, 'e)) t] is a constraint whose resolution will either
@@ -56,17 +56,17 @@ module Make (T : Utils.Functor) = struct
     | Conj : ('a, 'e) t * ('b, 'e) t -> ('a * 'b, 'e) t
     | Eq : variable * variable -> (unit, eq_error) t
     | Exist : variable * structure option * ('a, 'e) t -> ('a, 'e) t
-    | Decode : variable -> (STLC.ty, variable Utils.cycle) t
+    | Decode : variable -> (F.ty, variable Utils.cycle) t
     | Do : ('a, 'e) t T.t -> ('a, 'e) t
-    | DecodeScheme : scheme_variable -> (STLC.scheme, variable Utils.cycle) t
-    | Instance : scheme_variable * variable -> (STLC.ty list, eq_error) t
+    | DecodeScheme : scheme_variable -> (F.scheme, variable Utils.cycle) t
+    | Instance : scheme_variable * variable -> (F.ty list, eq_error) t
     | Let :
         scheme_variable * variable * ('a, 'e) t * ('b, 'e) t
         -> ('a * 'b, 'e) t
 
   (** ['a on_sol] represents an elaborated witness of type ['a] that depends on
       the solution to the whole constraint -- represented by a mapping from
-      inference variables to elaborated types, [variable -> STLC.ty].
+      inference variables to elaborated types, [variable -> F.ty].
 
       This is used in the success constraint above
       [Ret : 'a on_sol -> ('a, 'e) t]; using just [Ret : 'a -> ('a, 'e) t] would
@@ -81,7 +81,7 @@ module Make (T : Utils.Functor) = struct
       when resolving other parts of the whole constraint that handle the
       application of [0]. We have to solve the whole constraint, and then come
       back to elaborate an explictly-typed term [lambda (y : int). 42]. *)
-  and 'a on_sol = (variable -> STLC.ty) -> 'a
+  and 'a on_sol = (variable -> F.ty) -> 'a
 
   let ( let+ ) c f = Map (c, f)
 

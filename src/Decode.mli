@@ -13,7 +13,7 @@ type env = Unif.Env.t
     up in a solution incompatible with any specific choice of [foo]. We decide
     to decode this into a fresh (rigid) type variable (which is assumed distinct
     from everything else, but nothing else): [?w3] decodes into [int -> α]. *)
-type decoder = Constraint.variable -> STLC.ty
+type decoder = Constraint.variable -> F.ty
 
 (** [decode env ()] returns a decoder that can be called on inference variables,
     and shares/caches the decoding work across several calls. *)

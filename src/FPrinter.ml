@@ -1,7 +1,7 @@
-open STLC
+open F
 
 let print_quantifier (quantifiers : TyVar.t list) : PPrint.document =
-  quantifiers |> List.map STLC.TyVar.print |> Printer.print_quantifier
+  quantifiers |> List.map F.TyVar.print |> Printer.print_quantifier
 
 let print_ty : ty -> PPrint.document =
   let rec print t =
@@ -27,7 +27,7 @@ let print_term : term -> PPrint.document =
   let print_binding x tau = Printer.annot (TeVar.print x) (print_ty tau) in
   let print_let_binding x (quantifiers, ty) =
     Printer.let_binding
-      (List.map STLC.TyVar.print quantifiers)
+      (List.map F.TyVar.print quantifiers)
       (TeVar.print x) (print_ty ty)
   in
   let print_var_app x = function

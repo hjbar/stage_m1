@@ -92,14 +92,14 @@ let typ :=
 
 let typ_arrow :=
   | ty1 = typ_atom ; "->" ; ty2 = typ_arrow ;
-    { STLC.Constr (Structure.Arrow (ty1, ty2)) }
+    { F.Constr (Structure.Arrow (ty1, ty2)) }
   | ~ = typ_atom ; <>
 
 let typ_atom :=
   | x = tyvar ;
-    { STLC.Constr (Structure.Var x) }
+    { F.Constr (Structure.Var x) }
   | "{" ; tys = separated_list ("*", typ) ; "}" ;
-    { STLC.Constr (Structure.Prod tys) }
+    { F.Constr (Structure.Prod tys) }
   | "(" ; ~ = typ ; ")" ; <>
 
 let tyvar :=

@@ -32,7 +32,7 @@ module Make (T : Utils.Functor) = struct
       @@
       match t with
       | Var x -> Var.print x
-      | Annot (t, ty) -> Printer.annot (print_top t) (STLCPrinter.print_ty ty)
+      | Annot (t, ty) -> Printer.annot (print_top t) (FPrinter.print_ty ty)
       | Tuple ts -> Printer.tuple print_top ts
       | (App _ | Abs _ | Let _ | LetTuple _) as other ->
         PPrint.parens (print_top other)

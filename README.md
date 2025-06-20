@@ -60,14 +60,14 @@ See the corresponding technical report at:
 
 This project contains a simple type inference engine in the spirit of
 Inferno, with a type `Untyped.term` of untyped terms, a type
-`STLC.term` of explicitly-typed terms, a type `('a, 'e) Constraint.t`
+`F.term` of explicitly-typed terms, a type `('a, 'e) Constraint.t`
 of constraints that produce elaboration witnesses of type `'a`.
 
 #### Type inference a la inferno
 
 The general idea is to implement a constraint generator of type
 
-    Untyped.term -> (STLC.term, type_error) Constraint.t
+    Untyped.term -> (F.term, type_error) Constraint.t
 
 and a constraint solving function of type
 
@@ -97,7 +97,7 @@ in OCaml modules `Make(T : Utils.Functor)` parametrized over `T`.
 
 The constraint-generation function is unchanged.
 
-    Untyped.term -> (STLC.term, type_error) Constraint.t
+    Untyped.term -> (F.term, type_error) Constraint.t
 
 For constraint solving, however, new terms of the form
   `Do (p : (a, e) Constraint.t T.t)`
@@ -176,10 +176,10 @@ wrote naive implementations of two natural variants:
 
    + `Solver.ml,mli`: the constraint solver
 
-   + `STLC.ml`: the syntax of types and well-typed terms
+   + `F.ml`: the syntax of types and well-typed terms
 
    + `Structure.ml`: the definition of type-formers
-     in the type system. This is used in `STLC.ml`,
+     in the type system. This is used in `F.ml`,
      but also in constraints that manipulate types
      containing inference variables.
 
@@ -207,7 +207,7 @@ wrote naive implementations of two natural variants:
        well-typed terms). This simpler type (no GADTs in sight) is
        used under the hood for simplification and pretty-printing.
 
-    * `STLCPrinter.ml,mli`: a pretty-printer for explicitly-typed
+    * `FPrinter.ml,mli`: a pretty-printer for explicitly-typed
       terms.
 
     * `UntypedLexer.mll`: an `ocamllex` lexer for the untyped

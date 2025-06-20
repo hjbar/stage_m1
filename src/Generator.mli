@@ -7,11 +7,9 @@ module Make (M : Utils.MonadPlus) : sig
 
   val untyped_vanille : Untyped.term
 
-  val constraint_ :
-    Untyped.term -> (STLC.term * STLC.scheme, Infer.err) Constraint.t
+  val constraint_ : Untyped.term -> (F.term * F.scheme, Infer.err) Constraint.t
 
-  val typed_cut_early :
-    size:int -> Untyped.term -> (STLC.term * STLC.scheme) M.t
+  val typed_cut_early : size:int -> Untyped.term -> (F.term * F.scheme) M.t
 
-  val typed_cut_late : size:int -> Untyped.term -> (STLC.term * STLC.scheme) M.t
+  val typed_cut_late : size:int -> Untyped.term -> (F.term * F.scheme) M.t
 end

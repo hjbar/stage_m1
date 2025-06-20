@@ -2,18 +2,18 @@ type env = Unif.Env.t
 
 type slot =
   | Ongoing
-  | Done of STLC.ty
+  | Done of F.ty
 
-let new_var = STLC.TyVar.namegen [| "α"; "β"; "γ"; "δ" |]
+let new_var = F.TyVar.namegen [| "α"; "β"; "γ"; "δ" |]
 
-type decoder = Constraint.variable -> STLC.ty
+type decoder = Constraint.variable -> F.ty
 
 let decode (env : env) () : decoder =
   let table = Hashtbl.create 42 in
 
   fun v ->
     let exception Found_cycle of Constraint.variable Utils.cycle in
-    let rec decode (v : Constraint.variable) : STLC.ty =
+    let rec decode (v : Constraint.variable) : F.ty =
       let repr = Unif.Env.repr v env in
 
       match Hashtbl.find table repr.var with
@@ -23,7 +23,7 @@ let decode (env : env) () : decoder =
         Hashtbl.replace table repr.var Ongoing;
 
         let ty =
-          STLC.Constr
+          F.Constr
             ( match repr.structure with
             | Some s -> Structure.map decode s
             | None -> Var (new_var ()) )

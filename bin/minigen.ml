@@ -43,14 +43,14 @@ let () =
 
 let () =
   let scheme_to_doc (term, scheme) =
-    let term_doc = STLCPrinter.print_term term in
+    let term_doc = FPrinter.print_term term in
 
     match config.types with
     | false -> term_doc
     | true ->
       PPrint.(
         term_doc ^^ hardline ^^ hardline ^^ string "Inferred type : "
-        ^^ STLCPrinter.print_scheme scheme )
+        ^^ FPrinter.print_scheme scheme )
   in
 
   (if config.exhaustive then (module MSeq) else (module MRand))

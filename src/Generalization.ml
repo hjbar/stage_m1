@@ -118,23 +118,6 @@ let update_ranks (generation : generation) (env : env) : env =
     let rec traverse (var : variable) (env : env) : env * rank =
       (* To get the repr of the variable & check its status *)
       let data = Env.repr var env in
-      (* *)
-      (* DEBUG START *)
-      (*
-      if data.status = Generic then begin
-        Debug.print_sub_header "DEBUG CURRENT ENV" @@ Unif.Env.debug_env env;
-        Debug.print_sub_header "DEBUG CURRENT POOL" @@ Unif.Env.debug_pool env;
-
-        Utils.(
-          Constraint.Var.(
-            Format.sprintf "(var) %s |--> %s (repr)"
-              (var |> print |> string_of_doc)
-              (data.var |> print |> string_of_doc)
-            |> Debug.print_message ) )
-      end;
-      *)
-      (* DEBUG END *)
-      (* *)
       assert (data.status <> Generic);
 
       (* If we have already visited this variable, stop *)
