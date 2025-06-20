@@ -1,41 +1,27 @@
-(* Import some types *)
-
-type variable = Unif.var
-
-type structure = Unif.structure
-
-type data = Unif.repr
-
-type env = Unif.Env.t
-
-type err = Unif.err
-
 (* Type of scheme *)
 
 type scheme
 
-and root = variable
+(* Functions on schemes *)
 
-and roots = root list
+val body : scheme -> Unif.var
 
-and quantifiers = variable list
-
-and schemes = scheme list
-
-(* Function on schemes *)
-
-val body : scheme -> root
-
-val quantifiers : scheme -> quantifiers
+val quantifiers : scheme -> Unif.var list
 
 val debug_scheme : scheme -> PPrint.document
 
-(* Functions on generalization *)
+(* Functions for generalization *)
 
-val fresh_flexible : ?name:string -> structure -> env -> env * variable
+val fresh_flexible :
+  ?name:string -> Unif.structure -> Unif.Env.t -> Unif.Env.t * Unif.var
 
-val enter : env -> env
+val enter : Unif.Env.t -> Unif.Env.t
 
-val exit : roots -> env -> env * quantifiers * schemes
+val exit :
+  Unif.var list -> Unif.Env.t -> Unif.Env.t * Unif.var list * scheme list
 
-val instantiate : scheme -> variable -> env -> env * (quantifiers, err) result
+val instantiate :
+     scheme
+  -> Unif.var
+  -> Unif.Env.t
+  -> Unif.Env.t * (Unif.var list, Unif.err) result
