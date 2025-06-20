@@ -3,16 +3,16 @@ module Make (T : Utils.Functor) = struct
 
   open SatConstraint.Make (T)
 
-  let print_var v = Printer.inference_variable (Constraint.Var.print v)
+  let print_var (v : Constraint.variable) : PPrint.document =
+    Printer.inference_variable @@ Constraint.Var.print v
 
-  let print_sch_var sch_var =
-    Printer.scheme_variable (Constraint.SVar.print sch_var)
+  let print_sch_var (sch_var : Constraint.scheme_variable) : PPrint.document =
+    Printer.scheme_variable @@ Constraint.SVar.print sch_var
 
   let print_sat_constraint (c : sat_constraint) : PPrint.document =
     let rec print_top = fun c -> print_left_open c
     and print_left_open =
-      let _print_self = print_left_open
-      and print_next = print_conj in
+      let print_next = print_conj in
 
       fun ac ->
         let rec peel = function
@@ -29,8 +29,7 @@ module Make (T : Utils.Functor) = struct
         let bindings, body = peel ac in
         if List.is_empty bindings then body else Printer.exist bindings body
     and print_conj =
-      let _print_self = print_conj
-      and print_next = print_atom in
+      let print_next = print_atom in
 
       function
       | Conj cs -> Printer.conjunction @@ List.map print_next cs
@@ -54,24 +53,24 @@ module Make (T : Utils.Functor) = struct
   let print_sat_constraint_in_context ~(env : PPrint.document)
     (c : sat_constraint) (k : sat_cont) : PPrint.document =
     let rec print_cont = function
-      | frame :: rest ->
+      | frame :: rest -> begin
         let rest = print_cont rest in
-        begin
-          match frame with
-          | KConj1 c2 -> Printer.conjunction [ rest; print_sat_constraint c2 ]
-          | KConj2 -> Printer.conjunction [ Printer.true_; rest ]
-          | KExist v -> Printer.exist [ (print_var v, None) ] rest
-          | KLet1 (s, v, c2) ->
-            Printer.let_sch (print_sch_var s) (print_var v) rest
-              (print_sat_constraint c2)
-          | KLet2 -> Printer.let_sch_2 rest
-        end
+
+        match frame with
+        | KConj1 c2 -> Printer.conjunction [ rest; print_sat_constraint c2 ]
+        | KConj2 -> Printer.conjunction [ Printer.true_; rest ]
+        | KExist v -> Printer.exist [ (print_var v, None) ] rest
+        | KLet1 (s, v, c2) ->
+          Printer.let_sch (print_sch_var s) (print_var v) rest
+            (print_sat_constraint c2)
+        | KLet2 -> Printer.let_sch_2 rest
+      end
       | [] -> Printer.hole ~env (print_sat_constraint c)
     in
     print_cont k
 
   let print_constraint (type a e) (c : (a, e) Constraint.t) : PPrint.document =
-    print_sat_constraint (erase c)
+    print_sat_constraint @@ erase c
 
   let print_constraint_in_context (type a1 e1 a e) ~(env : PPrint.document)
     (c : (a1, e1) Constraint.t) (k : (a1, e1, a, e) Constraint.cont) =

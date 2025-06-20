@@ -12,8 +12,8 @@
    distract you. *)
 
 module Types = struct
+  (* Constraint variables *)
   module Var = Utils.Variables ()
-  module SVar = Utils.Variables ()
 
   type variable = Var.t
 
@@ -22,6 +22,9 @@ module Types = struct
   type ty =
     | Var of variable
     | Constr of structure
+
+  (* Scheme variables *)
+  module SVar = Utils.Variables ()
 
   type scheme_variable = SVar.t
 end

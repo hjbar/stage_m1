@@ -1,9 +1,10 @@
 open F
 
 let print_quantifier (quantifiers : TyVar.t list) : PPrint.document =
-  quantifiers |> List.map F.TyVar.print |> Printer.print_quantifier
+  PPrint.group
+    (quantifiers |> List.map F.TyVar.print |> Printer.print_quantifier)
 
-let print_ty : ty -> PPrint.document =
+let print_ty (ty : ty) : PPrint.document =
   let rec print t =
     let print_self = print
     and print_next = print_atom in
@@ -13,15 +14,14 @@ let print_ty : ty -> PPrint.document =
     | other -> print_next other
   and print_atom = function
     | Constr (Var alpha) -> TyVar.print alpha
-    | Constr (Prod ts) -> Printer.product (List.map print ts)
-    | Constr (Arrow _) as other -> PPrint.parens (print other)
+    | Constr (Prod ts) -> Printer.product @@ List.map print ts
+    | Constr (Arrow _) as other -> PPrint.parens @@ print other
   in
 
-  print
+  PPrint.group @@ print ty
 
 let print_scheme ((quantifiers, ty) : scheme) : PPrint.document =
-  let open PPrint in
-  print_quantifier quantifiers ^^ print_ty ty
+  Printer.scheme (print_quantifier quantifiers) (print_ty ty)
 
 let print_term : term -> PPrint.document =
   let print_binding x tau = Printer.annot (TeVar.print x) (print_ty tau) in
@@ -32,9 +32,7 @@ let print_term : term -> PPrint.document =
   in
   let print_var_app x = function
     | [] -> TeVar.print x
-    | tys ->
-      Printer.var_app (TeVar.print x)
-        (PPrint.separate_map PPrint.(comma ^^ space) print_ty tys)
+    | tys -> Printer.var_app (TeVar.print x) (List.map print_ty tys)
   in
 
   let rec print_top t = print_left_open t

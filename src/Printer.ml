@@ -1,48 +1,58 @@
 open PPrint
 
 (** ?w *)
-let inference_variable w = string "?" ^^ w
+let inference_variable w = group (string "?" ^^ w)
 
 (** ?s *)
-let scheme_variable s = string "?scheme_" ^^ s
+let scheme_variable s = group (string "?scheme_" ^^ s)
 
 (** $t -> $u *)
-let arrow t u = group @@ t ^/^ string "->" ^/^ u
+let arrow t u = group (t ^/^ string "->" ^/^ u)
 
 (** {!$t1 * $t2 * ... $tn} *)
-let product ts = group @@ braces (separate (break 1 ^^ star ^^ space) ts)
+let product ts = group @@ braces @@ separate (break 1 ^^ star ^^ space) ts
 
 (** ($term : $ty) *)
 let annot term ty = group @@ surround 2 0 lparen (term ^/^ colon ^//^ ty) rparen
 
 (** ∀$ty1. ∀$ty2. ... *)
 let print_quantifier quantifiers =
-  concat_map (fun var -> string "∀" ^^ var ^^ string ". ") quantifiers
+  group @@ concat_map (fun var -> string "∀" ^^ var ^^ string ". ") quantifiers
+
+(** ∀$ty1. ∀$ty2. ... $ty *)
+let scheme quantifiers ty = group (quantifiers ^^ ty)
 
 (** x[$ty1, $ty2, ...] *)
-let var_app x tys = group @@ x ^^ lbracket ^^ tys ^^ rbracket
+let var_app x tys =
+  group (x ^^ lbracket ^^ separate (comma ^^ space) tys ^^ rbracket)
 
 (** Λ$ty1. Λ$ty2. ... (x : ty) *)
 let let_binding quantifiers x ty =
   group
-  @@ concat_map (fun var -> string "Λ" ^^ var ^^ dot ^^ space) quantifiers
-  ^^ lparen ^^ x ^^ space ^^ colon ^^ space ^^ ty ^^ rparen
+    begin
+      concat_map (fun var -> string "Λ" ^^ var ^^ dot ^^ space) quantifiers
+      ^^ lparen ^^ x ^^ space ^^ colon ^^ space ^^ ty ^^ rparen
+    end
 
 (** lambda $input. $body *)
 let lambda ~input ~body =
-  group @@ string "lambda" ^/^ input ^^ string "." ^//^ body
+  group (string "lambda" ^/^ input ^^ string "." ^//^ body)
 
 (** let $var = $def in $body *)
 let let_ ~var ~def ~body =
   group
-  @@ group
-       ( group (string "let" ^/^ var ^/^ string "=")
-       ^^ nest 2 (break 1 ^^ def)
-       ^/^ string "in" )
-  ^//^ body
+    begin
+      group
+        begin
+          group (string "let" ^/^ var ^/^ string "=")
+          ^^ nest 2 (break 1 ^^ def)
+          ^/^ string "in"
+        end
+      ^//^ body
+    end
 
 (** $t $u *)
-let app t u = group @@ t ^//^ u
+let app t u = group (t ^//^ u)
 
 (** (t1, t2... tn) *)
 let tuple p ts =
@@ -72,7 +82,7 @@ let exist bindings body =
     | Some s -> group @@ surround 2 0 lparen (w ^/^ string "=" ^/^ s) rparen
   in
 
-  let bindings = group (flow_map (break 1) print_binding bindings) in
+  let bindings = group @@ flow_map (break 1) print_binding bindings in
 
   group
     begin
@@ -94,33 +104,36 @@ let conjunction docs =
   | docs -> separate (break 1 ^^ utf8string "∧" ^^ space) docs
 
 (** $v1 = $v2 *)
-let eq v1 v2 = group @@ v1 ^/^ string "=" ^/^ v2
+let eq v1 v2 = group (v1 ^/^ string "=" ^/^ v2)
 
 (** decode $v *)
-let decode v = group @@ string "decode" ^^ break 1 ^^ v
+let decode v = group (string "decode" ^^ break 1 ^^ v)
 
 let do_ = string "do?"
 
-let decode_scheme sch_var =
-  group @@ string "decode_scheme" ^^ break 1 ^^ sch_var
+let decode_scheme sch_var = group (string "decode_scheme" ^^ break 1 ^^ sch_var)
 
 let instance sch_var var =
-  group @@ sch_var ^^ break 1 ^^ utf8string "≤" ^^ break 1 ^^ var
+  group (sch_var ^^ break 1 ^^ utf8string "≤" ^^ break 1 ^^ var)
 
 let let_sch sch_var var c1 c2 =
   group
-  @@ group (string "let" ^/^ sch_var ^/^ colon ^/^ var ^/^ string "=")
-  ^^ nest 2 (break 1 ^^ c1)
-  ^/^ string "in" ^//^ c2
+    begin
+      group (string "let" ^/^ sch_var ^/^ colon ^/^ var ^/^ string "=")
+      ^^ nest 2 (break 1 ^^ c1)
+      ^/^ string "in" ^//^ c2
+    end
 
 let let_sch_2 c2 =
-  group @@ string "let " ^^ true_ ^^ break 1 ^^ string "in" ^^ break 1 ^^ c2
+  group (string "let " ^^ true_ ^^ break 1 ^^ string "in" ^^ break 1 ^^ c2)
 
 let hole ~env c =
   group
-  @@ group (string "hole" ^^ break 1 ^^ group (surround 2 0 lbrace env rbrace))
-  ^^ break 1
-  ^^ group (surround 2 0 lparen c rparen)
+    begin
+      group (string "hole" ^^ break 1 ^^ group @@ surround 2 0 lbrace env rbrace)
+      ^^ break 1
+      ^^ group (surround 2 0 lparen c rparen)
+    end
 
 (** $ty1 incompatible with $ty2 *)
 let incompatible ty1 ty2 =
@@ -128,7 +141,7 @@ let incompatible ty1 ty2 =
   ^^ hardline ^^ string "incompatible with" ^^ hardline
   ^^ group (blank 2 ^^ nest 2 ty2)
 
-let cycle v = string "cycle on constraint variable" ^/^ v
+let cycle v = group (string "cycle on constraint variable" ^/^ v)
 
 let with_header header doc =
-  string header ^^ colon ^^ nest 2 @@ group (hardline ^^ doc)
+  string header ^^ colon ^^ nest 2 (group (hardline ^^ doc))

@@ -31,13 +31,13 @@ module Make (T : Utils.Functor) = struct
       PPrint.group
       @@
       match t with
+      | Loc (_loc, t) -> print_top t
       | Var x -> Var.print x
       | Annot (t, ty) -> Printer.annot (print_top t) (FPrinter.print_ty ty)
       | Tuple ts -> Printer.tuple print_top ts
       | (App _ | Abs _ | Let _ | LetTuple _) as other ->
-        PPrint.parens (print_top other)
+        PPrint.parens @@ print_top other
       | Do _p -> Printer.do_
-      | Loc (_loc, t) -> print_top t
     in
 
     print_top

@@ -2,12 +2,15 @@
 
 let debug =
   match Sys.getenv "DEBUG" with
-  | "1" | "yes" | "true" | "Y" -> true
   | exception Not_found -> false
-  | "0" | "no" | "false" | "N" -> false
-  | other ->
-    Printf.ksprintf invalid_arg
-      "Unknown value for DEBUG environment variable: %S" other
+  | debug_variable -> begin
+    match String.(debug_variable |> trim |> lowercase_ascii) with
+    | "1" | "y" | "true" | "yes" -> true
+    | "0" | "n" | "false" | "no" -> false
+    | _ ->
+      Printf.ksprintf invalid_arg
+        "Unknown value for DEBUG environment variable: %S" debug_variable
+  end
 
 let run_test f = if debug then f ()
 

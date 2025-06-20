@@ -62,14 +62,14 @@ let merge f s1 s2 =
 let global_tyvar : string -> TyVar.t =
   (* There are no binders for type variables, which are scoped
      globally for the whole term. *)
-  let tenv = Hashtbl.create 5 in
+  let tenv = Hashtbl.create 16 in
 
   fun alpha ->
-    match Hashtbl.find tenv alpha with
-    | alpha_var -> alpha_var
-    | exception Not_found ->
+    match Hashtbl.find_opt tenv alpha with
+    | Some alpha_var -> alpha_var
+    | None ->
       let alpha_var = TyVar.fresh alpha in
-      Hashtbl.add tenv alpha alpha_var;
+      Hashtbl.replace tenv alpha alpha_var;
       alpha_var
 
 let freshen freshen = function
@@ -79,5 +79,5 @@ let freshen freshen = function
 
 let print p = function
   | Var v -> TyVar.print v
-  | Prod ts -> Printer.product (List.map p ts)
   | Arrow (t1, t2) -> Printer.arrow (p t1) (p t2)
+  | Prod ts -> Printer.product (List.map p ts)

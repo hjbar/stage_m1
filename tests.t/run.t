@@ -1240,8 +1240,7 @@ a lot of those.)
     ∧ ?wu = ?x
   
   Error:
-    cycle on constraint variable
-    ?wu
+    cycle on constraint variable ?wu
   
 
 
