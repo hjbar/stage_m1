@@ -48,11 +48,12 @@ generation of well-typed programs?
 In this project, we implement a *simple* constraint-based type
 inference engine, basically a miniature version of Inferno
 ( https://inria.hal.science/hal-01081233 ,
-https://gitlab.inria.fr/fpottier/inferno ) for a small simply-typed
-lambda-calculus (no ML-style polymorphism), and then turn it into
-a random generator of well-typed programs.
+https://gitlab.inria.fr/fpottier/inferno ) for a small
+system-F (with ML-style polymorphism), and then turn it
+into a random generator of well-typed programs.
 
-See the corresponding technical report at:
+See the corresponding technical report
+(for simply-typed lambda-calculus) at :
 <https://inria.hal.science/hal-04607309>
 
 
@@ -67,7 +68,7 @@ of constraints that produce elaboration witnesses of type `'a`.
 
 The general idea is to implement a constraint generator of type
 
-    Untyped.term -> (F.term, type_error) Constraint.t
+    Untyped.term -> (F.term * F.scheme, type_error) Constraint.t
 
 and a constraint solving function of type
 
@@ -80,11 +81,6 @@ By composing these functions together, you have a type-checker for
 the untyped language, that produces a "witness of well-typedness" in
 the form of an explicitly-typed term -- presumably an annotation of
 the original program.
-
-(To keep the project difficulty manageable, our "simple type inference
-engine" does not handle ML-style polymorphism, or in fact any sort of
-polymorphism. We are implementing type inference for the simply-typed
-lambda-calculus.)
 
 #### Abstracting over an effect
 
