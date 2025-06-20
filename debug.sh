@@ -1,9 +1,5 @@
 #!/bin/bash
 
-exec > >(tee debug.log) 2>&1
+clear
 
-[ -t 1 ] && clear
-dune clean &&
-dune fmt &&
-dune build &&
-OCAMLRUNPARAM=b DEBUG=Y dune exec -- minigen --exhaustive --types --size 10 --count 1
+OCAMLRUNPARAM=b DEBUG=Y dune exec -- minigen --types --size 200 --count 1 --seed 42 > debug.log 2>&1

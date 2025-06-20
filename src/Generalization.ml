@@ -120,7 +120,7 @@ let update_ranks (generation : generation) (env : env) : env =
       let data = Env.repr var env in
       (* *)
       (* DEBUG START *)
-      (* *)
+      (*
       if data.status = Generic then begin
         Debug.print_sub_header "DEBUG CURRENT ENV" @@ Unif.Env.debug_env env;
         Debug.print_sub_header "DEBUG CURRENT POOL" @@ Unif.Env.debug_pool env;
@@ -132,7 +132,7 @@ let update_ranks (generation : generation) (env : env) : env =
               (data.var |> print |> string_of_doc)
             |> Debug.print_message ) )
       end;
-      (* *)
+      *)
       (* DEBUG END *)
       (* *)
       assert (data.status <> Generic);
@@ -269,30 +269,28 @@ let debug_scheme { root; quantifiers; generics } =
 
 (* Transform root into a scheme -- assert : calls after generalization *)
 
-let schemify (root : variable) (env : env) : scheme =
+let schemify (env : env) (root : variable) : scheme =
   (* Compute generics *)
   let cache = Hashtbl.create 16 in
 
-  let rec traverse (var : variable) (acc : variable list) : variable list =
-    let data = Env.repr var env in
+  let traverse (var : variable) : variable list =
+    let rec loop (acc : variable list) (var : variable) : variable list =
+      let data = Env.repr var env in
 
-    Unif.Env.debug_var var env |> Utils.string_of_doc |> Debug.print_message;
-    ( match data.status with
-    | Generic -> Debug.print_message "Generic"
-    | Flexible -> Debug.print_message "Flexible" );
+      if data.status <> Generic || Hashtbl.mem cache data.var then acc
+      else begin
+        Hashtbl.replace cache data.var ();
+        let acc = data.var :: acc in
 
-    if data.status <> Generic || Hashtbl.mem cache data.var then acc
-    else begin
-      Hashtbl.replace cache data.var ();
-      let acc = data.var :: acc in
-
-      match data.structure with
-      | None -> acc
-      | Some structure -> Structure.fold (Fun.flip traverse) acc structure
-    end
+        match data.structure with
+        | None -> acc
+        | Some structure -> Structure.fold loop acc structure
+      end
+    in
+    loop [] var
   in
 
-  let generics = List.rev @@ traverse root [] in
+  let generics = List.rev @@ traverse root in
 
   (* Compute quantifiers *)
   let has_no_structure var = (Env.repr var env).structure = None in
@@ -320,11 +318,9 @@ let exit (roots : roots) (env : env) : env * quantifiers * schemes =
   let env, quantifiers = generalize generation env in
 
   (* We build a scheme for every root *)
-  let schemes = List.map (Fun.flip schemify @@ env) roots in
+  let schemes = List.map (schemify env) roots in
 
   (* Clean the environment *)
-  Debug.print_header "DEBUG EXIT POOL" @@ Unif.Env.debug_pool env;
-
   let env = Env.clean_pool state_young env in
   let env = Env.decr_young env in
 
