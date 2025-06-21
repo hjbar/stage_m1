@@ -1,4 +1,4 @@
-include Utils.MonadPlus
+include Choice.Intf
 
 (** We demand that [MRand.run e] returns an infinite sequence of solutions
     sampled from [e], for example

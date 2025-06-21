@@ -1,4 +1,4 @@
-module Make (M : Utils.MonadPlus) = struct
+module Make (M : Choice.Intf) = struct
   module Untyped = Untyped.Make (M)
   module Constraint = Constraint.Make (M)
   module SatConstraint = SatConstraint.Make (M)

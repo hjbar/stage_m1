@@ -34,7 +34,7 @@ let config =
   ; seed = !seed
   }
 
-let generate (module M : Utils.MonadPlus) =
+let generate (module M : Choice.Intf) =
   let module Gen = Generator.Make (M) in
   M.run @@ Gen.typed ~size:config.size
 
