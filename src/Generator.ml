@@ -1,4 +1,4 @@
-module Make (M : Utils.MonadPlus) = struct
+module Make (M : Choice.Intf) = struct
   (* Instantiate modules *)
 
   module Untyped = Untyped.Make (M)

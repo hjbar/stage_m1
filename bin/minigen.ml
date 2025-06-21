@@ -171,7 +171,7 @@ let () =
 
 
 module type SearchImpl = sig
-  include Utils.MonadPlus
+  include Choice.Intf
 
   val tries : int ref
 end

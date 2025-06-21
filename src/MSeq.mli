@@ -1,4 +1,4 @@
-include Utils.MonadPlus
+include Choice.Intf
 
 (** We demand that [MSeq.run e] returns the finite list of solutions for [e],
     for example
