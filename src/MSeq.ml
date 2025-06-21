@@ -1,17 +1,77 @@
-type 'a t = 'a Seq.t
+type path = ChoicePath.t
+open ChoicePath
 
-let map = Seq.map
+let invalid_path f path =
+  ignore path;
+  Printf.ksprintf failwith "MSeq.%s: invalid path '%s'"
+    f
+    (ChoicePathPrinter.print path
+     |> Utils.string_of_doc)
 
-let delay f = fun () -> f () ()
+type 'a t = path -> (path * 'a) Seq.t
 
-let return = Seq.return
+let map f s = fun p ->
+  s p
+  |> Seq.map (fun (p', v) -> (p', f v))
 
-let bind s f = Seq.concat_map f s
+let delay ds = fun p -> ds () p
 
-let fail = Seq.empty
+let return v : 'a t = fun p ->
+  match p with
+  | Nil | Return ->
+    Seq.return (Return, v)
+  | Fail | Index _ | Sum _ | Bind _ ->
+    invalid_path "return" p
 
-let one_of = Array.to_seq
+let bind s f = fun p ->
+  let pa, first_pb = match p with
+    | Nil -> (Nil, Nil)
+    | Bind (pa, pb) -> (pa, pb)
+    | Fail | Return | Index _ | Sum _ ->
+      invalid_path "bind" p
+  in
+  s pa |> Seq.mapi (fun i (pa', sa) ->
+    (pa', (if i = 0 then first_pb else Nil), sa)
+  ) |> Seq.concat_map @@ fun (pa', pb, va) ->
+  f va pb |> Seq.map @@ fun (pb', vb) ->
+  (Bind (pa', pb'), vb)
 
-let sum seqs = seqs |> List.to_seq |> Seq.concat
+let fail = fun p ->
+  match p with
+  | Nil | Fail -> Seq.empty
+  | Return | Index _ | Sum _ | Bind _ ->
+    invalid_path "fail" p
 
-let run = Fun.id
+let one_of arr = fun p ->
+  let start = match p with
+    | Nil -> 0
+    | Index i -> i
+    | Return | Fail | Sum _ | Bind _ ->
+      invalid_path "one_of" p
+  in
+  Seq.ints start
+  |> Seq.take_while (fun i -> i < Array.length arr)
+  |> Seq.map (fun i -> (Index i, arr.(i)))
+
+let sum ss = fun p ->
+  let start, start_p = match p with
+    | Nil -> 0, Nil
+    | Sum (i, i_p) -> (i, i_p)
+    | Return | Fail | Index _ | Bind _ ->
+      invalid_path "sum" p
+  in
+  ss
+  |> List.to_seq
+  |> Seq.mapi (fun i s -> (i, s))
+  |> Seq.concat_map (fun (i, s) ->
+    Seq.map (fun (p, v) -> (Sum (i, p), v)) @@
+    if i < start then Seq.empty
+    else if i = start then s start_p
+    else s Nil
+  )
+
+let run s =
+  s Nil
+  |> Seq.map snd
+
+let run' s = fun p -> s p
