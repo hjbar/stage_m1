@@ -10,3 +10,5 @@ include Choice.Intf
     ]}
     should be the list [[1; 2; 3]] -- or maybe the same elements in some other
     order. *)
+
+val run' : 'a t -> ChoicePath.t -> (ChoicePath.t * 'a) Seq.t
