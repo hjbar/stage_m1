@@ -5,8 +5,8 @@
  (libraries unionFind pprint menhirLib)
  (wrapped false))
 
-(ocamllex UntypedLexer)
+(ocamllex UntypedLexer ChoicePathLexer)
 
 (menhir
- (modules UntypedParser)
+ (modules UntypedParser ChoicePathParser)
  (flags --explain))
