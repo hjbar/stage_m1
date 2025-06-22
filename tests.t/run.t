@@ -1311,6 +1311,7 @@ There are not many programs with size 3, 4 and 5.
     ∀α/1. α/1 -> α/1
   
   
+  
 
 
   $ minigen --exhaustive --types --size 3 --count 100
@@ -1327,6 +1328,7 @@ There are not many programs with size 3, 4 and 5.
   
   Inferred type:
     ∀γ/7. ∀δ/7. δ/7 -> γ/7 -> γ/7
+  
   
   
 
@@ -1421,6 +1423,7 @@ There are not many programs with size 3, 4 and 5.
   
   Inferred type:
     ∀β/53. β/53 -> β/53
+  
   
   
 
@@ -1539,6 +1542,7 @@ An example of random sampling output at higher size.
     ∀δ/2bf. δ/2bf -> δ/2bf
   
   
+  
 
   $ dune exec -- minigen --exhaustive --types --size 10 --count 1
   Generated term:
@@ -1558,5 +1562,6 @@ An example of random sampling output at higher size.
   Inferred type:
     ∀δ/bea8. ∀α/bea9. ∀β/bea9.
       δ/bea8 -> β/bea9 -> α/bea9 -> δ/bea8
+  
   
   
