@@ -17,9 +17,7 @@ rule read = parse
   | "_"             { NIL }
   | "."             { RETURN }
   | "fail"          { FAIL }
-  | "i" (int as n)  { INDEX (int_of_string n) }
-  | "s" (int as n)  { SUM (int_of_string n) }
-  | "bind"          { BIND }
+  | int as n        { SUM (int_of_string n) }
   | "--"            { line_comment lexbuf; read lexbuf }
   | _ as c
     { failwith

@@ -5,9 +5,7 @@
 %token NIL
 %token RETURN
 %token FAIL
-%token <int> INDEX
 %token <int> SUM
-%token BIND "bind"
 
 %token LPAR "("
 %token RPAR ")"
@@ -24,6 +22,5 @@ let path :=
   | NIL; { Nil }
   | RETURN; { Return }
   | FAIL; { Fail }
-  | i=INDEX; { Index(i) }
   | i=SUM; p = path; { Sum(i, p) }
-  | BIND; LPAR; p1 = path; RPAR; p2 = path; { Bind(p1, p2) }
+  | LPAR; p1 = path; RPAR; p2 = path; { Bind(p1, p2) }

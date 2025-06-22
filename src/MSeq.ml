@@ -20,14 +20,14 @@ let return v : 'a t = fun p ->
   match p with
   | Nil | Return ->
     Seq.return (Return, v)
-  | Fail | Index _ | Sum _ | Bind _ ->
+  | Fail | Sum _ | Bind _ ->
     invalid_path "return" p
 
 let bind s f = fun p ->
   let pa, first_pb = match p with
     | Nil -> (Nil, Nil)
     | Bind (pa, pb) -> (pa, pb)
-    | Fail | Return | Index _ | Sum _ ->
+    | Fail | Return | Sum _ ->
       invalid_path "bind" p
   in
   s pa |> Seq.mapi (fun i (pa', sa) ->
@@ -39,25 +39,25 @@ let bind s f = fun p ->
 let fail = fun p ->
   match p with
   | Nil | Fail -> Seq.empty
-  | Return | Index _ | Sum _ | Bind _ ->
+  | Return | Sum _ | Bind _ ->
     invalid_path "fail" p
 
 let one_of arr = fun p ->
   let start = match p with
     | Nil -> 0
-    | Index i -> i
+    | Sum (i, Return) -> i
     | Return | Fail | Sum _ | Bind _ ->
       invalid_path "one_of" p
   in
   Seq.ints start
   |> Seq.take_while (fun i -> i < Array.length arr)
-  |> Seq.map (fun i -> (Index i, arr.(i)))
+  |> Seq.map (fun i -> (Sum (i, Return), arr.(i)))
 
 let sum ss = fun p ->
   let start, start_p = match p with
     | Nil -> 0, Nil
     | Sum (i, i_p) -> (i, i_p)
-    | Return | Fail | Index _ | Bind _ ->
+    | Return | Fail | Bind _ ->
       invalid_path "sum" p
   in
   ss

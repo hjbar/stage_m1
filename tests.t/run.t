@@ -1339,46 +1339,46 @@ Choice paths make it possible to restart the exhaustive enumeration of minigen i
 We can use the option `--log-choice-path` to print the "choice path" for each enumerated element:
 
   $ minigen --size 4 --exhaustive --count 1000 --log-choice-path
-  Choice path: bind(s2 .) bind(s2 .) bind(s2 .) bind(s0 i0) .
+  Choice path: (2 .) (2 .) (2 .) (0 0 .) .
   lambda (v/14 : α/7). lambda (u/19 : γ/7). lambda (z/1a : β/7). v/14
   
-  Choice path: bind(s2 .) bind(s2 .) bind(s2 .) bind(s0 i1) .
+  Choice path: (2 .) (2 .) (2 .) (0 1 .) .
   lambda (v/14 : β/8). lambda (u/19 : δ/7). lambda (z/1a : α/8). u/19
   
-  Choice path: bind(s2 .) bind(s2 .) bind(s2 .) bind(s0 i2) .
+  Choice path: (2 .) (2 .) (2 .) (0 2 .) .
   lambda (v/14 : α/9). lambda (u/19 : δ/8). lambda (z/1a : γ/8). z/1a
   
-  Choice path: bind(s2 .) bind(s3 .) bind(s0 i0) bind(s0 i0) .
+  Choice path: (2 .) (3 .) (0 0 .) (0 0 .) .
   lambda (v/14 : β/a). let (v/1d : γ/a) = v/14 in v/14
   
-  Choice path: bind(s2 .) bind(s3 .) bind(s0 i0) bind(s0 i1) .
+  Choice path: (2 .) (3 .) (0 0 .) (0 1 .) .
   lambda (v/14 : δ/a). let (v/1d : δ/a) = v/14 in v/1d
   
-  Choice path: bind(s2 .) bind(s4 bind(i0) .) bind(s0 i0) bind(s0 i0) .
+  Choice path: (2 .) (4 (0 .) .) (0 0 .) (0 0 .) .
   lambda (v/14 : α/c). (v/14, v/14)
   
-  Choice path: bind(s2 .) bind(s5 bind(i0) .) bind(s0 i0) bind(s0 i0) .
+  Choice path: (2 .) (5 (0 .) .) (0 0 .) (0 0 .) .
   lambda
   (v/14 : {β/d * γ/d}).
     let ((y/27 : β/d), (z/27 : γ/d)) = v/14 in v/14
   
-  Choice path: bind(s2 .) bind(s5 bind(i0) .) bind(s0 i0) bind(s0 i1) .
+  Choice path: (2 .) (5 (0 .) .) (0 0 .) (0 1 .) .
   lambda
   (v/14 : {δ/d * α/e}).
     let ((y/27 : δ/d), (z/27 : α/e)) = v/14 in y/27
   
-  Choice path: bind(s2 .) bind(s5 bind(i0) .) bind(s0 i0) bind(s0 i2) .
+  Choice path: (2 .) (5 (0 .) .) (0 0 .) (0 2 .) .
   lambda
   (v/14 : {γ/e * β/e}).
     let ((y/27 : γ/e), (z/27 : β/e)) = v/14 in z/27
   
-  Choice path: bind(s3 .) bind(s2 .) bind(s0 i0) bind(s0 i0) .
+  Choice path: (3 .) (2 .) (0 0 .) (0 0 .) .
   let Λα/12. (u/2b : α/12 -> α/12) = lambda (v/2f : α/12). v/2f in
     u/2b[δ/11]
   
 We can then restart from an arbitrary point in the enumeration using the `--start-choice-path <string>` option:
 
-  $ minigen --size 4 --exhaustive --count 1000 --start-choice-path "bind(s2 .) bind(s5 bind(i0) .) bind(s0 i0) bind(s0 i2) ."
+  $ minigen --size 4 --exhaustive --count 1000 --start-choice-path "(2 .) (5 (0 .) .) (0 0 .) (0 2 .) ."
   lambda (x : {β * α}). let ((y : β), (z : α)) = x in z
   
   let Λδ/3. (u/4 : δ/3 -> δ/3) = lambda (v/8 : δ/3). v/8 in u/4[γ/3]
