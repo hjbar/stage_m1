@@ -1178,6 +1178,7 @@ There are not many programs with size 3, 4 and 5.
   lambda (v : α). v
   
   Inferred type : ∀α. α -> α
+  
 
 
   $ minigen --exhaustive --types --size 3 --count 100
@@ -1185,11 +1186,10 @@ There are not many programs with size 3, 4 and 5.
   
   Inferred type : ∀β/1. ∀α/1. β/1 -> α/1 -> α/1
   
-  
-  
   lambda (x/4 : γ/1). lambda (w/4 : δ/1). x/4
   
   Inferred type : ∀γ/1. ∀δ/1. γ/1 -> δ/1 -> γ/1
+  
 
 
   $ minigen --exhaustive --types --size 4 --count 100
@@ -1197,37 +1197,25 @@ There are not many programs with size 3, 4 and 5.
   
   Inferred type : ∀γ/7. ∀α/7. ∀β/7. α/7 -> γ/7 -> β/7 -> α/7
   
-  
-  
   lambda (v/14 : β/8). lambda (u/19 : δ/7). lambda (z/1a : α/8). u/19
   
   Inferred type : ∀δ/7. ∀β/8. ∀α/8. β/8 -> δ/7 -> α/8 -> δ/7
-  
-  
   
   lambda (v/14 : α/9). lambda (u/19 : δ/8). lambda (z/1a : γ/8). z/1a
   
   Inferred type : ∀δ/8. ∀α/9. ∀γ/8. α/9 -> δ/8 -> γ/8 -> γ/8
   
-  
-  
   lambda (v/14 : β/a). let (v/1d : γ/a) = v/14 in v/14
   
   Inferred type : ∀β/a. β/a -> β/a
-  
-  
   
   lambda (v/14 : δ/a). let (v/1d : δ/a) = v/14 in v/1d
   
   Inferred type : ∀δ/a. δ/a -> δ/a
   
-  
-  
   lambda (v/14 : α/c). (v/14, v/14)
   
   Inferred type : ∀α/c. α/c -> {α/c * α/c}
-  
-  
   
   lambda
   (v/14 : {β/d * γ/d}).
@@ -1235,15 +1223,11 @@ There are not many programs with size 3, 4 and 5.
   
   Inferred type : ∀β/d. ∀γ/d. {β/d * γ/d} -> {β/d * γ/d}
   
-  
-  
   lambda
   (v/14 : {δ/d * α/e}).
     let ((y/27 : δ/d), (z/27 : α/e)) = v/14 in y/27
   
   Inferred type : ∀δ/d. ∀α/e. {δ/d * α/e} -> δ/d
-  
-  
   
   lambda
   (v/14 : {γ/e * β/e}).
@@ -1251,12 +1235,11 @@ There are not many programs with size 3, 4 and 5.
   
   Inferred type : ∀γ/e. ∀β/e. {γ/e * β/e} -> β/e
   
-  
-  
   let Λα/12. (u/2b : α/12 -> α/12) = lambda (v/2f : α/12). v/2f in
     u/2b[δ/11]
   
   Inferred type : δ/11 -> δ/11
+  
 
 
 An example of random sampling output at higher size.
@@ -1270,22 +1253,16 @@ An example of random sampling output at higher size.
   ->
   {α/129 -> δ/128 * β/129 -> β/129}
   
-  
-  
   lambda
   (z/7 : δ/135).
     (lambda (u/64 : δ/135). lambda (u/392 : γ/135). u/392) z/7
   
   Inferred type : ∀δ/135. ∀γ/135. δ/135 -> γ/135 -> γ/135
   
-  
-  
   let Λβ/187. (w/2 : β/187 -> β/187) = lambda (z/e : β/187). z/e in
     w/2[γ/187] w/2[α/187]
   
   Inferred type : α/187 -> α/187
-  
-  
   
   lambda
   (z/7 : {δ/1b0 * α/1b1}).
@@ -1296,16 +1273,12 @@ An example of random sampling output at higher size.
   
   Inferred type : ∀δ/1b0. ∀α/1b1. {δ/1b0 * α/1b1} -> δ/1b0
   
-  
-  
   lambda
   (z/7 : {α/228 * β/228}).
     let ((z/6ed : α/228), (u/6ed : β/228)) = z/7 in
       let (v/6ed : {α/228 * β/228}) = z/7 in z/6ed
   
   Inferred type : ∀α/228. ∀β/228. {α/228 * β/228} -> α/228
-  
-  
   
   (
     lambda (x/788 : γ/259). lambda (y/788 : β/259). y/788,
@@ -1317,8 +1290,6 @@ An example of random sampling output at higher size.
   β/259 -> β/259
   * δ/259 -> δ/259}
   
-  
-  
   lambda
   (z/7 : α/25a).
     lambda (z/18 : β/25a). lambda (w/21 : γ/25a). (z/7, z/18)
@@ -1326,8 +1297,6 @@ An example of random sampling output at higher size.
   Inferred type : ∀β/25a. ∀α/25a. ∀γ/25a. α/25a
   ->
   β/25a -> γ/25a -> {α/25a * β/25a}
-  
-  
   
   lambda
   (z/7 : {γ/35d * δ/35d}).
@@ -1340,8 +1309,6 @@ An example of random sampling output at higher size.
   ->
   {γ/35d * δ/35d}
   
-  
-  
   lambda
   (z/7 : {β/515 * γ/515}).
     (z/7, let ((v/fa0 : β/515), (w/fa0 : γ/515)) = z/7 in z/7)
@@ -1350,14 +1317,13 @@ An example of random sampling output at higher size.
   ->
   {{β/515 * γ/515} * {β/515 * γ/515}}
   
-  
-  
   let Λγ/548. Λβ/548. (w/2 : γ/548 -> β/548 -> β/548) =
     lambda (z/e : γ/548). lambda (w/24 : β/548). w/24
   in
     lambda (y/a5 : α/548). y/a5
   
   Inferred type : ∀α/548. α/548 -> α/548
+  
 
   $ dune exec -- minigen --exhaustive --types --size 10 --count 1
   Fatal error: exception File "src/Generalization.ml", line 160, characters 6-12: Assertion failed
