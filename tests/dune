@@ -1,0 +1,7 @@
+(executable
+  (public_name ChoiceTest)
+  (libraries constrained_generation menhirLib)
+  (modules ChoiceTest))
+
+(cram
+ (deps %{bin:ChoiceTest}))
