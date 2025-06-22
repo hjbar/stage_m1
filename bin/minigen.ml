@@ -278,19 +278,17 @@ let produce_doc_of_term config (term, scheme) =
 
 
 let produce_terms config =
-  get_search_impl config
-  |> generate config
-  |> Seq.take config.count
+  get_search_impl config |> generate config |> Seq.take config.count
+
 
 let run_display config =
   produce_terms config
   |> Seq.iter (fun term ->
-    term
-    |> produce_doc_of_term config
-    |> Utils.string_of_doc
-    |> print_endline
-    |> print_newline
-  )
+       term
+       |> produce_doc_of_term config
+       |> Utils.string_of_doc
+       |> print_endline
+       |> print_newline )
 
 
 let pp_s ppf s = Printf.fprintf ppf "%.2fs" s
