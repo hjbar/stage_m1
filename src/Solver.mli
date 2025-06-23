@@ -41,9 +41,5 @@ module Make (T : Utils.Functor) : sig
       steps (obtained from the solver environment and the original constraint by
       constraint simplification) as the constraint-solving progresses. *)
   val eval :
-       log:bool
-    -> Env.t
-    -> ('a1, 'e1) Constraint.t
-    -> ('a1, 'e1, 'a, 'e) Constraint.cont
-    -> ('a, 'e) normal_constraint
+    log:bool -> Env.t -> ('a, 'e) Constraint.t -> ('a, 'e) normal_constraint
 end

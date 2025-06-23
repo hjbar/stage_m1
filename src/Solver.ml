@@ -89,8 +89,8 @@ module Make (T : Utils.Functor) = struct
     | NErr : 'e -> ('a, 'e) normal_constraint
     | NDo : ('a, 'e) normal_constraint T.t -> ('a, 'e) normal_constraint
 
-  let eval (type a1 e1 a e) ~log (env : env) (c0 : (a1, e1) Constraint.t)
-    (k : (a1, e1, a, e) Constraint.cont) : (a, e) normal_constraint =
+  let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t) :
+    (a, e) normal_constraint =
     (* We recommend calling the function [add_to_log] below
          whenever you get an updated environment.
 
@@ -252,9 +252,10 @@ module Make (T : Utils.Functor) = struct
       end
     in
 
-    add_to_log ~dir:`Enter env c0 k;
+    let k0 = Constraint.Done in
+    add_to_log ~dir:`Enter env c0 k0;
 
-    match eval env c0 k with
+    match eval env c0 k0 with
     | exception Located (loc, exn, bt) ->
       Printf.eprintf "Error at %s" @@ MenhirLib.LexerUtil.range loc;
       Printexc.raise_with_backtrace exn bt

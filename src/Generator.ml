@@ -162,7 +162,7 @@ module Make (M : Utils.MonadPlus) = struct
       | NDo m -> M.bind m loop
     in
     let constraint_ = untyped |> cut_size ~size |> constraint_ in
-    loop (Solver.eval ~log:false Solver.Env.empty constraint_ Constraint.Done)
+    loop (Solver.eval ~log:false Solver.Env.empty constraint_)
 
   let typed_cut_late ~size untyped : (F.term * F.scheme) M.t =
     let rec loop : type a e.
@@ -179,6 +179,5 @@ module Make (M : Utils.MonadPlus) = struct
         | NDo m -> M.bind m (loop ~fuel:(fuel - 1))
     in
     loop ~fuel:size
-      (Solver.eval ~log:false Solver.Env.empty (constraint_ untyped)
-         Constraint.Done )
+      (Solver.eval ~log:false Solver.Env.empty (constraint_ untyped))
 end
