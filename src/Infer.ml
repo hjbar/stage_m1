@@ -4,26 +4,46 @@
 
 module Make (T : Utils.Functor) = struct
   module Constraint = Constraint.Make (T)
-  open Constraint
   module Untyped = Untyped.Make (T)
+  open Constraint
 
   (* Type definitions *)
 
-  (** OLD : The "environment" of the constraint generator maps each program
-      variable to an inference variable representing its (monomorphic) type.
+  (** The "environment" of the constraint generator maps each program variable
+      to either an inference variable representing its (monomorphic) type or an
+      inference scheme variable representing its (polymorphic) scheme.
 
-      For example, to infer the type of the term [lambda x. t], we will
-      eventually call [has_type env t] with an environment mapping [x] to a
-      local inference variable representing its type.
+      For example:
+      - To infer the type of the term [lambda x. t], we will eventually call
+        [has_type env t] with an environment mapping [x] to a local inference
+        variable representing its type.
+      - To infer the type of the term [let x = t in u], we will eventually call
+        [has_type env t] and [has_type env u] with an environment mapping [x] to
+        a local inference scheme variable representing its scheme. *)
+  module Env = struct
+    module Map = Untyped.Var.Map
 
-      TODO : new doc *)
-  module Env = Untyped.Var.Map
+    type t =
+      { variables : variable Map.t
+      ; schemes : scheme_variable Map.t
+      }
 
-  type mono = variable Env.t
+    let empty = { variables = Map.empty; schemes = Map.empty }
 
-  type poly = scheme_variable Env.t
+    let findopt_variable x env = Map.find_opt x env.variables
 
-  type env = mono * poly
+    let find_scheme x env = Map.find x env.schemes
+
+    let add_variable x v env =
+      let variables = Map.add x v env.variables in
+      { env with variables }
+
+    let add_scheme x s env =
+      let schemes = Map.add x s env.schemes in
+      { env with schemes }
+  end
+
+  type env = Env.t
 
   type err = eq_error =
     | Clash of F.ty Utils.clash
@@ -31,7 +51,7 @@ module Make (T : Utils.Functor) = struct
 
   type 'a constraint_ = ('a, err) Constraint.t
 
-  (* Helper functions *)
+  (* Helper functions for constraint constructors *)
 
   let eq v1 v2 = Eq (v1, v2)
 
@@ -43,19 +63,13 @@ module Make (T : Utils.Functor) = struct
 
   let decode_scheme s = MapErr (DecodeScheme s, fun e -> Cycle e)
 
-  let fresh_name = Constraint.Var.fresh
+  (* Helper functions for generating fresh variable names *)
 
-  let fresh_var x = fresh_name @@ Untyped.Var.name x
+  let fresh_var = Constraint.Var.fresh
+
+  let fresh_var_name x = Constraint.Var.fresh (Untyped.Var.name x)
 
   let fresh_scheme = Constraint.SVar.fresh
-
-  let findopt_mono x (mono_env, _poly_env) = Env.find_opt x mono_env
-
-  let add_mono x v (mono_env, poly_env) = (Env.add x v mono_env, poly_env)
-
-  let find_poly x (_mono_env, poly_env) = Env.find x poly_env
-
-  let add_poly x v (mono_env, poly_env) = (mono_env, Env.add x v poly_env)
 
   (** This is a helper function to implement constraint generation for the
       [Annot] construct.
@@ -73,15 +87,15 @@ module Make (T : Utils.Functor) = struct
     ('a, 'e) t =
     match ty with
     | Var v ->
-      let w = fresh_name v.name in
+      let w = fresh_var v.name in
       exist w (Some (Var v)) @@ k w
     | Arrow (ty1, ty2) ->
-      let warr = fresh_name "arr" in
+      let warr = fresh_var "arr" in
 
       bind ty1 @@ fun w1 ->
       bind ty2 @@ fun w2 -> exist warr (Some (Arrow (w1, w2))) @@ k warr
     | Prod tys ->
-      let wprod = fresh_name "prod" in
+      let wprod = fresh_var "prod" in
 
       let rec loop tys k =
         match tys with
@@ -114,28 +128,30 @@ module Make (T : Utils.Functor) = struct
       ]}
       but the actually generated constraint may be more complex/verbose.
 
-      Precondition: when calling [has_type env t], [env] must map each term
-      variable that is free in [t] to an inference variable. *)
+      Precondition: when calling [has_type env t], [env] must map every term
+      variable free in [t] to either an inference variable or a scheme variable.
+  *)
   let rec has_type (env : env) (t : Untyped.term) (w : variable) :
     (F.term, err) t =
     match t with
     | Untyped.Loc (loc, t) -> Constraint.Loc (loc, has_type env t w)
     | Untyped.Var x -> begin
-      (* OLD : [[x : w]] := (E(x) = w) TODO : new doc *)
-      match findopt_mono x env with
+      (* [[x : w]] := (E(x) = w) if w is in the environment's variables
+         [[x : w]] := (E(x) = Instance(s, w)) where s is the scheme of x *)
+      match Env.findopt_variable x env with
       | Some wx ->
         let+ () = eq w wx in
         F.Var x
       | None ->
-        let sch = find_poly x env in
+        let sch = Env.find_scheme x env in
 
         let+ tys = Instance (sch, w) in
         F.VarApp (x, tys)
     end
     | Untyped.App (t, u) ->
       (* [[t u : w]] := ∃wu. [[t : wu -> w]] ∧ [[u : wu]] *)
-      let wu = fresh_name "wu" in
-      let wt = fresh_name "wt" in
+      let wu = fresh_var "wu" in
+      let wt = fresh_var "wt" in
 
       exist wu None
       @@ exist wt (Some (Arrow (wu, w)))
@@ -143,11 +159,12 @@ module Make (T : Utils.Functor) = struct
          and+ u' = has_type env u wu in
          F.App (t', u')
     | Untyped.Abs (x, t) ->
-      (* [[fun x -> t : w]] := ∃wx wt. w = wx -> wt ∧ [[t : wt]](E,x↦wx) *)
-      let wx = fresh_var x in
-      let wt = fresh_name "wt" in
-      let warr = fresh_name "warr" in
-      let env = add_mono x wx env in
+      (* [[fun x -> t : w]] := ∃wx wt. w = wx -> wt ∧ [[t : wt]](E,x ↦ wx) *)
+      let wx = fresh_var_name x in
+      let wt = fresh_var "wt" in
+      let warr = fresh_var "warr" in
+
+      let env = Env.add_variable x wx env in
 
       exist wx None @@ exist wt None
       @@ exist warr (Some (Arrow (wx, wt)))
@@ -156,12 +173,12 @@ module Make (T : Utils.Functor) = struct
          and+ tyx = decode wx in
          F.Abs (x, tyx, t')
     | Untyped.Let (x, t, u) ->
-      (* OLD : [[let x = t in u : w]] := ∃wt. [[t : wt]] ∧ [[u : w]](E,x↦wt)
-         TODO : new doc *)
-      let wt = fresh_var x in
+      (* [[let x = t in u : w]] := Let (x, s, [[t : wt]], [[u : w]](E,x ↦ s))
+         where wt is a fresh variable and s is a fresh scheme variable *)
+      let wt = fresh_var_name x in
       let s = fresh_scheme "s" in
 
-      let inner_env = add_poly x s env in
+      let inner_env = Env.add_scheme x s env in
 
       let+ t', (u', scheme) =
         let_ s wt (has_type env t wt)
@@ -180,18 +197,17 @@ module Make (T : Utils.Functor) = struct
       (* [[(t₁, t₂ ... tₙ) : w]] :=
          ∃w₁.
          [[t₁ : w₁]] /\
-         ∃w₂.
-           [[t₂ : w₂]] /\
+          ∃w₂.
+          [[t₂ : w₂]] /\
            ...
-           ∃wₙ.
-             [[tₙ : wₙ]] /\
-             w = (w₁ * w₂ * ... * wₙ)
-      *)
+            ∃wₙ.
+            [[tₙ : wₙ]] /\
+             w = (w₁ * w₂ * ... * wₙ) *)
       let rec loop i ts k =
         match ts with
         | [] -> k []
         | t :: ts ->
-          let w = Printf.ksprintf fresh_name "w%d" (i + 1) in
+          let w = Printf.ksprintf fresh_var "w%d" (i + 1) in
 
           exist w None
           @@ let+ t' = has_type env t w
@@ -201,7 +217,7 @@ module Make (T : Utils.Functor) = struct
 
       let+ ts =
         loop 0 ts @@ fun ws ->
-        let wprod = fresh_name "wprod" in
+        let wprod = fresh_var "wprod" in
 
         exist wprod (Some (Prod ws))
         @@ let+ () = eq w wprod in
@@ -219,12 +235,12 @@ module Make (T : Utils.Functor) = struct
         match xs with
         | [] -> k []
         | x :: xs ->
-          let wx = fresh_var x in
+          let wx = fresh_var_name x in
           exist wx None @@ loop xs @@ fun ws -> k (wx :: ws)
       in
 
       loop xs @@ fun ws ->
-      let wt = fresh_name "wt" in
+      let wt = fresh_var "wt" in
 
       exist wt (Some (Prod ws))
       @@
@@ -240,7 +256,7 @@ module Make (T : Utils.Functor) = struct
         loop @@ List.combine xs ws
       and+ t' = has_type env t wt
       and+ u' =
-        let env = List.fold_right2 add_mono xs ws env in
+        let env = List.fold_right2 Env.add_variable xs ws env in
         has_type env u w
       in
 
