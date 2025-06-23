@@ -17,7 +17,7 @@ module Make (T : Utils.Functor) = struct
       ; schemes : Generalization.scheme SMap.t
       }
 
-    let empty = { unif = Unif.Env.empty; schemes = SMap.empty }
+    let empty = { unif = Unif.Env.empty (); schemes = SMap.empty }
 
     let debug_schemes schemes =
       let open PPrint in
