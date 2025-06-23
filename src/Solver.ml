@@ -12,13 +12,9 @@ module Make (T : Utils.Functor) = struct
   module Env = struct
     module SMap = Constraint.SVar.Map
 
-    type unif = Unif.Env.t
-
-    type schemes = Generalization.scheme SMap.t
-
     type t =
-      { unif : unif
-      ; schemes : schemes
+      { unif : Unif.Env.t
+      ; schemes : Generalization.scheme SMap.t
       }
 
     let empty = { unif = Unif.Env.empty; schemes = SMap.empty }
@@ -36,36 +32,32 @@ module Make (T : Utils.Functor) = struct
 
     let debug { unif; schemes } =
       let open PPrint in
-      let has_schemes, schemes_doc =
-        match SMap.is_empty schemes with
-        | true -> (false, empty)
-        | false ->
-          ( true
-          , group @@ string "Schemes :"
-            ^^ nest 2 (hardline ^^ debug_schemes schemes) )
+      let has_no_schemes = SMap.is_empty schemes in
+      let schemes_doc =
+        if has_no_schemes then empty
+        else
+          group
+            (string "Schemes :" ^^ nest 2 (hardline ^^ debug_schemes schemes))
       in
 
-      let has_env, env_doc =
-        match Unif.Env.map_is_empty unif with
-        | true -> (false, empty)
-        | false ->
-          ( true
-          , group @@ string "Env :"
-            ^^ nest 2 (hardline ^^ Unif.Env.debug_env unif) )
+      let has_no_env = Unif.Env.map_is_empty unif in
+      let env_doc =
+        if has_no_env then empty
+        else
+          group (string "Env :" ^^ nest 2 (hardline ^^ Unif.Env.debug_env unif))
       in
 
       let pool_doc =
-        match Unif.Env.pool_is_empty unif with
-        | true -> empty
-        | false ->
-          group @@ string "Pool :"
-          ^^ nest 2 (hardline ^^ Unif.Env.debug_pool unif)
+        if Unif.Env.pool_is_empty unif then empty
+        else
+          group
+            (string "Pool :" ^^ nest 2 (hardline ^^ Unif.Env.debug_pool unif))
       in
 
       schemes_doc
-      ^^ (if has_schemes then hardline else empty)
+      ^^ (if has_no_schemes then empty else hardline)
       ^^ env_doc
-      ^^ (if has_env then hardline else empty)
+      ^^ (if has_no_env then empty else hardline)
       ^^ pool_doc
   end
 
@@ -74,11 +66,11 @@ module Make (T : Utils.Functor) = struct
   type log = PPrint.document list
 
   let do_log ~dir env c k =
-    PPrint.(
-      nest 2
-        ( string (match dir with `Enter -> "->" | `Continue -> "<-")
-        ^^ ConstraintPrinter.print_constraint_in_context ~env:(Env.debug env) c
-             k ) )
+    let open PPrint in
+    let env = Env.debug env in
+    let dir = match dir with `Enter -> "-> " | `Continue -> "<- " in
+
+    nest 2 (string dir ^^ ConstraintPrinter.print_constraint_in_context ~env c k)
     |> Utils.string_of_doc |> print_endline
 
   (** See [../README.md] ("High-level description") or [Solver.mli] for a
@@ -92,19 +84,24 @@ module Make (T : Utils.Functor) = struct
   let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t) :
     (a, e) normal_constraint =
     (* We recommend calling the function [add_to_log] below
-         whenever you get an updated environment.
+       whenever you get an updated environment.
 
-         $ dune exec -- minihell --log-solver foo.test
+       $ dune exec -- minihell --log-solver foo.test
 
-         will show a log that will let you see the evolution
-         of your input constraint (after simplification) as
-         the solver progresses, which is useful for debugging.
+       will show a log that will let you see the evolution
+       of your input constraint as the solver progresses,
+       which is useful for debugging.
 
-         (You can also tweak this code temporarily to print stuff on
-         stderr right away if you need dirtier ways to debug.)
+       (You can also tweak this code temporarily to print stuff
+       on stderr right away if you need dirtier ways to debug.)
     *)
     let add_to_log ~dir env c k =
       if log || Debug.debug then do_log ~dir env c k
+    in
+
+    let result_to_constr = function
+      | Ok v -> Constraint.Ret v
+      | Error e -> Constraint.Err e
     in
 
     let exception Located of Utils.loc * exn * Printexc.raw_backtrace in
@@ -156,14 +153,14 @@ module Make (T : Utils.Functor) = struct
       | DecodeScheme sch_var -> begin
         let scheme = Env.SMap.find sch_var env.schemes in
 
-        let body sol = sol @@ Generalization.body scheme in
-        let quantifiers (sol : Constraint.variable -> F.ty) :
-          Structure.TyVar.t list =
+        let body sol = sol (Generalization.body scheme) in
+
+        let quantifiers sol =
           scheme |> Generalization.quantifiers
           |> List.map
                begin
                  fun var ->
-                   let (Constr ty) = sol var in
+                   let (F.Constr ty) = sol var in
                    match ty with Var v -> v | Arrow _ | Prod _ -> assert false
                end
         in
@@ -226,11 +223,10 @@ module Make (T : Utils.Functor) = struct
           (* We could in theory remove [x] from the solver environment
              at this point, as it is not in scope for the rest of the
              constraint. But our notion of "solution" for the whole
-             constraint expects a map with witnesses for all
-             variables, even those that are bound locally with an
-             existential. We must those keep these variables in the
-             environment to be able to provide the solution at the
-             end. *)
+             constraint expects a map with witnesses for all variables,
+             even those that are bound locally with an existential.
+             We must those keep these variables in the environment
+             to be able to provide the solution at the end. *)
           continue env res k
         | Next (KLet1 (sch_var, var, c), k) as k0 ->
           let unif, _gammas, schemes = Generalization.exit [ var ] env.unif in
@@ -241,10 +237,7 @@ module Make (T : Utils.Functor) = struct
 
           let schemes = Env.SMap.add sch_var scheme env.schemes in
           let env = { env with schemes } in
-
-          add_to_log ~dir env
-            (match res with Ok v -> Ret v | Error e -> Err e)
-            k0;
+          add_to_log ~dir env (result_to_constr res) k0;
 
           eval env c (Next (KLet2 v, k))
         | Next (KLet2 w, k) -> continue env (Ok (fun sol -> (w sol, v sol))) k
