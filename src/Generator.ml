@@ -7,6 +7,8 @@ module Make (M : Utils.MonadPlus) = struct
   module TeVarSet = TeVar.Set
   module TyVarSet = F.TyVar.Set
 
+  let do_ p = Untyped.Do p
+
   let ret = M.return
 
   let ( let+ ) s f = M.map f s
@@ -25,75 +27,86 @@ module Make (M : Utils.MonadPlus) = struct
   let untyped_gasche : Untyped.term =
     let open Untyped in
     let new_var = Var.namegen [| "x"; "y"; "z"; "u"; "v"; "w" |] in
+
     let rec gen env =
       let fvars =
         env.Env.tevars |> TeVarSet.to_seq |> Array.of_seq |> M.one_of
       in
-      Do
-        ( M.delay @@ fun () ->
-          let rule_var =
-            let+ x = fvars in
-            Var x
-          in
-          let rule_app = M.return (App (gen env, gen env)) in
-          let rule_abs =
-            M.delay @@ fun () ->
-            let x = new_var () in
-            ret (Abs (x, gen (Env.bind_tevar x env)))
-          in
-          let rule_let =
-            M.delay @@ fun () ->
-            let x = new_var () in
-            ret (Let (x, gen env, gen (Env.bind_tevar x env)))
-          in
-          let tuple_size = M.one_of [| 2 |] in
-          let rule_tuple =
-            M.delay @@ fun () ->
-            M.bind tuple_size @@ fun size ->
-            let ts = List.init size (fun _ -> gen env) in
-            ret (Tuple ts)
-          in
-          let rule_lettuple =
-            M.delay @@ fun () ->
-            M.bind tuple_size @@ fun size ->
-            let xs = List.init size (fun _ -> new_var ()) in
-            let env' = List.fold_right Env.bind_tevar xs env in
-            ret (LetTuple (xs, gen env, gen env'))
-          in
-          M.sum
-            [ rule_var
-            ; rule_app
-            ; rule_abs
-            ; rule_let
-            ; rule_tuple
-            ; rule_lettuple
-            ] )
+
+      do_ @@ M.delay
+      @@ fun () ->
+      let rule_var =
+        let+ x = fvars in
+        Var x
+      in
+
+      let rule_app = M.return @@ App (gen env, gen env) in
+
+      let rule_abs =
+        M.delay @@ fun () ->
+        let x = new_var () in
+        let env = Env.bind_tevar x env in
+
+        ret @@ Abs (x, gen env)
+      in
+
+      let rule_let =
+        M.delay @@ fun () ->
+        let x = new_var () in
+        let inner_env = Env.bind_tevar x env in
+
+        ret @@ Let (x, gen env, gen inner_env)
+      in
+
+      let tuple_size = M.one_of [| 2 |] in
+
+      let rule_tuple =
+        M.delay @@ fun () ->
+        M.bind tuple_size @@ fun size ->
+        let ts = List.init size (fun _ -> gen env) in
+        ret @@ Tuple ts
+      in
+
+      let rule_lettuple =
+        M.delay @@ fun () ->
+        M.bind tuple_size @@ fun size ->
+        let xs = List.init size (fun _ -> new_var ()) in
+        let inner_env = List.fold_right Env.bind_tevar xs env in
+
+        ret @@ LetTuple (xs, gen env, gen inner_env)
+      in
+
+      M.sum
+        [ rule_var; rule_app; rule_abs; rule_let; rule_tuple; rule_lettuple ]
     in
-    gen (Env.empty ())
+
+    gen @@ Env.empty ()
 
   let untyped_vanille : Untyped.term =
-    let rec gen (fv : TeVar.t list) : Untyped.term =
+    let rec gen fv =
+      let open Untyped in
       (* The partial terms constructed at this iteration will occur in distinct
          complete terms. Thus it's fine if we generate fresh variables once and
          use them several times in different terms, it cannot produce collisions. *)
       let x = TeVar.fresh "x" in
       let y = TeVar.fresh "y" in
-      Untyped.(
-        Do
-          ( M.delay @@ fun () ->
-            M.sum
-              [ (* One of the existing available variables *)
-                M.sum (fv |> List.map (fun v -> M.return (Var v)))
-              ; (* or any term constructor recursively filled in. *)
-                M.one_of
-                  [| App (gen fv, gen fv)
-                   ; Abs (x, gen (x :: fv))
-                   ; Let (x, gen fv, gen (x :: fv))
-                   ; LetTuple ([ x; y ], gen fv, gen (x :: y :: fv))
-                   ; Tuple [ gen fv; gen fv ]
-                  |]
-              ] ) )
+
+      do_ @@ M.delay
+      @@ fun () ->
+      M.sum
+        [ (* One of the existing available variables *)
+          M.sum (fv |> List.map (fun v -> M.return @@ Var v))
+        ; (* or any term constructor recursively filled in. *)
+          M.one_of
+            [| App (gen fv, gen fv)
+             ; Abs (x, gen (x :: fv))
+             ; Let (x, gen fv, gen (x :: fv))
+             ; LetTuple ([ x; y ], gen fv, gen (x :: y :: fv))
+             ; Tuple [ gen fv; gen fv ]
+            |]
+        ]
     in
+
     gen []
 
   let rec cut_size ~size (term : Untyped.term) : Untyped.term =
