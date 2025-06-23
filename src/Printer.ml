@@ -116,10 +116,17 @@ let decode_scheme sch_var = group (string "decode_scheme" ^^ break 1 ^^ sch_var)
 let instance sch_var var =
   group (sch_var ^^ break 1 ^^ utf8string "≤" ^^ break 1 ^^ var)
 
-let let_sch sch_var var c1 c2 =
+let let_sch bindings c1 c2 =
+  let binding (sch_var, var) = sch_var ^/^ colon ^/^ var in
+
   group
     begin
-      group (string "let" ^/^ sch_var ^/^ colon ^/^ var ^/^ string "=")
+      group
+        begin
+          string "let"
+          ^/^ separate_map (comma ^^ break 1) binding bindings
+          ^/^ string "="
+        end
       ^^ nest 2 (break 1 ^^ c1)
       ^/^ string "in" ^//^ c2
     end

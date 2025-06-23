@@ -186,13 +186,20 @@ module Make (T : Utils.Functor) = struct
 
         continue env res k
       end
-      | Let (sch_var, var, c1, c2) ->
-        let unif = Generalization.enter env.unif in
-        let unif = Unif.Env.add_flexible var None unif in
-        let env = { env with unif } in
+      | Let (bindings, c1, c2) ->
+        let env =
+          List.fold_left
+            begin
+              fun (env : env) (_, var) ->
+                let unif = Generalization.enter env.unif in
+                let unif = Unif.Env.add_flexible var None unif in
+                { env with unif }
+            end
+            env bindings
+        in
         add_to_log ~dir env c k;
 
-        eval env c1 (Next (KLet1 (sch_var, var, c2), k))
+        eval env c1 (Next (KLet1 (bindings, c2), k))
     and continue : type a1 e1 a e.
          env
       -> (a1 Constraint.on_sol, e1) result
@@ -228,14 +235,15 @@ module Make (T : Utils.Functor) = struct
              We must those keep these variables in the environment
              to be able to provide the solution at the end. *)
           continue env res k
-        | Next (KLet1 (sch_var, var, c), k) as k0 ->
-          let unif, _gammas, schemes = Generalization.exit [ var ] env.unif in
+        | Next (KLet1 (bindings, c), k) as k0 ->
+          let sch_vars, vars = List.split bindings in
+
+          let unif, _gammas, schemes = Generalization.exit vars env.unif in
           let env = { env with unif } in
 
-          assert (List.length schemes = 1);
-          let scheme = List.hd schemes in
-
-          let schemes = Env.SMap.add sch_var scheme env.schemes in
+          let schemes =
+            List.fold_right2 Env.SMap.add sch_vars schemes env.schemes
+          in
           let env = { env with schemes } in
           add_to_log ~dir env (result_to_constr res) k0;
 

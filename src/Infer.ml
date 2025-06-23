@@ -57,7 +57,7 @@ module Make (T : Utils.Functor) = struct
 
   let exist v s c = Exist (v, s, c)
 
-  let let_ s v c1 c2 = Let (s, v, c1, c2)
+  let let_ s v c1 c2 = Let ([ (s, v) ], c1, c2)
 
   let decode v = MapErr (Decode v, fun e -> Cycle e)
 

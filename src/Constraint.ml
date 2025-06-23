@@ -66,7 +66,7 @@ module Make (T : Utils.Functor) = struct
     | DecodeScheme : scheme_variable -> (F.scheme, variable Utils.cycle) t
     | Instance : scheme_variable * variable -> (F.ty list, eq_error) t
     | Let :
-        scheme_variable * variable * ('a, 'e) t * ('b, 'e) t
+        (scheme_variable * variable) list * ('a, 'e) t * ('b, 'e) t
         -> ('a * 'b, 'e) t
 
   (** ['a on_sol] represents an elaborated witness of type ['a] that depends on
@@ -122,7 +122,7 @@ module Make (T : Utils.Functor) = struct
     | KConj2 : 'ok1 on_sol -> ('ok2, 'err, 'ok1 * 'ok2, 'err) cont_frame
     | KExist : variable -> ('ok, 'err, 'ok, 'err) cont_frame
     | KLet1 :
-        scheme_variable * variable * ('ok2, 'err) t
+        (scheme_variable * variable) list * ('ok2, 'err) t
         -> ('ok1, 'err, 'ok1 * 'ok2, 'err) cont_frame
     | KLet2 : 'ok1 on_sol -> ('ok2, 'err, 'ok1 * 'ok2, 'err) cont_frame
 end

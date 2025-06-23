@@ -166,7 +166,10 @@ module Make (M : Utils.MonadPlus) = struct
   let constraint_ untyped : (F.term * F.scheme, Infer.err) Constraint.t =
     let s = Constraint.SVar.fresh "final_scheme" in
     let w = Constraint.Var.fresh "final_term" in
-    Let (s, w, Infer.has_type Infer.Env.empty untyped w, Infer.decode_scheme s)
+    Let
+      ( [ (s, w) ]
+      , Infer.has_type Infer.Env.empty untyped w
+      , Infer.decode_scheme s )
 
   (* Generate a typed term of a given size from a monadic untyped term *)
 

@@ -63,7 +63,8 @@ let call_typer ~config (term : Untyped.term) =
     let s = SVar.fresh "final_scheme" in
     let w = Var.fresh "final_term" in
 
-    Let (s, w, Infer.has_type Infer.Env.empty term w, Infer.decode_scheme s)
+    Let
+      ([ (s, w) ], Infer.has_type Infer.Env.empty term w, Infer.decode_scheme s)
   in
 
   if config.show_constraint then
