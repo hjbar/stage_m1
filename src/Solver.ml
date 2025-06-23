@@ -238,7 +238,7 @@ module Make (T : Utils.Functor) = struct
         | Next (KLet1 (bindings, c), k) as k0 ->
           let sch_vars, vars = List.split bindings in
 
-          let unif, _gammas, schemes = Generalization.exit vars env.unif in
+          let unif, schemes = Generalization.exit vars env.unif in
           let env = { env with unif } in
 
           let schemes =

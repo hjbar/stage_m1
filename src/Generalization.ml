@@ -276,17 +276,12 @@ let schemify (env : env) (quantifiers : variable list) (root : variable) :
 
   let generics = List.rev (traverse root) in
 
-  (* Compute quantifiers: generic variables with no structure *)
-  let has_no_structure var = (Env.repr var env).structure = None in
-  let _quantifiers = List.filter has_no_structure generics in
-
   (* Construct and return the scheme *)
   { root; generics; quantifiers }
 
 (* Function to exit, to terminate the process of generalization *)
 
-let exit (roots : variable list) (env : env) : env * variable list * scheme list
-    =
+let exit (roots : variable list) (env : env) : env * scheme list =
   (* Get the young level of the environment *)
   let state_young = Env.get_young env in
 
@@ -311,7 +306,7 @@ let exit (roots : variable list) (env : env) : env * variable list * scheme list
   let env = Env.decr_young env in
 
   (* Return the updated environment, list of quantifiers, and schemes *)
-  (env, quantifiers, schemes)
+  (env, schemes)
 
 (* Instantiate a scheme with a constraint variable *)
 

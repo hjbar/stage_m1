@@ -17,8 +17,7 @@ val fresh_flexible :
 
 val enter : Unif.Env.t -> Unif.Env.t
 
-val exit :
-  Unif.var list -> Unif.Env.t -> Unif.Env.t * Unif.var list * scheme list
+val exit : Unif.var list -> Unif.Env.t -> Unif.Env.t * scheme list
 
 val instantiate :
      scheme
