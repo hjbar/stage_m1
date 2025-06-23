@@ -1,4 +1,6 @@
 module Make (M : Utils.MonadPlus) = struct
+  (* Instantiate modules *)
+
   module Untyped = Untyped.Make (M)
   module Constraint = Constraint.Make (M)
   module Infer = Infer.Make (M)
@@ -7,9 +9,9 @@ module Make (M : Utils.MonadPlus) = struct
   module TeVarSet = TeVar.Set
   module TyVarSet = F.TyVar.Set
 
-  let do_ p = Untyped.Do p
+  (* Define untyped terms for generation *)
 
-  let ret = M.return
+  let do_ p = Untyped.Do p
 
   let ( let+ ) s f = M.map f s
 
@@ -47,7 +49,7 @@ module Make (M : Utils.MonadPlus) = struct
         let x = new_var () in
         let env = Env.bind_tevar x env in
 
-        ret @@ Abs (x, gen env)
+        M.return @@ Abs (x, gen env)
       in
 
       let rule_let =
@@ -55,7 +57,7 @@ module Make (M : Utils.MonadPlus) = struct
         let x = new_var () in
         let inner_env = Env.bind_tevar x env in
 
-        ret @@ Let (x, gen env, gen inner_env)
+        M.return @@ Let (x, gen env, gen inner_env)
       in
 
       let tuple_size = M.one_of [| 2 |] in
@@ -64,7 +66,7 @@ module Make (M : Utils.MonadPlus) = struct
         M.delay @@ fun () ->
         M.bind tuple_size @@ fun size ->
         let ts = List.init size (fun _ -> gen env) in
-        ret @@ Tuple ts
+        M.return @@ Tuple ts
       in
 
       let rule_lettuple =
@@ -73,14 +75,14 @@ module Make (M : Utils.MonadPlus) = struct
         let xs = List.init size (fun _ -> new_var ()) in
         let inner_env = List.fold_right Env.bind_tevar xs env in
 
-        ret @@ LetTuple (xs, gen env, gen inner_env)
+        M.return @@ LetTuple (xs, gen env, gen inner_env)
       in
 
       M.sum
         [ rule_var; rule_app; rule_abs; rule_let; rule_tuple; rule_lettuple ]
     in
 
-    gen @@ Env.empty ()
+    gen (Env.empty ())
 
   let untyped_vanille : Untyped.term =
     let rec gen fv =
@@ -93,56 +95,73 @@ module Make (M : Utils.MonadPlus) = struct
 
       do_ @@ M.delay
       @@ fun () ->
+      let inner_fv = x :: fv in
+      let tuple_inner_fv = y :: x :: fv in
+
       M.sum
         [ (* One of the existing available variables *)
-          M.sum (fv |> List.map (fun v -> M.return @@ Var v))
+          M.sum @@ List.map (fun v -> M.return @@ Var v) fv
         ; (* or any term constructor recursively filled in. *)
           M.one_of
             [| App (gen fv, gen fv)
-             ; Abs (x, gen (x :: fv))
-             ; Let (x, gen fv, gen (x :: fv))
-             ; LetTuple ([ x; y ], gen fv, gen (x :: y :: fv))
+             ; Abs (x, gen inner_fv)
+             ; Let (x, gen fv, gen inner_fv)
              ; Tuple [ gen fv; gen fv ]
+             ; LetTuple ([ x; y ], gen fv, gen tuple_inner_fv)
             |]
         ]
     in
 
     gen []
 
+  (* Generate a monadic untyped term of size [~size]
+     from a descriptive monadic untyped term *)
+
   let rec cut_size ~size (term : Untyped.term) : Untyped.term =
     let un ~size t f : Untyped.term =
       let size = size - 1 in
+
       if size < 1 then Do M.fail else f (cut_size ~size t)
     in
+
     let bin ~size ta tb f : Untyped.term =
       let size = size - 1 in
+
       if size < 2 then Do M.fail
       else
-        Do
-          ( M.sum
-          @@ List.init (size - 1) (fun idx ->
-               (* { i, j | i > 0, j > 0, i+j = size } *)
-               let i = idx + 1 in
-               let j = size - i in
-               let ta' = cut_size ~size:i ta in
-               let tb' = cut_size ~size:j tb in
-               M.return (f ta' tb') ) )
+        do_ @@ M.sum
+        @@ List.init (size - 1)
+             begin
+               fun idx ->
+                 (* { i, j | i > 0, j > 0, i+j = size } *)
+                 let i = idx + 1 in
+                 let j = size - i in
+
+                 let ta' = cut_size ~size:i ta in
+                 let tb' = cut_size ~size:j tb in
+
+                 M.return @@ f ta' tb'
+             end
     in
+
     if size <= 0 then Do M.fail
     else
       match term with
-      | Var _ -> if size = 1 then term else Do M.fail
-      | App (t, u) -> bin ~size t u (fun t' u' -> App (t', u'))
-      | Abs (x, t) -> un ~size t (fun t' -> Abs (x, t'))
-      | Let (x, t, u) -> bin ~size t u (fun t' u' -> Let (x, t', u'))
+      | Var _ when size <> 1 -> Do M.fail
+      | Var _ -> term
+      | App (t, u) -> bin ~size t u @@ fun t' u' -> App (t', u')
+      | Abs (x, t) -> un ~size t @@ fun t' -> Abs (x, t')
+      | Let (x, t, u) -> bin ~size t u @@ fun t' u' -> Let (x, t', u')
       | Tuple ts ->
         let t, u = match ts with [ t; u ] -> (t, u) | _ -> assert false in
-        bin ~size t u (fun t' u' -> Tuple [ t'; u' ])
+        bin ~size t u @@ fun t' u' -> Tuple [ t'; u' ]
       | LetTuple (xs, t, u) ->
-        bin ~size t u (fun t' u' -> LetTuple (xs, t', u'))
-      | Annot (t, ty) -> un ~size t (fun t' -> Annot (t', ty))
+        bin ~size t u @@ fun t' u' -> LetTuple (xs, t', u')
+      | Annot (t, ty) -> un ~size t @@ fun t' -> Annot (t', ty)
       | Do m -> Do (M.map (cut_size ~size) m)
-      | Loc (loc, t) -> un ~size t (fun t' -> Loc (loc, t'))
+      | Loc (loc, t) -> un ~size t @@ fun t' -> Loc (loc, t')
+
+  (* Generate the initial constraint to type a given untyped term *)
 
   let constraint_ untyped : (F.term * F.scheme, Infer.err) Constraint.t =
     let s = Constraint.SVar.fresh "final_scheme" in
@@ -153,16 +172,18 @@ module Make (M : Utils.MonadPlus) = struct
       , Infer.has_type (Untyped.Var.Map.empty, Untyped.Var.Map.empty) untyped w
       , Infer.decode_scheme s )
 
+  (* Generate a typed term of a given size from a monadic untyped term *)
+
   let typed_cut_early ~size untyped : (F.term * F.scheme) M.t =
     let rec loop : type a e. (a, e) Solver.normal_constraint -> a M.t = function
-      | NRet (env, v) ->
-        let decoder = Decode.decode env.unif () in
-        M.return (v decoder)
+      | NRet (env, v) -> M.return @@ v (Decode.decode env.unif ())
       | NErr _ -> M.fail
       | NDo m -> M.bind m loop
     in
+
     let constraint_ = untyped |> cut_size ~size |> constraint_ in
-    loop (Solver.eval ~log:false Solver.Env.empty constraint_)
+    let nf = Solver.eval ~log:false Solver.Env.empty constraint_ in
+    loop nf
 
   let typed_cut_late ~size untyped : (F.term * F.scheme) M.t =
     let rec loop : type a e.
@@ -172,12 +193,12 @@ module Make (M : Utils.MonadPlus) = struct
       else
         match nf with
         | (NRet _ | NErr _) when fuel > 0 -> M.fail
-        | NRet (env, v) ->
-          let decoder = Decode.decode env.unif () in
-          M.return (v decoder)
+        | NRet (env, v) -> M.return @@ v (Decode.decode env.unif ())
         | NErr _ -> M.fail
         | NDo m -> M.bind m (loop ~fuel:(fuel - 1))
     in
-    loop ~fuel:size
-      (Solver.eval ~log:false Solver.Env.empty (constraint_ untyped))
+
+    let constraint_ = constraint_ untyped in
+    let nf = Solver.eval ~log:false Solver.Env.empty constraint_ in
+    loop ~fuel:size nf
 end
