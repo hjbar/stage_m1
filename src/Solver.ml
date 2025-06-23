@@ -85,14 +85,12 @@ module Make (T : Utils.Functor) = struct
       description of normal constraints and our expectations regarding the
       [eval] function. *)
   type ('ok, 'err) normal_constraint =
-    | NRet : 'a Constraint.on_sol -> ('a, 'e) normal_constraint
+    | NRet : env * 'a Constraint.on_sol -> ('a, 'e) normal_constraint
     | NErr : 'e -> ('a, 'e) normal_constraint
-    | NDo :
-        ('a, 'e) Constraint.t T.t * ('a, 'e, 'ok, 'err) Constraint.cont
-        -> ('ok, 'err) normal_constraint
+    | NDo : ('a, 'e) normal_constraint T.t -> ('a, 'e) normal_constraint
 
   let eval (type a1 e1 a e) ~log (env : env) (c0 : (a1, e1) Constraint.t)
-    (k : (a1, e1, a, e) Constraint.cont) : env * (a, e) normal_constraint =
+    (k : (a1, e1, a, e) Constraint.cont) : (a, e) normal_constraint =
     (* We recommend calling the function [add_to_log] below
          whenever you get an updated environment.
 
@@ -122,7 +120,7 @@ module Make (T : Utils.Functor) = struct
          env
       -> (a1, e1) Constraint.t
       -> (a1, e1, a, e) Constraint.cont
-      -> env * (a, e) normal_constraint =
+      -> (a, e) normal_constraint =
      fun env c k ->
       let dir = `Enter in
 
@@ -154,7 +152,7 @@ module Make (T : Utils.Functor) = struct
 
         eval env c (Next (KExist x, k))
       | Decode v -> continue env (Ok (fun sol -> sol v)) k
-      | Do p -> (env, NDo (p, k))
+      | Do p -> NDo (T.map (fun c -> eval env c k) p)
       | DecodeScheme sch_var -> begin
         let scheme = Env.SMap.find sch_var env.schemes in
 
@@ -202,14 +200,14 @@ module Make (T : Utils.Functor) = struct
          env
       -> (a1 Constraint.on_sol, e1) result
       -> (a1, e1, a, e) Constraint.cont
-      -> env * (a, e) normal_constraint =
+      -> (a, e) normal_constraint =
      fun env res k ->
       let dir = `Continue in
 
       match res with
       | Error e -> begin
         match k with
-        | Done -> (env, NErr e)
+        | Done -> NErr e
         | Next (KMapErr f, k) -> continue env (Error (f e)) k
         | Next (KMap _, k) -> continue env (Error e) k
         | Next (KConj1 _, k) -> continue env (Error e) k
@@ -220,7 +218,7 @@ module Make (T : Utils.Functor) = struct
       end
       | Ok v -> begin
         match k with
-        | Done -> (env, NRet v)
+        | Done -> NRet (env, v)
         | Next (KMap f, k) -> continue env (Ok (fun sol -> f @@ v sol)) k
         | Next (KConj1 c, k) -> eval env c (Next (KConj2 v, k))
         | Next (KConj2 w, k) -> continue env (Ok (fun sol -> (w sol, v sol))) k

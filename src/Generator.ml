@@ -154,43 +154,31 @@ module Make (M : Utils.MonadPlus) = struct
       , Infer.decode_scheme s )
 
   let typed_cut_early ~size untyped : (F.term * F.scheme) M.t =
-    let rec loop : type a1 e1 a e.
-         Solver.Env.t
-      -> (a1, e1) Constraint.t
-      -> (a1, e1, a, e) Constraint.cont
-      -> a M.t =
-     fun env cstr k ->
-      let env, nf = Solver.eval ~log:false env cstr k in
-
-      match nf with
-      | NRet v ->
+    let rec loop : type a e. (a, e) Solver.normal_constraint -> a M.t = function
+      | NRet (env, v) ->
         let decoder = Decode.decode env.unif () in
         M.return (v decoder)
       | NErr _ -> M.fail
-      | NDo (p, k) -> M.bind p (fun cstr -> loop env cstr k)
+      | NDo m -> M.bind m loop
     in
-
     let constraint_ = untyped |> cut_size ~size |> constraint_ in
-    loop Solver.Env.empty constraint_ Constraint.Done
+    loop (Solver.eval ~log:false Solver.Env.empty constraint_ Constraint.Done)
 
   let typed_cut_late ~size untyped : (F.term * F.scheme) M.t =
-    let rec loop : type a1 e1 a e.
-         fuel:int
-      -> Solver.Env.t
-      -> (a1, e1) Constraint.t
-      -> (a1, e1, a, e) Constraint.cont
-      -> a M.t =
-     fun ~fuel env cstr k ->
+    let rec loop : type a e.
+      fuel:int -> (a, e) Solver.normal_constraint -> a M.t =
+     fun ~fuel nf ->
       if fuel < 0 then M.fail
       else
-        let env, nf = Solver.eval ~log:false env cstr k in
         match nf with
         | (NRet _ | NErr _) when fuel > 0 -> M.fail
-        | NRet v ->
+        | NRet (env, v) ->
           let decoder = Decode.decode env.unif () in
           M.return (v decoder)
         | NErr _ -> M.fail
-        | NDo (p, k) -> M.bind p (fun cstr -> loop ~fuel:(fuel - 1) env cstr k)
+        | NDo m -> M.bind m (loop ~fuel:(fuel - 1))
     in
-    loop ~fuel:size Solver.Env.empty (constraint_ untyped) Constraint.Done
+    loop ~fuel:size
+      (Solver.eval ~log:false Solver.Env.empty (constraint_ untyped)
+         Constraint.Done )
 end
