@@ -216,7 +216,7 @@ module Make (T : Utils.Functor) = struct
       | Ok v -> begin
         match k with
         | Done -> NRet (env, v)
-        | Next (KMap f, k) -> continue env (Ok (fun sol -> f @@ v sol)) k
+        | Next (KMap f, k) -> continue env (Ok (fun sol -> f (v sol))) k
         | Next (KConj1 c, k) -> eval env c (Next (KConj2 v, k))
         | Next (KConj2 w, k) -> continue env (Ok (fun sol -> (w sol, v sol))) k
         | Next (KExist _x, k) ->
@@ -250,7 +250,7 @@ module Make (T : Utils.Functor) = struct
 
     match eval env c0 k0 with
     | exception Located (loc, exn, bt) ->
-      Printf.eprintf "Error at %s" @@ MenhirLib.LexerUtil.range loc;
+      Printf.eprintf "Error at %s" (MenhirLib.LexerUtil.range loc);
       Printexc.raise_with_backtrace exn bt
     | exception exn -> raise exn
     | result -> result

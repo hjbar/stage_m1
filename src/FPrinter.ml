@@ -14,11 +14,11 @@ let print_ty (ty : ty) : PPrint.document =
     | other -> print_next other
   and print_atom = function
     | Constr (Var alpha) -> TyVar.print alpha
-    | Constr (Prod ts) -> Printer.product @@ List.map print ts
-    | Constr (Arrow _) as other -> PPrint.parens @@ print other
+    | Constr (Prod ts) -> Printer.product (List.map print ts)
+    | Constr (Arrow _) as other -> PPrint.parens (print other)
   in
 
-  PPrint.group @@ print ty
+  PPrint.group (print ty)
 
 let print_scheme ((quantifiers, ty) : scheme) : PPrint.document =
   Printer.scheme (print_quantifier quantifiers) (print_ty ty)

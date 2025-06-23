@@ -119,7 +119,7 @@ module Env = struct
     let var = repr.var in
     let unode = unode_of_repr repr env in
 
-    assert (not @@ Constraint.Var.Map.mem var env.map);
+    assert (not (Constraint.Var.Map.mem var env.map));
 
     let uvar = UF.make env.store unode in
     let map = Constraint.Var.Map.add var uvar env.map in
@@ -188,7 +188,7 @@ module Env = struct
     let module PP = PPrint in
     let ( ^^ ) = PP.( ^^ ) in
 
-    if not @@ Constraint.Var.eq var uvar.var then
+    if not (Constraint.Var.eq var uvar.var) then
       (* not representative *)
       let doc =
         Constraint.Var.print var ^^ PP.string " |--> "

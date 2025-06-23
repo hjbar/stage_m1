@@ -97,7 +97,7 @@ let print_result ~config result =
     | Infer.Clash (ty1, ty2) ->
       Printer.incompatible (FPrinter.print_ty ty1) (FPrinter.print_ty ty2)
     | Infer.Cycle (Utils.Cycle v) ->
-      Printer.cycle @@ Printer.inference_variable @@ Constraint.Var.print v
+      v |> Constraint.Var.print |> Printer.inference_variable |> Printer.cycle
   end
 
 let process ~config input_path =

@@ -10,14 +10,14 @@ let scheme_variable s = group (string "?scheme_" ^^ s)
 let arrow t u = group (t ^/^ string "->" ^/^ u)
 
 (** {!$t1 * $t2 * ... $tn} *)
-let product ts = group @@ braces @@ separate (break 1 ^^ star ^^ space) ts
+let product ts = group (braces (separate (break 1 ^^ star ^^ space) ts))
 
 (** ($term : $ty) *)
-let annot term ty = group @@ surround 2 0 lparen (term ^/^ colon ^//^ ty) rparen
+let annot term ty = group (surround 2 0 lparen (term ^/^ colon ^//^ ty) rparen)
 
 (** ∀$ty1. ∀$ty2. ... *)
 let print_quantifier quantifiers =
-  group @@ concat_map (fun var -> string "∀" ^^ var ^^ string ". ") quantifiers
+  group (concat_map (fun var -> string "∀" ^^ var ^^ string ". ") quantifiers)
 
 (** ∀$ty1. ∀$ty2. ... $ty *)
 let scheme quantifiers ty = group (quantifiers ^^ ty)
@@ -79,10 +79,10 @@ let exist bindings body =
   let print_binding (w, s) =
     match s with
     | None -> w
-    | Some s -> group @@ surround 2 0 lparen (w ^/^ string "=" ^/^ s) rparen
+    | Some s -> group (surround 2 0 lparen (w ^/^ string "=" ^/^ s) rparen)
   in
 
-  let bindings = group @@ flow_map (break 1) print_binding bindings in
+  let bindings = group (flow_map (break 1) print_binding bindings) in
 
   group
     begin
@@ -130,7 +130,7 @@ let let_sch_2 c2 =
 let hole ~env c =
   group
     begin
-      group (string "hole" ^^ break 1 ^^ group @@ surround 2 0 lbrace env rbrace)
+      group (string "hole" ^^ break 1 ^^ group (surround 2 0 lbrace env rbrace))
       ^^ break 1
       ^^ group (surround 2 0 lparen c rparen)
     end

@@ -253,7 +253,7 @@ module Make (T : Utils.Functor) = struct
             (x, ty) :: bindings
         in
 
-        loop @@ List.combine xs ws
+        loop (List.combine xs ws)
       and+ t' = has_type env t wt
       and+ u' =
         let env = List.fold_right2 Env.add_variable xs ws env in

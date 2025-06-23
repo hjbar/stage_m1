@@ -137,7 +137,7 @@ let update_ranks (generation : generation) (env : env) : env =
         env := new_env;
 
         (* If the variable is not young, stop traversal *)
-        if not @@ generation.is_young var then repr.rank
+        if not (generation.is_young var) then repr.rank
         else begin
           (* The variable must have rank [k] at this point *)
           assert (repr.rank = k);
@@ -273,7 +273,7 @@ let schemify (env : env) (root : variable) : scheme =
     loop [] root
   in
 
-  let generics = List.rev @@ traverse root in
+  let generics = List.rev (traverse root) in
 
   (* Compute quantifiers: generic variables with no structure *)
   let has_no_structure var = (Env.repr var env).structure = None in
