@@ -25,14 +25,12 @@ let print_scheme ((quantifiers, ty) : scheme) : PPrint.document =
 
 let print_term : term -> PPrint.document =
   let print_binding x tau = Printer.annot (TeVar.print x) (print_ty tau) in
-  let print_let_binding x (quantifiers, ty) =
-    Printer.let_binding
-      (List.map F.TyVar.print quantifiers)
-      (TeVar.print x) (print_ty ty)
+  let print_let_binding x scheme =
+    Printer.let_binding (TeVar.print x) (print_scheme scheme)
   in
-  let print_var_app x = function
-    | [] -> TeVar.print x
-    | tys -> Printer.var_app (TeVar.print x) (List.map print_ty tys)
+  let print_ty_app t = function
+    | [] -> t
+    | tys -> Printer.ty_app t (List.map print_ty tys)
   in
 
   let rec print_top t = print_left_open t
@@ -45,6 +43,10 @@ let print_term : term -> PPrint.document =
     match t with
     | Abs (x, tau, t) ->
       Printer.lambda ~input:(print_binding x tau) ~body:(print_self t)
+    | TyAbs (alphas, t) ->
+      Printer.big_lambda
+        ~input:(List.map TyVar.print alphas)
+        ~body:(print_self t)
     | Let (x, scheme, t, u) ->
       Printer.let_
         ~var:(print_let_binding x scheme)
@@ -62,16 +64,16 @@ let print_term : term -> PPrint.document =
     @@
     match t with
     | App (t, u) -> Printer.app (print_self t) (print_next u)
+    | TyApp (t, tys) -> print_ty_app (print_next t) tys
     | other -> print_next other
   and print_atom t =
     PPrint.group
     @@
     match t with
     | Var x -> TeVar.print x
-    | VarApp (x, tys) -> print_var_app x tys
     | Annot (t, ty) -> Printer.annot (print_top t) (print_ty ty)
     | Tuple ts -> Printer.tuple print_top ts
-    | (App _ | Abs _ | Let _ | LetTuple _) as other ->
+    | (App _ | Abs _ | Let _ | LetTuple _ | TyApp _ | TyAbs _) as other ->
       PPrint.parens (print_top other)
   in
 

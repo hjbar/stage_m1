@@ -146,7 +146,7 @@ module Make (T : Utils.Functor) = struct
         let sch = Env.find_scheme x env in
 
         let+ tys = Instance (sch, w) in
-        F.VarApp (x, tys)
+        F.TyApp (F.Var x, tys)
     end
     | Untyped.App (t, u) ->
       (* [[t u : w]] := ∃wu. [[t : wu -> w]] ∧ [[u : wu]] *)
@@ -186,7 +186,7 @@ module Make (T : Utils.Functor) = struct
            and+ scheme = decode_scheme s in
            (u', scheme)
       in
-      F.Let (x, scheme, t', u')
+      F.Let (x, scheme, TyAbs (fst scheme, t'), u')
     | Untyped.Annot (t, ty) ->
       (* [[(t : ty) : w]] := ∃(wt = ty). [[t : wt]] /\ [[wt = w]] *)
       bind ty @@ fun wt ->

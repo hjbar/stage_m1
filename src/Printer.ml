@@ -23,20 +23,23 @@ let print_quantifier quantifiers =
 let scheme quantifiers ty = group (quantifiers ^^ ty)
 
 (** x[$ty1, $ty2, ...] *)
-let var_app x tys =
-  group (x ^^ lbracket ^^ separate (comma ^^ space) tys ^^ rbracket)
+let ty_app t tys =
+  group (t ^^ lbracket ^^ separate (comma ^^ space) tys ^^ rbracket)
 
-(** Λ$ty1. Λ$ty2. ... (x : ty) *)
-let let_binding quantifiers x ty =
+(** (x : ty) *)
+let let_binding x ty =
   group
     begin
-      concat_map (fun var -> string "Λ" ^^ var ^^ dot ^^ space) quantifiers
-      ^^ lparen ^^ x ^^ space ^^ colon ^^ space ^^ ty ^^ rparen
+      lparen ^^ x ^^ space ^^ colon ^^ space ^^ ty ^^ rparen
     end
 
 (** lambda $input. $body *)
 let lambda ~input ~body =
   group (string "lambda" ^/^ input ^^ string "." ^//^ body)
+
+(** Λ $input. $body *)
+let big_lambda ~input ~body =
+  group (group (string "Λ" ^/^ separate space input ^^ string ".") ^//^ body)
 
 (** let $var = $def in $body *)
 let let_ ~var ~def ~body =

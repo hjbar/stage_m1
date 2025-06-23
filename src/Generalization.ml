@@ -251,7 +251,8 @@ let debug_scheme { root; quantifiers; generics } =
 (* Transform root into a scheme.
    Assertion: should be called only after generalization *)
 
-let schemify (env : env) (root : variable) : scheme =
+let schemify (env : env) (quantifiers : variable list) (root : variable) :
+  scheme =
   (* Cache to avoid visiting a root's representative twice *)
   let cache = Hashtbl.create 16 in
 
@@ -277,7 +278,7 @@ let schemify (env : env) (root : variable) : scheme =
 
   (* Compute quantifiers: generic variables with no structure *)
   let has_no_structure var = (Env.repr var env).structure = None in
-  let quantifiers = List.filter has_no_structure generics in
+  let _quantifiers = List.filter has_no_structure generics in
 
   (* Construct and return the scheme *)
   { root; generics; quantifiers }
@@ -303,7 +304,7 @@ let exit (roots : variable list) (env : env) : env * variable list * scheme list
   let env, quantifiers = generalize generation env in
 
   (* Build a scheme for each root variable *)
-  let schemes = List.map (schemify env) roots in
+  let schemes = List.map (schemify env quantifiers) roots in
 
   (* Clean up the environment *)
   let env = Env.clean_pool state_young env in
@@ -327,14 +328,17 @@ let instantiate ({ root; generics; quantifiers } : scheme) (var : variable)
             let repr = Env.repr var env in
             assert (repr.status = Generic);
 
-            let env, fresh_var =
-              fresh_flexible ~name:("fresh_" ^ repr.var.name) None env
-            in
-            Hashtbl.replace ht repr.var fresh_var;
+            if Hashtbl.mem ht repr.var then env
+            else begin
+              let env, fresh_var =
+                fresh_flexible ~name:("fresh_" ^ repr.var.name) None env
+              in
+              Hashtbl.replace ht repr.var fresh_var;
 
-            env
+              env
+            end
         end
-        env generics
+        env (quantifiers @ generics)
     in
 
     (env, ht)

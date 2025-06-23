@@ -131,7 +131,8 @@ to the bin/dune content.)
   
   Elaborated term:
     lambda
-    (y : α). let Λβ. (id : β -> β) = lambda (x : β). x in id[α] y
+    (y : α).
+      let (id : ∀β. β -> β) = Λ β. lambda (x : β). x in id[α] y
   
 
 
@@ -179,7 +180,7 @@ type, this is just an abstract/rigid type variable: `Constr
     ∀α. α -> α
   
   Elaborated term:
-    let Λβ. (x : β -> β) = lambda (y : β). y in x[α]
+    let (x : ∀β. β -> β) = Λ β. lambda (y : β). y in x[α]
   
 
 
@@ -212,7 +213,7 @@ type, this is just an abstract/rigid type variable: `Constr
     in decode_scheme ?scheme_final_scheme
   
   Inferred type:
-    ∀γ. ∀β. ∀α. ({γ * β} -> α) -> γ -> β -> α
+    ∀β. ∀γ. ∀α. ({γ * β} -> α) -> γ -> β -> α
   
   Elaborated term:
     lambda (f : {γ * β} -> α). lambda (x : γ). lambda (y : β). f (x, y)
@@ -283,8 +284,8 @@ type, this is just an abstract/rigid type variable: `Constr
   Elaborated term:
     lambda
     (a : α).
-      let Λβ. (id : β -> β) = lambda (x : β). x in
-        let (r : α) = id[α] a in r
+      let (id : ∀β. β -> β) = Λ β. lambda (x : β). x in
+        let (r : α) = Λ . id[α] a in r
   
 
 
@@ -323,14 +324,15 @@ type, this is just an abstract/rigid type variable: `Constr
     in decode_scheme ?scheme_final_scheme
   
   Inferred type:
-    ∀α. ∀β. α -> β -> {α * β}
+    ∀β. ∀α. α -> β -> {α * β}
   
   Elaborated term:
-    let Λγ. (id : γ -> γ) = lambda (x : γ). x in
+    let (id : ∀γ. γ -> γ) = Λ γ. lambda (x : γ). x in
       lambda
       (a : α).
         lambda
-        (b : β). let (l : α) = id[α] a in let (r : β) = id[β] b in (l, r)
+        (b : β).
+          let (l : α) = Λ . id[α] a in let (r : β) = Λ . id[β] b in (l, r)
   
 
 
@@ -375,16 +377,51 @@ type, this is just an abstract/rigid type variable: `Constr
     int -> bool -> {int * bool}
   
   Elaborated term:
-    let Λα. (id : α -> α) = lambda (x : α). x in
+    let (id : ∀α. α -> α) = Λ α. lambda (x : α). x in
       lambda
       (a : int).
         lambda
         (b : bool).
-          let (l : int) = id[int] a in
-            let (r : bool) = id[bool] b in ((l : int), (r : bool))
+          let (l : int) = Λ . id[int] a in
+            let (r : bool) = Λ . id[bool] b in ((l : int), (r : bool))
   
 
 
+
+
+## System F
+
+We test an example where a type variable occurs in the body
+of a definition but not in the inferred type scheme.
+
+  $ minihell $FLAGS poly_silent_var.test
+  Input term:
+    let test = lambda x. lambda z. x lambda y. y in test
+  
+  Generated constraint:
+    let ?scheme_final_scheme : ?final_term =
+      let ?scheme_s : ?test =
+        ∃?x ?wt (?warr = ?x -> ?wt).
+          ?test = ?warr
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt).
+            (∃?z ?wt/2 (?warr/1 = ?z -> ?wt/2).
+              ?wt/1 = ?warr/1 ∧ ?wt/2 = ?x ∧ decode ?z)
+            ∧ (∃?y ?wt/3 (?warr/2 = ?y -> ?wt/3).
+              ?wu = ?warr/2 ∧ ?wt/3 = ?y ∧ decode ?y))
+          ∧ decode ?x
+      in (?scheme_s ≤ ?final_term ∧ decode_scheme ?scheme_s)
+    in decode_scheme ?scheme_final_scheme
+  
+  Inferred type:
+    ∀α. ∀β. α -> α
+  
+  Elaborated term:
+    let (test : ∀δ. ∀γ. γ -> γ) =
+      Λ δ γ.
+        lambda (x : γ). (lambda (z : δ -> δ). x) (lambda (y : δ). y)
+    in
+      test[β, α]
+  
 
 
 
@@ -1279,35 +1316,35 @@ There are not many programs with size 3, 4 and 5.
   
   lambda (v : δ). lambda (w : γ). w
   
-  Inferred type : ∀δ. ∀γ. δ -> γ -> γ
+  Inferred type : ∀γ. ∀δ. δ -> γ -> γ
 
 
   $ minigen --exhaustive --types --size 4 --count 100
   lambda (v/2 : α). lambda (y/5 : γ). lambda (z/4 : β). v/2
   
-  Inferred type : ∀α. ∀γ. ∀β. α -> γ -> β -> α
+  Inferred type : ∀α. ∀β. ∀γ. α -> γ -> β -> α
   
   
   
   lambda (v/2 : β/1). lambda (y/5 : α/1). lambda (z/4 : δ). z/4
   
-  Inferred type : ∀β/1. ∀α/1. ∀δ. β/1 -> α/1 -> δ -> δ
+  Inferred type : ∀δ. ∀α/1. ∀β/1. β/1 -> α/1 -> δ -> δ
   
   
   
   lambda (v/2 : α/2). lambda (y/5 : γ/1). lambda (z/4 : δ/1). y/5
   
-  Inferred type : ∀α/2. ∀γ/1. ∀δ/1. α/2 -> γ/1 -> δ/1 -> γ/1
+  Inferred type : ∀γ/1. ∀δ/1. ∀α/2. α/2 -> γ/1 -> δ/1 -> γ/1
   
   
   
-  lambda (v/2 : β/2). let (v/5 : β/2) = v/2 in v/2
+  lambda (v/2 : β/2). let (v/5 : β/2) = Λ . v/2 in v/2
   
   Inferred type : ∀β/2. β/2 -> β/2
   
   
   
-  lambda (v/2 : γ/2). let (v/5 : γ/2) = v/2 in v/5
+  lambda (v/2 : γ/2). let (v/5 : γ/2) = Λ . v/2 in v/5
   
   Inferred type : ∀γ/2. γ/2 -> γ/2
   
@@ -1322,14 +1359,14 @@ There are not many programs with size 3, 4 and 5.
   lambda
   (v/2 : {α/3 * β/3}). let ((u/8 : α/3), (v/8 : β/3)) = v/2 in v/2
   
-  Inferred type : ∀α/3. ∀β/3. {α/3 * β/3} -> {α/3 * β/3}
+  Inferred type : ∀β/3. ∀α/3. {α/3 * β/3} -> {α/3 * β/3}
   
   
   
   lambda
   (v/2 : {γ/3 * δ/3}). let ((u/8 : γ/3), (v/8 : δ/3)) = v/2 in u/8
   
-  Inferred type : ∀γ/3. ∀δ/3. {γ/3 * δ/3} -> γ/3
+  Inferred type : ∀δ/3. ∀γ/3. {γ/3 * δ/3} -> γ/3
   
   
   
@@ -1340,7 +1377,8 @@ There are not many programs with size 3, 4 and 5.
   
   
   
-  let Λδ/4. (y/b : δ/4 -> δ/4) = lambda (x/c : δ/4). x/c in y/b[γ/4]
+  let (y/b : ∀δ/4. δ/4 -> δ/4) = Λ δ/4. lambda (x/c : δ/4). x/c in
+    y/b[γ/4]
   
   Inferred type : ∀γ/4. γ/4 -> γ/4
 
@@ -1353,7 +1391,7 @@ An example of random sampling output at higher size.
     lambda (w/3 : γ/1). w/3
   )
   
-  Inferred type : ∀β/1. ∀α/1. ∀γ/1. {β/1 -> α/1 -> α/1
+  Inferred type : ∀γ/1. ∀α/1. ∀β/1. {β/1 -> α/1 -> α/1
   * γ/1 -> γ/1}
   
   
@@ -1363,7 +1401,7 @@ An example of random sampling output at higher size.
     lambda (w/3 : β/2). w/3
   )
   
-  Inferred type : ∀δ/1. ∀α/2. ∀β/2. {δ/1 -> α/2 -> δ/1
+  Inferred type : ∀β/2. ∀δ/1. ∀α/2. {δ/1 -> α/2 -> δ/1
   * β/2 -> β/2}
   
   
@@ -1373,7 +1411,7 @@ An example of random sampling output at higher size.
     lambda (w/3 : δ/2). lambda (u/14 : α/3). w/3
   )
   
-  Inferred type : ∀γ/2. ∀δ/2. ∀α/3. {γ/2 -> γ/2
+  Inferred type : ∀δ/2. ∀α/3. ∀γ/2. {γ/2 -> γ/2
   * δ/2 -> α/3 -> δ/2}
   
   
@@ -1383,23 +1421,27 @@ An example of random sampling output at higher size.
     lambda (w/3 : δ/3). lambda (u/14 : γ/3). u/14
   )
   
-  Inferred type : ∀β/3. ∀δ/3. ∀γ/3. {β/3 -> β/3
+  Inferred type : ∀γ/3. ∀δ/3. ∀β/3. {β/3 -> β/3
   * δ/3 -> γ/3 -> γ/3}
   
   
   
   lambda
   (z/1d : α/4).
-    let Λδ/4. (u/1d : δ/4 -> α/4) = lambda (y/1f : δ/4). z/1d in
+    let (u/1d : ∀δ/4. δ/4 -> α/4) =
+      Λ δ/4. lambda (y/1f : δ/4). z/1d
+    in
       lambda (v/1e : γ/4). u/1d[β/4]
   
-  Inferred type : ∀α/4. ∀γ/4. ∀β/4. α/4 -> γ/4 -> β/4 -> α/4
+  Inferred type : ∀β/4. ∀γ/4. ∀α/4. α/4 -> γ/4 -> β/4 -> α/4
   
   
   
   lambda
   (z/1d : α/5).
-    let Λγ/5. (u/1d : γ/5 -> α/5) = lambda (y/1f : γ/5). z/1d in
+    let (u/1d : ∀γ/5. γ/5 -> α/5) =
+      Λ γ/5. lambda (y/1f : γ/5). z/1d
+    in
       lambda (v/1e : β/5). z/1d
   
   Inferred type : ∀α/5. ∀β/5. α/5 -> β/5 -> α/5
@@ -1408,34 +1450,42 @@ An example of random sampling output at higher size.
   
   lambda
   (z/1d : α/6).
-    let Λβ/6. (u/1d : β/6 -> α/6) = lambda (y/1f : β/6). z/1d in
+    let (u/1d : ∀β/6. β/6 -> α/6) =
+      Λ β/6. lambda (y/1f : β/6). z/1d
+    in
       lambda (v/1e : δ/5). v/1e
   
-  Inferred type : ∀α/6. ∀δ/5. α/6 -> δ/5 -> δ/5
+  Inferred type : ∀δ/5. ∀α/6. α/6 -> δ/5 -> δ/5
   
   
   
   lambda
   (z/1d : δ/6).
-    let Λα/7. (u/1d : α/7 -> α/7) = lambda (y/1f : α/7). y/1f in
+    let (u/1d : ∀α/7. α/7 -> α/7) =
+      Λ α/7. lambda (y/1f : α/7). y/1f
+    in
       lambda (v/1e : γ/6). v/1e
   
-  Inferred type : ∀δ/6. ∀γ/6. δ/6 -> γ/6 -> γ/6
+  Inferred type : ∀γ/6. ∀δ/6. δ/6 -> γ/6 -> γ/6
   
   
   
   lambda
   (z/1d : δ/7).
-    let Λα/8. (u/1d : α/8 -> α/8) = lambda (y/1f : α/8). y/1f in
+    let (u/1d : ∀α/8. α/8 -> α/8) =
+      Λ α/8. lambda (y/1f : α/8). y/1f
+    in
       lambda (v/1e : γ/7). u/1d[β/7]
   
-  Inferred type : ∀δ/7. ∀γ/7. ∀β/7. δ/7 -> γ/7 -> β/7 -> β/7
+  Inferred type : ∀β/7. ∀γ/7. ∀δ/7. δ/7 -> γ/7 -> β/7 -> β/7
   
   
   
   lambda
   (z/1d : β/8).
-    let Λδ/8. (u/1d : δ/8 -> δ/8) = lambda (y/1f : δ/8). y/1f in
+    let (u/1d : ∀δ/8. δ/8 -> δ/8) =
+      Λ δ/8. lambda (y/1f : δ/8). y/1f
+    in
       lambda (v/1e : γ/8). z/1d
   
   Inferred type : ∀β/8. ∀γ/8. β/8 -> γ/8 -> β/8
@@ -1445,4 +1495,4 @@ An example of random sampling output at higher size.
     ((lambda (u/1 : α -> γ -> β -> α). u/1)
       (lambda (z/4 : α). lambda (w/5 : γ). lambda (x/7 : β). z/4))
   
-  Inferred type : ∀α. ∀γ. ∀β. α -> γ -> β -> α
+  Inferred type : ∀α. ∀β. ∀γ. α -> γ -> β -> α
