@@ -109,7 +109,7 @@ to the bin/dune content.)
 
 
 
-  $ minihell $FLAGS id_poly2.test
+  $ minihell $FLAGS id_poly_with_let.test
   Input term:
     lambda y. let id = lambda x. x in id y
   
@@ -164,7 +164,7 @@ type, this is just an abstract/rigid type variable: `Constr
 
 
 
-  $ minihell $FLAGS let_easy.test
+  $ minihell $FLAGS let_poly.test
   Input term:
     let x = lambda y. y in x
   
@@ -258,7 +258,7 @@ type, this is just an abstract/rigid type variable: `Constr
 
 ## Polymorhpism
 
-  $ minihell $FLAGS poly_easy.test
+  $ minihell $FLAGS poly_easy_use.test
   Input term:
     lambda a. let id = lambda x. x in let r = id a in r
   
@@ -290,7 +290,7 @@ type, this is just an abstract/rigid type variable: `Constr
 
 
 
-  $ minihell $FLAGS poly1.test
+  $ minihell $FLAGS poly_use.test
   Input term:
     let id = lambda x. x in
       lambda a. lambda b. let l = id a in let r = id b in (l, r)
@@ -337,7 +337,7 @@ type, this is just an abstract/rigid type variable: `Constr
 
 
 
-  $ minihell $FLAGS poly2.test
+  $ minihell $FLAGS poly_annot_use.test
   Input term:
     let id = lambda x. x in
       lambda
