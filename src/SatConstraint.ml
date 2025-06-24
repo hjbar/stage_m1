@@ -13,6 +13,13 @@ module Make (T : Utils.Functor) = struct
     | False
     | Do of sat_constraint T.t
 
+  type sat_cont_frame =
+    | KConj1 of sat_constraint
+    | KConj2
+    | KExist of variable
+
+  type sat_cont = sat_cont_frame list
+
   let rec erase : type a e. (a, e) Constraint.t -> sat_constraint = function
     | Exist (v, c, s) -> Exist (v, c, erase s)
     | Loc (loc, c) -> Loc (loc, erase c)
@@ -20,7 +27,7 @@ module Make (T : Utils.Functor) = struct
     | MapErr (c, _) -> erase c
     | Ret _v -> Conj []
     | Err _e -> False
-    | Conj (_, _) as conj ->
+    | Conj (_, _) as conj -> begin
       let rec peel : type a e. (a, e) Constraint.t -> sat_constraint list =
         function
         | Loc (_loc, c) -> peel c
@@ -34,12 +41,30 @@ module Make (T : Utils.Functor) = struct
         | Decode _ as c -> [ erase c ]
         | Do _ as c -> [ erase c ]
       in
-      begin
-        match peel conj with
-        | [ c ] -> c
-        | cases -> Conj cases
-      end
+      match peel conj with
+      | [ c ] -> c
+      | cases -> Conj cases
+    end
     | Eq (v1, v2) -> Eq (v1, v2)
     | Decode v -> Decode v
     | Do c -> Do (T.map erase c)
+
+
+  let erase_cont_frame : type a1 e1 a2 e2.
+    (a1, e1, a2, e2) Constraint.cont_frame -> sat_cont_frame option = function
+    | KMap _ -> None
+    | KMapErr _ -> None
+    | KConj1 c -> Some (KConj1 (erase c))
+    | KConj2 _v -> Some KConj2
+    | KExist v -> Some (KExist v)
+
+
+  let rec erase_cont : type a1 e1 a e.
+    (a1, e1, a, e) Constraint.cont -> sat_cont = function
+    | Done -> []
+    | Next ((_loc, frame), rest) ->
+      ( match erase_cont_frame frame with
+      | None -> []
+      | Some frame -> [ frame ] )
+      @ erase_cont rest
 end

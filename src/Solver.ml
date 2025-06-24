@@ -7,21 +7,28 @@
 module Make (T : Utils.Functor) = struct
   module Constraint = Constraint.Make (T)
   module SatConstraint = SatConstraint.Make (T)
-  module ConstraintSimplifier = ConstraintSimplifier.Make (T)
   module ConstraintPrinter = ConstraintPrinter.Make (T)
 
   type env = Unif.Env.t
 
   type log = PPrint.document list
 
-  let do_log c0 =
-    let c0_erased = SatConstraint.erase c0 in
-    fun env ->
-      c0_erased
-      |> ConstraintSimplifier.simplify env
-      |> ConstraintPrinter.print_sat_constraint
-      |> Utils.string_of_doc
-      |> prerr_endline
+  let do_log ~dir env c k =
+    let open PPrint in
+    let env = Unif.Env.debug_env env in
+    let dir =
+      match dir with
+      | `Init -> "--"
+      | `Enter -> "->"
+      | `Continue -> "<-"
+    in
+
+    nest 2
+      ( string dir
+      ^^ space
+      ^^ ConstraintPrinter.print_constraint_in_context ~env c k )
+    |> Utils.string_of_doc
+    |> print_endline
 
 
   (** See [../README.md] ("High-level description") or [Solver.mli] for a
@@ -34,7 +41,9 @@ module Make (T : Utils.Functor) = struct
 
   let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t) :
     (a, e) normal_constraint =
-    let add_to_log = if log || Debug.debug then do_log c0 else ignore in
+    let add_to_log ~dir env c k =
+      if log || Debug.debug then do_log ~dir env c k
+    in
 
     let exception Located of Utils.loc * exn * Printexc.raw_backtrace in
     let locate_exn loc exn =
@@ -55,6 +64,7 @@ module Make (T : Utils.Functor) = struct
       (a1, e1, a, e) Constraint.cont ->
       (a, e) normal_constraint =
      fun env (loco, c) k ->
+      let add_to_log = add_to_log ~dir:`Enter in
       match c with
       | Loc (loc, c) -> eval env (Some loc, c) k
       | Ret v -> continue env (Ok v) k
@@ -65,7 +75,7 @@ module Make (T : Utils.Functor) = struct
       | Eq (x1, x2) -> begin
         match at_loc loco @@ fun () -> Unif.unify env x1 x2 with
         | Ok env ->
-          add_to_log env;
+          add_to_log env c k;
           continue env (Ok (fun _sol -> ())) k
         | Error (Cycle cy) -> continue env (Error (loco, Constraint.Cycle cy)) k
         | Error (Clash (y1, y2)) ->
@@ -77,7 +87,7 @@ module Make (T : Utils.Functor) = struct
       end
       | Exist (x, s, c) ->
         let env = Unif.Env.add x s env in
-        add_to_log env;
+        add_to_log env c k;
         eval env (loco, c) (Next ((loco, KExist x), k))
       | Decode v ->
         continue env (Ok (fun sol -> at_loc loco @@ fun () -> sol v)) k
@@ -122,8 +132,9 @@ module Make (T : Utils.Functor) = struct
       end
     in
 
+    let dir = `Init in
     let k0 = Constraint.Done in
-    add_to_log env;
+    add_to_log ~dir env c0 k0;
 
     match eval env (None, c0) k0 with
     | exception Located (loc, exn, bt) ->

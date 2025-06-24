@@ -97,6 +97,15 @@ let decode v = group @@
 
 let do_ = string "do?"
 
+(** hole {$env} $c *)
+let hole ~env c =
+  group
+    begin
+      group (string "hole" ^^ break 1 ^^ group (surround 2 0 lbrace env rbrace))
+      ^^ break 1
+      ^^ group (surround 2 0 lparen c rparen)
+    end
+
 (**
    $ty1
 incompatible with

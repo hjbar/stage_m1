@@ -153,43 +153,133 @@ the inference variables.
       ∧ decode ?final_type
   
   Constraint solving log:
-  ∃?final_type.
-    decode ?final_type
-    ∧ (∃?x ?wt (?warr = ?x -> ?wt).
-      (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-      ∧ decode ?x
-      ∧ ?final_type = ?warr)
-  ∃?final_type.
-    decode ?final_type
-    ∧ (∃?x ?wt (?warr = ?x -> ?wt).
-      (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-      ∧ decode ?x
-      ∧ ?final_type = ?warr)
-  ∃?x ?final_type.
-    decode ?final_type
-    ∧ (∃?wt (?warr = ?x -> ?wt).
-      (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-      ∧ decode ?x
-      ∧ ?final_type = ?warr)
-  ∃?x ?wt ?final_type.
-    decode ?final_type
-    ∧ (∃(?warr = ?x -> ?wt).
-      (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-      ∧ decode ?x
-      ∧ ?final_type = ?warr)
-  ∃?x ?wt (?warr = ?x -> ?wt) ?final_type.
-    decode ?final_type
-    ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-    ∧ decode ?x
-    ∧ ?final_type = ?warr
-  ∃?x ?wt (?final_type = ?x -> ?wt).
-    decode ?final_type ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x) ∧ decode ?x
-  ∃?x ?wt (?int = int) (?final_type = ?x -> ?wt).
-    decode ?final_type ∧ ?int = ?wt ∧ ?int = ?x ∧ decode ?x
-  ∃?wt (?int = int) (?final_type = ?int -> ?wt).
-    decode ?final_type ∧ ?int = ?wt ∧ decode ?int
-  ∃(?int = int) (?final_type = ?int -> ?int).
-    decode ?final_type ∧ decode ?int
+  -- hole {}
+    (
+      ∃?final_type.
+        (∃?x ?wt (?warr = ?x -> ?wt).
+          ?final_type = ?warr
+          ∧ decode ?x
+          ∧ (∃(?int = int). ?int = ?x ∧ ?int = ?wt))
+        ∧ decode ?final_type
+    )
+  -> hole {final_type }
+    (
+      ∃.
+        (∃?x ?wt (?warr = ?x -> ?wt).
+          ?final_type = ?warr
+          ∧ decode ?x
+          ∧ (∃(?int = int). ?int = ?x ∧ ?int = ?wt))
+        ∧ decode ?final_type
+    )
+  -> ∃?final_type.
+      hole
+      {
+        final_type
+        x
+      }
+      (
+        ∃?wt (?warr = ?x -> ?wt).
+          ?final_type = ?warr
+          ∧ decode ?x
+          ∧ (∃(?int = int). ?int = ?x ∧ ?int = ?wt)
+      )
+    ∧ ∃. decode ?final_type
+  -> ∃?x.
+      ∃?final_type.
+        hole
+        {
+          final_type
+          wt
+          x
+        }
+        (
+          ∃(?warr = ?x -> ?wt).
+            ?final_type = ?warr
+            ∧ decode ?x
+            ∧ (∃(?int = int). ?int = ?x ∧ ?int = ?wt)
+        )
+      ∧ ∃. decode ?final_type
+  -> ∃?wt.
+      ∃?x.
+        ∃?final_type.
+          hole
+          {
+            final_type
+            warr = x -> wt
+            wt
+            x
+          }
+          (
+            ∃.
+              ?final_type = ?warr
+              ∧ decode ?x
+              ∧ (∃(?int = int). ?int = ?x ∧ ?int = ?wt)
+          )
+        ∧ ∃. decode ?final_type
+  -> ∃?warr.
+      ∃?wt.
+        ∃?x.
+          ∃?final_type.
+            hole
+            {
+              final_type = x -> wt
+              warr |--> final_type
+              wt
+              x
+            }
+            (∃. ?final_type = ?warr)
+          ∧ ∃. decode ?final_type
+    ∧ ∃(?int = int). ?int = ?x ∧ ?int = ?wt
+    ∧ ∃. decode ?x
+  -> ⊤
+    ∧ ∃?warr.
+      ∃?wt.
+        ∃?x.
+          ∃?final_type.
+            hole
+            {
+              final_type = x -> wt
+              int = int
+              warr |--> final_type
+              wt
+              x
+            }
+            (∃. ?int = ?x ∧ ?int = ?wt)
+          ∧ ∃. decode ?final_type
+  -> ∃?int.
+      ⊤
+      ∧ ∃?warr.
+        ∃?wt.
+          ∃?x.
+            ∃?final_type.
+              hole
+              {
+                final_type = int -> wt
+                int = int
+                warr |--> final_type
+                wt
+                x |--> int
+              }
+              (∃. ?int = ?x)
+            ∧ ∃. decode ?final_type
+    ∧ ∃. ?int = ?wt
+  -> ⊤
+    ∧ ∃?int.
+      ⊤
+      ∧ ∃?warr.
+        ∃?wt.
+          ∃?x.
+            ∃?final_type.
+              hole
+              {
+                final_type = int -> int
+                int = int
+                warr |--> final_type
+                wt |--> int
+                x |--> int
+              }
+              (∃. ?int = ?wt)
+            ∧ ∃. decode ?final_type
   
   Inferred type:
     int -> int
@@ -217,7 +307,6 @@ the inference variables.
       ∧ decode ?final_type
   
   File "error.test", line 1, characters 23-34:
-  
   Error:
       int
     incompatible with
@@ -315,50 +404,137 @@ a lot of those.)
       ∧ decode ?final_type
   
   Constraint solving log:
-  ∃?final_type.
-    decode ?final_type
-    ∧ (∃?x ?wt (?warr = ?x -> ?wt).
-      (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-      ∧ decode ?x
-      ∧ ?final_type = ?warr)
-  ∃?final_type.
-    decode ?final_type
-    ∧ (∃?x ?wt (?warr = ?x -> ?wt).
-      (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-      ∧ decode ?x
-      ∧ ?final_type = ?warr)
-  ∃?x ?final_type.
-    decode ?final_type
-    ∧ (∃?wt (?warr = ?x -> ?wt).
-      (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-      ∧ decode ?x
-      ∧ ?final_type = ?warr)
-  ∃?x ?wt ?final_type.
-    decode ?final_type
-    ∧ (∃(?warr = ?x -> ?wt).
-      (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-      ∧ decode ?x
-      ∧ ?final_type = ?warr)
-  ∃?x ?wt (?warr = ?x -> ?wt) ?final_type.
-    decode ?final_type
-    ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-    ∧ decode ?x
-    ∧ ?final_type = ?warr
-  ∃?x ?wt (?final_type = ?x -> ?wt).
-    decode ?final_type
-    ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-    ∧ decode ?x
-  ∃?x ?wu ?wt (?final_type = ?x -> ?wt).
-    decode ?final_type
-    ∧ (∃(?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-    ∧ decode ?x
-  ∃?wu ?wt (?wt/1 = ?wu -> ?wt) ?x ?wu ?wt (?final_type = ?x -> ?wt).
-    decode ?final_type ∧ ?wu = ?x ∧ ?wt/1 = ?x ∧ decode ?x
-  ∃?wu ?wt (?wt/1 = ?wu -> ?wt) ?wt (?final_type = ?wt/1 -> ?wt).
-    decode ?final_type ∧ ⊥ ∧ decode ?wt/1
+  -- hole {}
+    (
+      ∃?final_type.
+        (∃?x ?wt (?warr = ?x -> ?wt).
+          ?final_type = ?warr
+          ∧ decode ?x
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x))
+        ∧ decode ?final_type
+    )
+  -> hole {final_type }
+    (
+      ∃.
+        (∃?x ?wt (?warr = ?x -> ?wt).
+          ?final_type = ?warr
+          ∧ decode ?x
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x))
+        ∧ decode ?final_type
+    )
+  -> ∃?final_type.
+      hole
+      {
+        final_type
+        x
+      }
+      (
+        ∃?wt (?warr = ?x -> ?wt).
+          ?final_type = ?warr
+          ∧ decode ?x
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
+      )
+    ∧ ∃. decode ?final_type
+  -> ∃?x.
+      ∃?final_type.
+        hole
+        {
+          final_type
+          wt
+          x
+        }
+        (
+          ∃(?warr = ?x -> ?wt).
+            ?final_type = ?warr
+            ∧ decode ?x
+            ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
+        )
+      ∧ ∃. decode ?final_type
+  -> ∃?wt.
+      ∃?x.
+        ∃?final_type.
+          hole
+          {
+            final_type
+            warr = x -> wt
+            wt
+            x
+          }
+          (
+            ∃.
+              ?final_type = ?warr
+              ∧ decode ?x
+              ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
+          )
+        ∧ ∃. decode ?final_type
+  -> ∃?warr.
+      ∃?wt.
+        ∃?x.
+          ∃?final_type.
+            hole
+            {
+              final_type = x -> wt
+              warr |--> final_type
+              wt
+              x
+            }
+            (∃. ?final_type = ?warr)
+          ∧ ∃. decode ?final_type
+    ∧ ∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x
+    ∧ ∃. decode ?x
+  -> ⊤
+    ∧ ∃?warr.
+      ∃?wt.
+        ∃?x.
+          ∃?final_type.
+            hole
+            {
+              final_type = x -> wt
+              warr |--> final_type
+              wt
+              wu
+              x
+            }
+            (∃(?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
+          ∧ ∃. decode ?final_type
+  -> ∃?wu.
+      ⊤
+      ∧ ∃?warr.
+        ∃?wt.
+          ∃?x.
+            ∃?final_type.
+              hole
+              {
+                final_type = x -> wt
+                warr |--> final_type
+                wt
+                wu
+                x
+                wt/1 = wu -> wt
+              }
+              (∃. ?wt/1 = ?x ∧ ?wu = ?x)
+            ∧ ∃. decode ?final_type
+  -> ∃?wt/1.
+      ∃?wu.
+        ⊤
+        ∧ ∃?warr.
+          ∃?wt.
+            ∃?x.
+              ∃?final_type.
+                hole
+                {
+                  final_type = wt/1 -> wt
+                  warr |--> final_type
+                  wt
+                  wu
+                  x |--> wt/1
+                  wt/1 = wu -> wt
+                }
+                (∃. ?wt/1 = ?x)
+              ∧ ∃. decode ?final_type
+    ∧ ∃. ?wu = ?x
   
   File "selfapp.test", line 1, characters 0-13:
-  
   Error:
     cycle on constraint variable
     ?wu
