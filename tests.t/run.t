@@ -40,7 +40,7 @@ the output corresponds to the output recorded in the file.
 To run the tests, just run `dune runtest` at the root of the
 project. This will show you a diff between the observed
 output and the recorded output of the test -- we consider
-that the test 'passes' if the diff is empty.  
+that the test 'passes' if the diff is empty.
 In particular, if you run `dune runtest` and you see no
 output, this is good! It means there was no change in the
 test output.
@@ -104,6 +104,7 @@ to the bin/dune content.)
     lambda (x : α). x
   
 
+
 `id_int` is the monomorphic identity on the type `int`. Note
 that we have not implemented support for a built-in `int`
 type, this is just an abstract/rigid type variable: `Constr
@@ -127,6 +128,7 @@ type, this is just an abstract/rigid type variable: `Constr
   Elaborated term:
     lambda (x : int). x
   
+
 
 ## Logging the constraint-solving process
 
@@ -192,6 +194,7 @@ the inference variables.
     lambda (x : int). x
   
 
+
 ## An erroneous program
 
   $ minihell $FLAGS error.test
@@ -212,6 +215,7 @@ the inference variables.
     incompatible with
       β -> α
   
+
 
 ## Examples with products
 
@@ -244,6 +248,7 @@ the inference variables.
     lambda (f : {γ * β} -> α). lambda (x : γ). lambda (y : β). f (x, y)
   
 
+
   $ minihell $FLAGS uncurry.test
   Input term:
     lambda f. lambda p. let (x, y) = p in f x y
@@ -273,6 +278,7 @@ the inference variables.
     (f : β -> γ -> α).
       lambda (p : {β * γ}). let ((x : β), (y : γ)) = p in f x y
   
+
 ## Cyclic types
 
 Unification can sometimes create cyclic types. We decide to reject
@@ -341,12 +347,16 @@ a lot of those.)
     cycle on constraint variable
     ?wu
   
+
 ## Generator tests
 
 This gives example outputs for my implementation. It is completely
 fine if your own implementation produces different (sensible) results.
 
 There are not many programs with size 3, 4 and 5.
+
+  $ minigen --search exhaustive --size 2 --count 100
+  lambda (z/3 : α/1). z/3
 
   $ minigen --search exhaustive --size 3 --count 100
   lambda (x/11 : γ/4). lambda (y/15 : β/4). x/11
