@@ -8,12 +8,10 @@ module Make (T : Utils.Functor) : sig
 
   type 'a constraint_ = ('a, err) Constraint.t
 
-  val eq : Constraint.variable -> Constraint.variable -> unit constraint_
-
-  val decode : Constraint.variable -> STLC.ty constraint_
-
   type env = Constraint.variable Untyped.Var.Map.t
 
   val has_type :
     env -> Untyped.term -> Constraint.variable -> STLC.term constraint_
+
+  val exist_wrapper : Untyped.term -> (STLC.term * STLC.ty, err) Constraint.t
 end

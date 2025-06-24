@@ -9,9 +9,10 @@ module Make (M : Utils.MonadPlus) : sig
 
   val cut_size : size:int -> Untyped.term -> Untyped.term
 
-  val constraint_ : Untyped.term -> (STLC.term, Infer.err) Constraint.t
+  val constraint_ :
+    Untyped.term -> (STLC.term * STLC.ty, Infer.err) Constraint.t
 
-  val typed_cut_early : size:int -> Untyped.term -> STLC.term M.t
+  val typed_cut_early : size:int -> Untyped.term -> (STLC.term * STLC.ty) M.t
 
-  val typed_cut_late : size:int -> Untyped.term -> STLC.term M.t
+  val typed_cut_late : size:int -> Untyped.term -> (STLC.term * STLC.ty) M.t
 end

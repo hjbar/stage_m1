@@ -136,12 +136,11 @@ module Make (M : Utils.MonadPlus) = struct
       | Loc (loc, t) -> un ~size t @@ fun t' -> Loc (loc, t')
 
 
-  let constraint_ untyped : (STLC.term, Infer.err) Constraint.t =
-    let w = Constraint.Var.fresh "final_type" in
-    Constraint.(Exist (w, None, Infer.has_type Untyped.Var.Map.empty untyped w))
+  let constraint_ untyped : (STLC.term * STLC.ty, Infer.err) Constraint.t =
+    Infer.exist_wrapper untyped
 
 
-  let typed_cut_early ~size untyped : STLC.term M.t =
+  let typed_cut_early ~size untyped : (STLC.term * STLC.ty) M.t =
     let open struct type env = Solver.env end in
     let rec loop : type a e. env -> (a, e) Constraint.t -> a M.t =
      fun env cstr ->
@@ -156,7 +155,7 @@ module Make (M : Utils.MonadPlus) = struct
     untyped |> cut_size ~size |> constraint_ |> loop Unif.Env.empty
 
 
-  let typed_cut_late ~size untyped : STLC.term M.t =
+  let typed_cut_late ~size untyped : (STLC.term * STLC.ty) M.t =
     let open struct type env = Solver.env end in
     let rec loop : type a e. fuel:int -> env -> (a, e) Constraint.t -> a M.t =
      fun ~fuel env cstr ->

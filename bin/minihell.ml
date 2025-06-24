@@ -55,14 +55,7 @@ let call_parser ~config parser_fun input_path =
 
 
 let call_typer ~config (term : Untyped.term) =
-  let cst =
-    let w = Constraint.Var.fresh "final_type" in
-    Constraint.(
-      Exist
-        ( w,
-          None,
-          Conj (Infer.has_type Untyped.Var.Map.empty term w, Infer.decode w) ) )
-  in
+  let cst = Infer.exist_wrapper term in
   if config.show_constraint then
     print_section "Generated constraint"
       (ConstraintPrinter.print_constraint cst);

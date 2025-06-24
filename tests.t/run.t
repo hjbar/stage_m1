@@ -73,7 +73,7 @@ output here more pleasant to read) and to show the generated
 constraint. It will also show the result type and the
 elaborated term.
 
-  $ FLAGS="--show-source --show-constraint"
+  $ FLAGS="--show-source --show-constraint --show-type --show-typed-term"
 
 Remark: You can call minihell from the command-line yourself
 by using either
@@ -105,6 +105,7 @@ to the bin/dune content.)
   
 
 
+
 `id_int` is the monomorphic identity on the type `int`. Note
 that we have not implemented support for a built-in `int`
 type, this is just an abstract/rigid type variable: `Constr
@@ -128,6 +129,7 @@ type, this is just an abstract/rigid type variable: `Constr
   Elaborated term:
     lambda (x : int). x
   
+
 
 
 ## Logging the constraint-solving process
@@ -195,6 +197,7 @@ the inference variables.
   
 
 
+
 ## An erroneous program
 
   $ minihell $FLAGS error.test
@@ -215,6 +218,7 @@ the inference variables.
     incompatible with
       β -> α
   
+
 
 
 ## Examples with products
@@ -249,6 +253,7 @@ the inference variables.
   
 
 
+
   $ minihell $FLAGS uncurry.test
   Input term:
     lambda f. lambda p. let (x, y) = p in f x y
@@ -278,6 +283,7 @@ the inference variables.
     (f : β -> γ -> α).
       lambda (p : {β * γ}). let ((x : β), (y : γ)) = p in f x y
   
+
 
 ## Cyclic types
 
@@ -348,6 +354,7 @@ a lot of those.)
     ?wu
   
 
+
 ## Generator tests
 
 This gives example outputs for my implementation. It is completely
@@ -355,70 +362,136 @@ fine if your own implementation produces different (sensible) results.
 
 There are not many programs with size 3, 4 and 5.
 
-  $ minigen --search exhaustive --size 2 --count 100
+  $ minigen --search exhaustive --types --size 2 --count 100
   lambda (z/3 : α/1). z/3
+  
+  Inferred type : α/1 -> α/1
 
-  $ minigen --search exhaustive --size 3 --count 100
-  lambda (x/11 : γ/4). lambda (y/15 : β/4). x/11
+  $ minigen --search exhaustive --types --size 3 --count 100
+  lambda (x/11 : β/4). lambda (y/15 : γ/4). x/11
+  
+  Inferred type : β/4 -> γ/4 -> β/4
+  
+  
   
   lambda (x/11 : α/5). lambda (y/15 : δ/4). y/15
+  
+  Inferred type : α/5 -> δ/4 -> δ/4
 
-  $ minigen --search exhaustive --size 4 --count 100
+  $ minigen --search exhaustive --types --size 4 --count 100
   lambda
-  (v/4e : δ/11). lambda (u/65 : γ/11). lambda (z/6a : β/11). v/4e
+  (v/4e : β/11). lambda (u/65 : δ/11). lambda (z/6a : γ/11). v/4e
+  
+  Inferred type : β/11 -> δ/11 -> γ/11 -> β/11
+  
+  
   
   lambda
-  (v/4e : γ/12). lambda (u/65 : β/12). lambda (z/6a : α/12). u/65
+  (v/4e : γ/12). lambda (u/65 : α/12). lambda (z/6a : β/12). u/65
+  
+  Inferred type : γ/12 -> α/12 -> β/12 -> α/12
+  
+  
   
   lambda
   (v/4e : β/13). lambda (u/65 : α/13). lambda (z/6a : δ/12). z/6a
   
+  Inferred type : β/13 -> α/13 -> δ/12 -> δ/12
+  
+  
+  
   lambda (v/4e : γ/14). let (z/7e : γ/14) = v/4e in v/4e
+  
+  Inferred type : γ/14 -> γ/14
+  
+  
   
   lambda (v/4e : δ/14). let (z/7e : δ/14) = v/4e in z/7e
   
+  Inferred type : δ/14 -> δ/14
+  
+  
+  
   lambda (v/4e : α/17). (v/4e, v/4e)
   
+  Inferred type : α/17 -> {α/17 * α/17}
+  
+  
+  
   lambda
-  (v/4e : {γ/19 * β/19}).
-    let ((y/b6 : γ/19), (z/b5 : β/19)) = v/4e in v/4e
+  (v/4e : {β/19 * γ/19}).
+    let ((y/b6 : β/19), (z/b5 : γ/19)) = v/4e in v/4e
+  
+  Inferred type : {β/19 * γ/19} -> {β/19 * γ/19}
+  
+  
   
   lambda
   (v/4e : {α/1a * δ/19}).
     let ((y/b6 : α/1a), (z/b5 : δ/19)) = v/4e in z/b5
   
+  Inferred type : {α/1a * δ/19} -> δ/19
+  
+  
+  
   lambda
-  (v/4e : {γ/1a * β/1a}).
-    let ((y/b6 : γ/1a), (z/b5 : β/1a)) = v/4e in y/b6
+  (v/4e : {β/1a * γ/1a}).
+    let ((y/b6 : β/1a), (z/b5 : γ/1a)) = v/4e in y/b6
+  
+  Inferred type : {β/1a * γ/1a} -> β/1a
+  
+  
   
   let (u/cb : β/21 -> β/21) = lambda (v/db : β/21). v/db in u/cb
+  
+  Inferred type : β/21 -> β/21
 
 An example of random sampling output at higher size.
 
-  $ minigen --seed 42 --size 6 --count 10
+  $ minigen --seed 42 --types --size 6 --count 10
   lambda
   (v/5 : δ/16c).
     lambda
-    (u/6 : {β/16c * α/16c}).
+    (u/6 : {β/16c * γ/16c}).
       lambda
-      (w/71 : γ/16c). let ((z/284 : β/16c), (u/284 : α/16c)) = u/6 in w/71
+      (w/71 : α/16c). let ((z/284 : β/16c), (u/284 : γ/16c)) = u/6 in w/71
+  
+  Inferred type : δ/16c -> {β/16c * γ/16c} -> α/16c -> α/16c
+  
+  
   
   lambda
   (v/5 : β/1de).
     (lambda (x/336 : α/1de). lambda (y/336 : δ/1dd). y/336, v/5)
   
+  Inferred type : β/1de -> {α/1de -> δ/1dd -> δ/1dd * β/1de}
+  
+  
+  
   lambda
   (v/5 : β/271). let (v/18 : {β/271 * β/271}) = (v/5, v/5) in v/18
   
+  Inferred type : β/271 -> {β/271 * β/271}
+  
+  
+  
   lambda
-  (v/5 : {{α/27a * δ/279} * β/27a}).
+  (v/5 : {{δ/279 * α/27a} * β/27a}).
     let
-    ((v/43e : {α/27a * δ/279}), (w/43e : β/27a))
+    ((v/43e : {δ/279 * α/27a}), (w/43e : β/27a))
     =
     v/5
-    in let ((x/440 : α/27a), (y/440 : δ/279)) = v/43e in x/440
+    in let ((x/440 : δ/279), (y/440 : α/27a)) = v/43e in x/440
+  
+  Inferred type : {{δ/279 * α/27a} * β/27a} -> δ/279
+  
+  
   
   lambda (v/5 : β/2a5). ((v/5, v/5), v/5)
+  
+  Inferred type : β/2a5 -> {{β/2a5 * β/2a5} * β/2a5}
+  
+  
   
   let
   (x/1 : α/2ba -> γ/2b9 -> δ/2b9 -> γ/2b9)
@@ -427,19 +500,35 @@ An example of random sampling output at higher size.
   (x/2f : α/2ba). lambda (y/2f : γ/2b9). lambda (y/15d : δ/2b9). y/2f
   in x/1
   
+  Inferred type : α/2ba -> γ/2b9 -> δ/2b9 -> γ/2b9
+  
+  
+  
   (lambda (z/f : α/403 -> δ/402 -> δ/402). z/f)
     (lambda (v/26 : α/403). lambda (y/1bc : δ/402). y/1bc)
+  
+  Inferred type : α/403 -> δ/402 -> δ/402
+  
+  
   
   lambda
   (v/5 : β/4f4). let (v/18 : {β/4f4 * β/4f4}) = (v/5, v/5) in v/5
   
+  Inferred type : β/4f4 -> β/4f4
+  
+  
+  
   lambda
-  (v/5 : δ/523).
+  (v/5 : α/523).
     lambda
-    (u/6 : γ/523).
+    (u/6 : δ/523).
       lambda
-      (w/71 : {β/523 * α/523}).
-        let ((z/88d : β/523), (u/88d : α/523)) = w/71 in v/5
+      (w/71 : {β/523 * γ/523}).
+        let ((z/88d : β/523), (u/88d : γ/523)) = w/71 in v/5
+  
+  Inferred type : α/523 -> δ/523 -> {β/523 * γ/523} -> α/523
+  
+  
   
   lambda
   (v/5 : {α/59a * β/59a}).
@@ -448,3 +537,5 @@ An example of random sampling output at higher size.
     =
     let ((z/93d : α/59a), (u/93d : β/59a)) = v/5 in v/5
     in v/18
+  
+  Inferred type : {α/59a * β/59a} -> {α/59a * β/59a}

@@ -207,4 +207,13 @@ module Make (T : Utils.Functor) = struct
             in
             STLC.LetTuple (bindings, t', u') ) )
     | Do p -> Do (T.map (fun t -> has_type env t w) p)
+
+
+  (** Transform a given program we want to type into a constraint, using a
+      exist-constraint as a wrapper *)
+  let exist_wrapper (term : Untyped.term) :
+    (STLC.term * STLC.ty, err) Constraint.t =
+    let open Constraint in
+    let w = Var.fresh "final_type" in
+    Exist (w, None, Conj (has_type Untyped.Var.Map.empty term w, decode w))
 end

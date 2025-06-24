@@ -43,6 +43,7 @@ end
 let pp_dict_val dict ppf v = Printf.fprintf ppf "%s" (Dict.find_key dict v)
 
 type config = {
+  types : bool;
   untyped_impl : untyped_impl;
   size : int;
   size_impl : size_impl;
@@ -58,11 +59,13 @@ let pp_config ppf config =
     | None -> Printf.fprintf ppf "None"
     | Some v -> Printf.fprintf ppf "Some %a" pp v
   in
+  let pp_bool ppf = Printf.fprintf ppf "%b" in
   let pp_int ppf = Printf.fprintf ppf "%d" in
   let pp_string ppf = Printf.fprintf ppf "%S" in
   begin[@ocamlformat "disable"]
     Printf.fprintf ppf
-      "{ untyped_impl = %a;\n\
+      "{ types = %a;\n\
+      \  untyped_impl = %a;\n\
       \  size = %a;\n\
       \  size_impl = %a;\n\
       \  search_impl = %a;\n\
@@ -70,6 +73,7 @@ let pp_config ppf config =
       \  seed = %a;\n\
       \  benchmark = %a;\n\
       \  msg = %a; }\n"
+      pp_bool config.types
       (pp_dict_val untyped_impl_dict) config.untyped_impl
       pp_int config.size
       (pp_dict_val size_impl_dict) config.size_impl
@@ -98,6 +102,7 @@ let arg_from_dict ~option ~doc dict ref : Arg.key * Arg.spec * Arg.doc =
 
 
 let config =
+  let types = ref false in
   let untyped_impl = ref Gasche in
   let size = ref 10 in
   let search_impl = ref Naive in
@@ -108,9 +113,11 @@ let config =
   let msg = ref None in
   let fmt fmt_str = Printf.sprintf fmt_str in
   let usage = fmt "Usage: %s [options]" Sys.argv.(0) in
+
   let spec =
     Arg.align
       [
+        ("--types", Arg.Set types, " Display types of terms (optional)");
         arg_from_dict ~option:"--untyped"
           ~doc:"untyped generator implementation" untyped_impl_dict untyped_impl;
         ( "--size",
@@ -136,8 +143,11 @@ let config =
            (optional)" );
       ]
   in
+
   Arg.parse spec (fun s -> raise (Arg.Bad s)) usage;
+
   {
+    types = !types;
     untyped_impl = !untyped_impl;
     size = !size;
     size_impl = !size_impl;
@@ -192,17 +202,31 @@ let generate config (module M : SearchImpl) =
   untyped |> typed ~size:config.size |> M.run
 
 
+let produce_doc_of_term config (term, ty) =
+  let term_doc = STLCPrinter.print_term term in
+
+  match config.types with
+  | false -> term_doc
+  | true ->
+    let open PPrint in
+    term_doc
+    ^^ hardline
+    ^^ hardline
+    ^^ string "Inferred type : "
+    ^^ STLCPrinter.print_ty ty
+
+
 let produce_terms config =
   get_search_impl config
   |> generate config
   |> Seq.take config.count
-  |> Seq.map STLCPrinter.print_term
+  |> Seq.map (produce_doc_of_term config)
   |> List.of_seq
 
 
 let run_display config =
   produce_terms config
-  |> PPrint.(separate (hardline ^^ hardline))
+  |> PPrint.(separate (hardline ^^ hardline ^^ hardline ^^ hardline))
   |> Utils.string_of_doc
   |> print_endline
 
