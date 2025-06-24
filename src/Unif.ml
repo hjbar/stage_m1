@@ -10,13 +10,35 @@ type var = Constraint.variable
 
 type structure = var Structure.t option
 
-(* The internal representation in terms of union-find nodes. *)
+(* Status type *)
+
+type status =
+  | Flexible
+  | Generic
+
+(* Rank type *)
+
+type rank = int
+
+let base_rank = 0
+
+(* Pool type *)
+
+type pool = var list
+
+module RankMap = Map.Make (Int)
+
+type pools = pool RankMap.t
+
+(* Internal representation using union-find nodes. *)
 type uvar = unode UF.rref
 
 (* Data associated with a variable *)
 and unode = {
   var : var;
   data : uvar Structure.t option;
+  status : status;
+  rank : rank;
 }
 
 (* The user-facing representation hides union-find nodes,
@@ -25,6 +47,8 @@ and unode = {
 type repr = {
   var : var;
   structure : structure;
+  status : status;
+  rank : rank;
 }
 
 (* Environment module implementation *)
@@ -35,6 +59,8 @@ module Env = struct
   type t = {
     store : unode UF.store;
     map : uvar Constraint.Var.Map.t;
+    pools : pools;
+    young : rank;
   }
 
   (* Empty environment *)
@@ -42,7 +68,9 @@ module Env = struct
   let empty () =
     let store = UF.new_store () in
     let map = Constraint.Var.Map.empty in
-    { store; map }
+    let pools = RankMap.empty in
+    let young = base_rank - 1 in
+    { store; map; pools; young }
 
 
   (* Membership test functions *)
@@ -54,18 +82,116 @@ module Env = struct
   let uvar var env = Constraint.Var.Map.find var env.map
 
   let repr var env =
-    let { var; data } = UF.get env.store (uvar var env) in
+    let { var; data; status; rank } = UF.get env.store (uvar var env) in
     let var_of_uvar uv = (UF.get env.store uv).var in
     let structure = Option.map (Structure.map var_of_uvar) data in
-    { var; structure }
+
+    { var; structure; status; rank }
 
 
-  (* Functions to add variables to the environment *)
+  let get_young env = env.young
 
-  let add var structure env =
-    let data = Option.map (Structure.map (fun v -> uvar v env)) structure in
-    let uvar = UF.make env.store { var; data } in
-    { env with map = Constraint.Var.Map.add var uvar env.map }
+  let get_pool rank env =
+    Option.value ~default:[] @@ RankMap.find_opt rank env.pools
+
+
+  (* Conversion functions *)
+
+  let unode_of_repr repr env =
+    let var = repr.var in
+    let data =
+      Option.map (Structure.map (fun v -> uvar v env)) repr.structure
+    in
+    let status = repr.status in
+    let rank = repr.rank in
+
+    { var; data; status; rank }
+
+
+  (* Functions to add or register variables to the environment *)
+
+  let add repr env =
+    let var = repr.var in
+    let unode = unode_of_repr repr env in
+
+    assert (not (Constraint.Var.Map.mem var env.map));
+
+    let uvar = UF.make env.store unode in
+    let map = Constraint.Var.Map.add var uvar env.map in
+
+    { env with map }
+
+
+  let register var ~rank env =
+    let pools =
+      RankMap.update rank
+        (fun pool -> Some (var :: Option.value ~default:[] pool))
+        env.pools
+    in
+    { env with pools }
+
+
+  let add_flexible var structure env =
+    let status = Flexible in
+    let rank = env.young in
+
+    env |> add { var; structure; status; rank } |> register var ~rank
+
+
+  (* Functions to remove variables from the environment *)
+
+  let unbind var env =
+    let map = Constraint.Var.Map.remove var env.map in
+    { env with map }
+
+
+  (* Setter functions *)
+
+  let set repr env =
+    let store = UF.copy env.store in
+    let env = { env with store } in
+
+    let var = repr.var in
+    let unode = unode_of_repr repr env in
+
+    assert (mem var env);
+    let node = uvar var env in
+
+    UF.set env.store node unode;
+    env
+
+
+  (* Functions to manipulate the environment's young rank *)
+
+  let incr_young env =
+    let young = env.young + 1 in
+    { env with young }
+
+
+  let decr_young env =
+    let young = env.young - 1 in
+    { env with young }
+
+
+  (* Functions to manipulate the pools *)
+
+  let pool_k_is_empty rank env =
+    match RankMap.find_opt rank env.pools with
+    | None | Some [] -> true
+    | Some _ -> false
+
+
+  let clean_pool rank env =
+    let pools = RankMap.remove rank env.pools in
+    { env with pools }
+
+
+  (* Functions on representatives *)
+
+  let is_representative var env =
+    match repr var env with
+    | var_repr -> Constraint.Var.eq var var_repr.var
+    | exception Not_found -> true
 
 
   (* Debugging functions *)
@@ -169,6 +295,13 @@ and unify_uvars store (queue : (uvar * uvar) Queue.t) =
 
 and merge queue (n1 : unode) (n2 : unode) : unode =
   let clash () = raise @@ Clash (n1.var, n2.var) in
+  let generic (n : unode) () =
+    Printf.ksprintf invalid_arg
+      "Constraint variable '%s' is generic at this point"
+      (Constraint.Var.name n.var)
+  in
+
+  let var = n1.var in
 
   let data =
     match (n1.data, n2.data) with
@@ -191,7 +324,16 @@ and merge queue (n1 : unode) (n2 : unode) : unode =
     end
   in
 
-  { n1 with data }
+  let status =
+    match (n1.status, n2.status) with
+    | Flexible, Flexible -> Flexible
+    | Generic, _ -> generic n1 ()
+    | _, Generic -> generic n2 ()
+  in
+
+  let rank = min n1.rank n2.rank in
+
+  { var; data; status; rank }
 
 
 let unifiable env v1 v2 =

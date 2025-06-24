@@ -81,7 +81,7 @@ module Make (T : Utils.Functor) = struct
             k
       end
       | Exist (x, s, c) ->
-        let env = Unif.Env.add x s env in
+        let env = Unif.Env.add_flexible x s env in
         add_to_log env c k;
         eval env (loco, c) (Next ((loco, KExist x), k))
       | Decode v ->

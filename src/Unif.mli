@@ -14,6 +14,26 @@ type var = Constraint.variable
 
 type structure = var Structure.t option
 
+(* Status type *)
+
+type status =
+  | Flexible (* Variable not yet generalized *)
+  | Generic (* Variable already generalized *)
+
+(* Rank type *)
+
+type rank = int
+
+val base_rank : int (* The top-level rank *)
+
+(* Pool type *)
+
+type pool = var list
+
+module RankMap : Map.S with type key = rank
+
+type pools = pool RankMap.t
+
 (** [repr] represents all the knowledge so far about an inference variable, or
     rather an equivalence class of inference variables that are equal to each
     other:
@@ -22,6 +42,8 @@ type structure = var Structure.t option
 type repr = {
   var : var;
   structure : structure;
+  status : status;
+  rank : rank;
 }
 
 (* Signature of the Environment module *)
@@ -39,13 +61,45 @@ module Env : sig
 
   val mem : var -> t -> bool
 
-  (* Functions to add variables to the environment *)
+  (* Getter functions for environment data *)
 
-  val add : var -> structure -> t -> t
+  val get_young : t -> rank
+
+  val get_pool : rank -> t -> var list
 
   (** [repr x env] gets the representant of [x] in [env].
       @raise [Not_found] if [x] is not bound in [env]. *)
   val repr : var -> t -> repr
+
+  (* Functions to add or register variables to the environment *)
+
+  val register : var -> rank:int -> t -> t
+
+  val add_flexible : var -> structure -> t -> t
+
+  (* Functions to remove variables from the environment *)
+
+  val unbind : var -> t -> t
+
+  (* Setter functions *)
+
+  val set : repr -> t -> t
+
+  (* Functions to manipulate the environment's young rank *)
+
+  val incr_young : t -> t
+
+  val decr_young : t -> t
+
+  (* Functions to manipulate the pool *)
+
+  val pool_k_is_empty : rank -> t -> bool
+
+  val clean_pool : rank -> t -> t
+
+  (* Functions on representatives *)
+
+  val is_representative : var -> t -> bool
 
   (* Debugging functions *)
 
