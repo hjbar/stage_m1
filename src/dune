@@ -1,9 +1,10 @@
-(include_subdirs unqualified) ;; also look in subdirectories
+(include_subdirs unqualified)
+
+;; also look in subdirectories
 
 (library
-  (name constrained_generation)
-  (public_name constrained_generation)
-  (synopsis "A random program generator based on constraint solving")
-  (libraries unionFind pprint)
-  (wrapped false)
-)
+ (name constrained_generation)
+ (public_name constrained_generation)
+ (synopsis "A random program generator based on constraint solving")
+ (libraries unionFind pprint)
+ (wrapped false))

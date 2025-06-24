@@ -5,12 +5,13 @@
 *)
 
 module Make (T : Utils.Functor) = struct
-  module Constraint = Constraint.Make(T)
-  module SatConstraint = SatConstraint.Make(T)
-  module ConstraintSimplifier = ConstraintSimplifier.Make(T)
-  module ConstraintPrinter = ConstraintPrinter.Make(T)
+  module Constraint = Constraint.Make (T)
+  module SatConstraint = SatConstraint.Make (T)
+  module ConstraintSimplifier = ConstraintSimplifier.Make (T)
+  module ConstraintPrinter = ConstraintPrinter.Make (T)
 
   type env = Unif.Env.t
+
   type log = PPrint.document list
 
   let make_logger c0 =
@@ -24,14 +25,13 @@ module Make (T : Utils.Functor) = struct
       in
       Queue.add doc logs
     in
-    let get_log () =
-      logs |> Queue.to_seq |> List.of_seq
-    in
-    add_to_log, get_log
+    let get_log () = logs |> Queue.to_seq |> List.of_seq in
+    (add_to_log, get_log)
 
-  (** See [../README.md] ("High-level description") or [Solver.mli]
-      for a description of normal constraints and
-      our expectations regarding the [eval] function. *)
+
+  (** See [../README.md] ("High-level description") or [Solver.mli] for a
+      description of normal constraints and our expectations regarding the
+      [eval] function. *)
   type ('a, 'e) normal_constraint =
     | NRet of 'a Constraint.on_sol
     | NErr of 'e
@@ -39,56 +39,68 @@ module Make (T : Utils.Functor) = struct
 
   let normal_pair nc nd =
     let open Constraint in
-    let (let+) nf f = T.map f nf in
-    match nc, nd with
+    let ( let+ ) nf f = T.map f nf in
+    match (nc, nd) with
     | NErr e, _ | _, NErr e -> NErr e
-    | NDo p, NDo q -> NDo (let+ c = p in Conj (c, Do q))
-    | NDo p, NRet w -> NDo (let+ c = p in Conj (c, Ret w))
-    | NRet v, NDo q -> NDo (let+ d = q in Conj (Ret v, d))
+    | NDo p, NDo q ->
+      NDo
+        (let+ c = p in
+         Conj (c, Do q) )
+    | NDo p, NRet w ->
+      NDo
+        (let+ c = p in
+         Conj (c, Ret w) )
+    | NRet v, NDo q ->
+      NDo
+        (let+ d = q in
+         Conj (Ret v, d) )
     | NRet v, NRet w -> NRet (fun sol -> (v sol, w sol))
 
-  let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t)
-    : log * env * (a, e) normal_constraint
-  =
+
+  let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t) :
+    log * env * (a, e) normal_constraint =
     let add_to_log, get_log =
-      if log then make_logger c0
-      else ignore, (fun _ -> [])
+      if log then make_logger c0 else (ignore, fun _ -> [])
     in
     let env = ref env in
-    let rec eval
-      : type a e . (a, e) Constraint.t -> (a, e) normal_constraint
-    =
+    let rec eval : type a e. (a, e) Constraint.t -> (a, e) normal_constraint =
       let open Constraint in
-      let (let+) nf f = T.map f nf in
+      let ( let+ ) nf f = T.map f nf in
       function
       | Ret v -> NRet v
       | Err e -> NErr e
-      | Map (c, f) ->
-        begin match eval c with
+      | Map (c, f) -> begin
+        match eval c with
         | NRet v -> NRet (fun sol -> f (v sol))
         | NErr e -> NErr e
-        | NDo p -> NDo (let+ c = p in Map (c, f))
-        end
-      | MapErr (c, f) ->
-        begin match eval c with
+        | NDo p ->
+          NDo
+            (let+ c = p in
+             Map (c, f) )
+      end
+      | MapErr (c, f) -> begin
+        match eval c with
         | NRet v -> NRet v
         | NErr e -> NErr (f e)
-        | NDo p -> NDo (let+ c = p in MapErr (c, f))
-        end
-      | Conj (c, d) ->
-        begin match eval c with
-          | NErr e -> NErr e
-          | nc -> normal_pair nc (eval d)
-        end
+        | NDo p ->
+          NDo
+            (let+ c = p in
+             MapErr (c, f) )
+      end
+      | Conj (c, d) -> begin
+        match eval c with
+        | NErr e -> NErr e
+        | nc -> normal_pair nc (eval d)
+      end
       | Eq (x1, x2) ->
         let result = Unif.unify !env x1 x2 in
-        begin match result with
+        begin
+          match result with
           | Ok new_env ->
             env := new_env;
             add_to_log !env;
             NRet (fun _sol -> ())
-          | Error (Cycle cy) ->
-            NErr (Cycle cy)
+          | Error (Cycle cy) -> NErr (Cycle cy)
           | Error (Clash (y1, y2)) ->
             let decoder = Decode.decode !env () in
             NErr (Clash (decoder y1, decoder y2))
@@ -99,19 +111,21 @@ module Make (T : Utils.Functor) = struct
            case we do not want to re-bind them in the
            environment, but reuse the previous binding
            which accumulated information through unifications. *)
-        if not (Unif.Env.mem x !env) then
-          env := Unif.Env.add x s !env;
+        if not (Unif.Env.mem x !env) then env := Unif.Env.add x s !env;
         add_to_log !env;
-        begin match eval c with
-        | NRet v -> NRet v
-        | NErr e -> NErr e
-        | NDo p -> NDo (let+ c = p in Exist (x, s, c))
+        begin
+          match eval c with
+          | NRet v -> NRet v
+          | NErr e -> NErr e
+          | NDo p ->
+            NDo
+              (let+ c = p in
+               Exist (x, s, c) )
         end
       | Decode v -> NRet (fun sol -> sol v)
       | Do p -> NDo p
     in
     add_to_log !env;
     let result = eval c0 in
-    get_log (), !env, result
-
+    (get_log (), !env, result)
 end

@@ -348,42 +348,93 @@ fine if your own implementation produces different (sensible) results.
 
 There are not many programs with size 3, 4 and 5.
 
-  $ minigen --exhaustive --size 3 --count 100
-  lambda (z/3 : α/1). z/3
-
-  $ minigen --exhaustive --size 4 --count 100
-  lambda (x/10 : γ/4). lambda (y/14 : β/4). x/10
+  $ minigen --search exhaustive --size 3 --count 100
+  lambda (x/11 : γ/4). lambda (y/15 : β/4). x/11
   
-  lambda (x/10 : α/5). lambda (y/14 : δ/4). y/14
+  lambda (x/11 : α/5). lambda (y/15 : δ/4). y/15
+
+  $ minigen --search exhaustive --size 4 --count 100
+  lambda
+  (v/4e : δ/11). lambda (u/65 : γ/11). lambda (z/6a : β/11). v/4e
+  
+  lambda
+  (v/4e : γ/12). lambda (u/65 : β/12). lambda (z/6a : α/12). u/65
+  
+  lambda
+  (v/4e : β/13). lambda (u/65 : α/13). lambda (z/6a : δ/12). z/6a
+  
+  lambda (v/4e : γ/14). let (z/7e : γ/14) = v/4e in v/4e
+  
+  lambda (v/4e : δ/14). let (z/7e : δ/14) = v/4e in z/7e
+  
+  lambda (v/4e : α/17). (v/4e, v/4e)
+  
+  lambda
+  (v/4e : {γ/19 * β/19}).
+    let ((y/b6 : γ/19), (z/b5 : β/19)) = v/4e in v/4e
+  
+  lambda
+  (v/4e : {α/1a * δ/19}).
+    let ((y/b6 : α/1a), (z/b5 : δ/19)) = v/4e in z/b5
+  
+  lambda
+  (v/4e : {γ/1a * β/1a}).
+    let ((y/b6 : γ/1a), (z/b5 : β/1a)) = v/4e in y/b6
+  
+  let (u/cb : β/21 -> β/21) = lambda (v/db : β/21). v/db in u/cb
 
 An example of random sampling output at higher size.
 
   $ minigen --seed 42 --size 6 --count 10
-  (lambda (z/8 : γ/6). z/8, lambda (u/8 : β/6). u/8)
-  
-  (lambda (u/4 : γ/cf -> γ/cf). u/4) (lambda (w/b1 : γ/cf). w/b1)
-  
-  (lambda (y/1f6 : δ/149). y/1f6, lambda (z/1f6 : γ/149). z/1f6)
-  
-  (lambda (u/4 : δ/1a8 -> δ/1a8). u/4) (lambda (w/b1 : δ/1a8). w/b1)
-  
   lambda
-  (v/3 : β/1ed).
-    let (w/11 : α/1ed -> α/1ed) = lambda (v/fb : α/1ed). v/fb in v/3
-  
-  lambda
-  (v/3 : (α/2aa -> α/2aa) -> β/2aa).
-    v/3 (lambda (w/1b8 : α/2aa). w/1b8)
-  
-  lambda (v/3 : γ/388). (v/3, lambda (y/5a9 : β/388). y/5a9)
-  
-  lambda
-  (v/3 : γ/3d9).
-    let (w/11 : δ/3d9 -> γ/3d9) = lambda (v/fb : δ/3d9). v/3 in v/3
-  
-  lambda
-  (v/3 : γ/43f).
+  (v/5 : δ/16c).
     lambda
-    (u/22 : β/43f). lambda (v/22 : α/43f). lambda (w/243 : δ/43e). v/3
+    (u/6 : {β/16c * α/16c}).
+      lambda
+      (w/71 : γ/16c). let ((z/284 : β/16c), (u/284 : α/16c)) = u/6 in w/71
   
-  (lambda (u/701 : β/457). u/701, lambda (v/701 : α/457). v/701)
+  lambda
+  (v/5 : β/1de).
+    (lambda (x/336 : α/1de). lambda (y/336 : δ/1dd). y/336, v/5)
+  
+  lambda
+  (v/5 : β/271). let (v/18 : {β/271 * β/271}) = (v/5, v/5) in v/18
+  
+  lambda
+  (v/5 : {{α/27a * δ/279} * β/27a}).
+    let
+    ((v/43e : {α/27a * δ/279}), (w/43e : β/27a))
+    =
+    v/5
+    in let ((x/440 : α/27a), (y/440 : δ/279)) = v/43e in x/440
+  
+  lambda (v/5 : β/2a5). ((v/5, v/5), v/5)
+  
+  let
+  (x/1 : α/2ba -> γ/2b9 -> δ/2b9 -> γ/2b9)
+  =
+  lambda
+  (x/2f : α/2ba). lambda (y/2f : γ/2b9). lambda (y/15d : δ/2b9). y/2f
+  in x/1
+  
+  (lambda (z/f : α/403 -> δ/402 -> δ/402). z/f)
+    (lambda (v/26 : α/403). lambda (y/1bc : δ/402). y/1bc)
+  
+  lambda
+  (v/5 : β/4f4). let (v/18 : {β/4f4 * β/4f4}) = (v/5, v/5) in v/5
+  
+  lambda
+  (v/5 : δ/523).
+    lambda
+    (u/6 : γ/523).
+      lambda
+      (w/71 : {β/523 * α/523}).
+        let ((z/88d : β/523), (u/88d : α/523)) = w/71 in v/5
+  
+  lambda
+  (v/5 : {α/59a * β/59a}).
+    let
+    (v/18 : {α/59a * β/59a})
+    =
+    let ((z/93d : α/59a), (u/93d : β/59a)) = v/5 in v/5
+    in v/18

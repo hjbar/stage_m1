@@ -1,3 +1,5 @@
+[@@@ocamlformat "disable"]
+
 open PPrint
 
 (** ?w *)
@@ -110,4 +112,3 @@ let cycle v =
 
 let with_header header doc =
   string header ^^ colon ^^ nest 2 (group (hardline ^^ doc))
-

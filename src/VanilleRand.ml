@@ -8,83 +8,68 @@
    implement a way to remove the term from [later] so that this
    dead-end will not be picked again. *)
 type 'a t = {
-    finished : 'a list;
-    later : (unit -> 'a t) list;
+  finished : 'a list;
+  later : (unit -> 'a t) list;
 }
 
-let of_finished (a : 'a list) : 'a t =
-    {
-      finished = a;
-      later = [];
-    }
+let of_finished (a : 'a list) : 'a t = { finished = a; later = [] }
 
-let of_later (a : (unit -> 'a t) list) : 'a t =
-    {
-      finished = [];
-      later = a;
-    }
+let of_later (a : (unit -> 'a t) list) : 'a t = { finished = []; later = a }
 
-let empty : 'a t =
-    of_finished []
+let empty : 'a t = of_finished []
 
 let rec map (f : 'a -> 'b) (s : 'a t) : 'b t =
-    {
-      finished = s.finished |> List.map f;
-      later = s.later |> List.map (fun gen () -> gen () |> map f);
-    }
+  {
+    finished = s.finished |> List.map f;
+    later = s.later |> List.map (fun gen () -> gen () |> map f);
+  }
 
-let return (x : 'a) : 'a t =
-    of_finished [x]
 
-let delay (f : unit -> 'a t) : 'a t =
-    of_later [f]
+let return (x : 'a) : 'a t = of_finished [ x ]
+
+let delay (f : unit -> 'a t) : 'a t = of_later [ f ]
 
 let concat (s : 'a t) (s' : 'a t) : 'a t =
-    {
-      finished = s.finished @ s'.finished;
-      later = s.later @ s'.later;
-    }
+  { finished = s.finished @ s'.finished; later = s.later @ s'.later }
+
 
 let rec bind (sa : 'a t) (f : 'a -> 'b t) : 'b t =
-    sa.finished
-    |> List.map f
-    |> List.fold_left concat (sa |> bind_later f)
+  sa.finished |> List.map f |> List.fold_left concat (sa |> bind_later f)
+
 
 and bind_later (f : 'a -> 'b t) (s : 'a t) =
-    of_later (s.later |> List.map (fun s () -> bind (s ()) f))
+  of_later (s.later |> List.map (fun s () -> bind (s ()) f))
 
-let sum (li : 'a t list) : 'a t =
-    li
-    |> List.fold_left concat empty
 
-let fail : 'a t =
-    empty
+let sum (li : 'a t list) : 'a t = li |> List.fold_left concat empty
 
-let one_of (vs : 'a array) : 'a t =
-    vs
-    |> Array.to_list
-    |> of_finished
+let fail : 'a t = empty
+
+let one_of (vs : 'a array) : 'a t = vs |> Array.to_list |> of_finished
 
 type 'a chosen =
-    | Picked of 'a
-    | Retry
-    | Empty
+  | Picked of 'a
+  | Retry
+  | Empty
 
 (* Takes the nth element out of the list and returns
    it and the list shorter by one.
 
    @raise: [Not_found] if [i > List.length l] *)
 let rec take_nth (l : 'a list) (n : int) : 'a * 'a list =
-    match l, n with
-    | h::t, i when i <= 0 -> h, t
-    | h::t, i -> let out, rem = take_nth t (i - 1) in out, h::rem
-    | [], _ -> raise Not_found
+  match (l, n) with
+  | h :: t, i when i <= 0 -> (h, t)
+  | h :: t, i ->
+    let out, rem = take_nth t (i - 1) in
+    (out, h :: rem)
+  | [], _ -> raise Not_found
+
 
 let tries = ref 0
 
 let run (s : 'a t) : 'a Seq.t =
-    let rec try_pick (sampler : 'a t) : 'a chosen * 'a t =
-        (* Attempt to pick an element.
+  let rec try_pick (sampler : 'a t) : 'a chosen * 'a t =
+    (* Attempt to pick an element.
            This might suceed with `Picked x` with `x` the element,
            and it might fail in two different ways:
            - `Retry` is a recoverable failure.
@@ -94,48 +79,40 @@ let run (s : 'a t) : 'a Seq.t =
              This generator is provably empty.
              The parent should completely delete this generator
              and never invoke it again. *)
-        let pick_finished () =
-            (* If we succesfully pick a value, we remove it from the generator.
+    let pick_finished () =
+      (* If we succesfully pick a value, we remove it from the generator.
                We could keep the value in the finished terms if we wanted to be
                able to generate an arbitrary number of terms (with duplicates). *)
-            let idx = Random.int (List.length sampler.finished) in
-            let x, rest = take_nth sampler.finished idx in
-            Picked x, { sampler with finished = rest }
-        in
-        let pick_later () =
-            let idx = Random.int (List.length sampler.later) in
-            let gen, trimmed = take_nth sampler.later idx in
-            let res, gen = try_pick (gen ()) in
-            match res with
-                | Picked x -> Picked x, { sampler with later = (fun () -> gen) :: trimmed }
-                | Retry -> Retry, { sampler with later = (fun () -> gen) :: trimmed }
-                | Empty -> Retry, { sampler with later = trimmed }
-        in
-        if sampler.finished = [] && sampler.later = [] then (
-          Empty, sampler
-        ) else if sampler.later = [] then (
-          pick_finished ()
-        ) else if sampler.finished = [] then (
-          pick_later ()
-        ) else (
-            if Random.bool () then (
-              pick_finished ()
-            ) else (
-              pick_later ()
-            )
-        )
+      let idx = Random.int (List.length sampler.finished) in
+      let x, rest = take_nth sampler.finished idx in
+      (Picked x, { sampler with finished = rest })
     in
-    let rec pick (miss : int) (sampler : 'a t) : 'a * 'a t =
-        incr tries;
-        let res, trimmed = try_pick sampler in
-        match res with
-        | Picked t -> t, trimmed
-        | Retry -> pick (miss + 1) trimmed
-        | Empty -> failwith "This generator is empty; no such term exists"
+    let pick_later () =
+      let idx = Random.int (List.length sampler.later) in
+      let gen, trimmed = take_nth sampler.later idx in
+      let res, gen = try_pick (gen ()) in
+      match res with
+      | Picked x ->
+        (Picked x, { sampler with later = (fun () -> gen) :: trimmed })
+      | Retry -> (Retry, { sampler with later = (fun () -> gen) :: trimmed })
+      | Empty -> (Retry, { sampler with later = trimmed })
     in
-    let rec seq (sampler : 'a t) () =
-        let res, trimmed = pick 0 sampler in
-        Seq.Cons (res, seq trimmed)
-    in
-    seq s
-
+    if sampler.finished = [] && sampler.later = [] then (Empty, sampler)
+    else if sampler.later = [] then pick_finished ()
+    else if sampler.finished = [] then pick_later ()
+    else if Random.bool () then pick_finished ()
+    else pick_later ()
+  in
+  let rec pick (miss : int) (sampler : 'a t) : 'a * 'a t =
+    incr tries;
+    let res, trimmed = try_pick sampler in
+    match res with
+    | Picked t -> (t, trimmed)
+    | Retry -> pick (miss + 1) trimmed
+    | Empty -> failwith "This generator is empty; no such term exists"
+  in
+  let rec seq (sampler : 'a t) () =
+    let res, trimmed = pick 0 sampler in
+    Seq.Cons (res, seq trimmed)
+  in
+  seq s
