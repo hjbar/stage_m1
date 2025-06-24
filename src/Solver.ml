@@ -1,15 +1,21 @@
-(*
-   As explained in the README.md ("Abstracting over an effect"),
+(* As explained in the README.md ("Abstracting over an effect"),
    this module as well as other modules is parametrized over
-   an arbitrary effect [T : Functor].
-*)
+   an arbitrary effect [T : Functor]. *)
 
 module Make (T : Utils.Functor) = struct
   module Constraint = Constraint.Make (T)
   module SatConstraint = SatConstraint.Make (T)
   module ConstraintPrinter = ConstraintPrinter.Make (T)
 
-  type env = Unif.Env.t
+  module Env = struct
+    type t = Unif.Env.t
+
+    let empty () = Unif.Env.empty ()
+
+    let debug env = Unif.Env.debug_env env
+  end
+
+  type env = Env.t
 
   type log = PPrint.document list
 
@@ -24,9 +30,11 @@ module Make (T : Utils.Functor) = struct
     in
 
     nest 2
-      ( string dir
-      ^^ space
-      ^^ ConstraintPrinter.print_constraint_in_context ~env c k )
+      begin
+        string dir
+        ^^ space
+        ^^ ConstraintPrinter.print_constraint_in_context ~env c k
+      end
     |> Utils.string_of_doc
     |> print_endline
 
@@ -44,20 +52,7 @@ module Make (T : Utils.Functor) = struct
     let add_to_log ~dir env c k =
       if log || Debug.debug then do_log ~dir env c k
     in
-
-    let exception Located of Utils.loc * exn * Printexc.raw_backtrace in
-    let locate_exn loc exn =
-      match exn with
-      | Located (_, _, _) as exn -> raise exn
-      | base_exn ->
-        let bt = Printexc.get_raw_backtrace () in
-        raise @@ Located (loc, base_exn, bt)
-    in
-    let at_loc loco f =
-      match loco with
-      | None -> f ()
-      | Some loc -> ( try f () with exn -> locate_exn loc exn )
-    in
+    let at_loc = Utils.at_loc in
     let rec eval : type a1 e1 a e.
       env ->
       Utils.loc option * (a1, e1) Constraint.t ->
@@ -137,7 +132,7 @@ module Make (T : Utils.Functor) = struct
     add_to_log ~dir env c0 k0;
 
     match eval env (None, c0) k0 with
-    | exception Located (loc, exn, bt) ->
+    | exception Utils.Located (loc, exn, bt) ->
       Printf.eprintf "Error at %s" (MenhirLib.LexerUtil.range loc);
       Printexc.raise_with_backtrace exn bt
     | exception exn -> raise exn

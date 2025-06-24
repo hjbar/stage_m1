@@ -6,6 +6,26 @@ type loc = Lexing.position * Lexing.position
 
 let string_of_loc loc = MenhirLib.LexerUtil.range loc
 
+exception Located of loc * exn * Printexc.raw_backtrace
+
+let at_loc loco f =
+  let locate_exn loc exn =
+    match exn with
+    | Located (_, _, _) as exn -> raise exn
+    | base_exn ->
+      let bt = Printexc.get_raw_backtrace () in
+      raise @@ Located (loc, base_exn, bt)
+  in
+  match loco with
+  | None -> f ()
+  | Some loc -> ( try f () with exn -> locate_exn loc exn )
+
+
+let print_loco = function
+  | None -> ()
+  | Some loc -> loc |> string_of_loc |> print_string
+
+
 let string_of_doc doc =
   let buf = Buffer.create 128 in
   PPrint.ToBuffer.pretty 0.9 80 buf doc;

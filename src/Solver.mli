@@ -1,14 +1,20 @@
 module Make (T : Utils.Functor) : sig
   module Constraint := Constraint.Make(T)
 
-  type env = Unif.Env.t
+  module Env : sig
+    type t = Unif.Env.t
+
+    val empty : unit -> t
+
+    val debug : t -> PPrint.document
+  end
 
   type log = PPrint.document list
 
   (** Normal constraints are the result of solving constraints without computing
       inside [Do p] nodes. *)
   type ('ok, 'err) normal_constraint =
-    | NRet : env * 'a Constraint.on_sol -> ('a, 'e) normal_constraint
+    | NRet : Env.t * 'a Constraint.on_sol -> ('a, 'e) normal_constraint
       (** A succesfully elaborated value. (See Constraint.ml for exaplanations
           on [on_sol].) *)
     | NErr : Utils.loc option * 'e -> ('a, 'e) normal_constraint
@@ -29,5 +35,5 @@ module Make (T : Utils.Functor) : sig
       steps (obtained from the solver environment and the original constraint by
       constraint simplification) as the constraint-solving progresses. *)
   val eval :
-    log:bool -> env -> ('a, 'e) Constraint.t -> ('a, 'e) normal_constraint
+    log:bool -> Env.t -> ('a, 'e) Constraint.t -> ('a, 'e) normal_constraint
 end

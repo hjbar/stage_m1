@@ -6,6 +6,12 @@ type loc = Lexing.position * Lexing.position
 
 val string_of_loc : loc -> string
 
+exception Located of loc * exn * Printexc.raw_backtrace
+
+val at_loc : loc option -> (unit -> 'a) -> 'a
+
+val print_loco : loc option -> unit
+
 val string_of_doc : PPrint.document -> string
 
 module Variables () : sig

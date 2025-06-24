@@ -63,7 +63,7 @@ let call_typer ~config (term : Untyped.term) =
 
   let nf =
     if config.log_solver then prerr_endline "Constraint solving log:";
-    let p = Solver.eval ~log:config.log_solver (Unif.Env.empty ()) cst in
+    let p = Solver.eval ~log:config.log_solver (Solver.Env.empty ()) cst in
     if config.log_solver then prerr_newline ();
     p
   in
@@ -81,22 +81,22 @@ let print_result ~config result =
       print_section "Inferred type" (STLCPrinter.print_ty ty);
     if config.show_typed_term then
       print_section "Elaborated term" (STLCPrinter.print_term term)
-  | Error (loco, err) ->
-    Option.iter (fun loc -> loc |> Utils.string_of_loc |> print_string) loco;
+  | Error (loco, err) -> begin
+    Utils.print_loco loco;
     print_section "Error"
-      ( match err with
-      | Infer.Clash (ty1, ty2) ->
-        Printer.incompatible (STLCPrinter.print_ty ty1)
-          (STLCPrinter.print_ty ty2)
-      | Infer.Cycle (Utils.Cycle v) ->
-        Printer.cycle (Printer.inference_variable (Constraint.Var.print v)) )
+    @@
+    match err with
+    | Infer.Clash (ty1, ty2) ->
+      Printer.incompatible (STLCPrinter.print_ty ty1) (STLCPrinter.print_ty ty2)
+    | Infer.Cycle (Utils.Cycle v) ->
+      v |> Constraint.Var.print |> Printer.inference_variable |> Printer.cycle
+  end
 
 
 let process ~config input_path =
   let ast = call_parser ~config UntypedParser.term_eof input_path in
   let result = call_typer ~config ast in
-  let () = print_result ~config result in
-  ()
+  print_result ~config result
 
 
 let parse_args () =
@@ -141,7 +141,9 @@ let parse_args () =
 let () =
   let config, input_paths = parse_args () in
   List.iteri
-    (fun i input ->
-      if i > 0 then print_newline ();
-      process ~config input )
+    begin
+      fun i input ->
+        if i > 0 then print_newline ();
+        process ~config input
+    end
     input_paths

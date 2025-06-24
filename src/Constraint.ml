@@ -11,6 +11,8 @@
    and outside the Make functor. Please don't let this small quirk
    distract you. *)
 module Types = struct
+  (* Constraint variables *)
+
   module Var = Utils.Variables ()
 
   type variable = Var.t

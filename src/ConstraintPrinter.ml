@@ -10,8 +10,8 @@ module Make (T : Utils.Functor) = struct
   let print_sat_constraint (c : sat_constraint) : PPrint.document =
     let rec print_top = fun c -> print_left_open c
     and print_left_open =
-      let _print_self = print_left_open
-      and print_next = print_conj in
+      let print_next = print_conj in
+
       fun ac ->
         let rec peel = function
           | Exist (v, s, c) ->
@@ -22,11 +22,12 @@ module Make (T : Utils.Functor) = struct
             (binding :: bindings, body)
           | other -> ([], print_next other)
         in
+
         let bindings, body = peel ac in
-        Printer.exist bindings body
+        if List.is_empty bindings then body else Printer.exist bindings body
     and print_conj =
-      let _print_self = print_conj
-      and print_next = print_atom in
+      let print_next = print_atom in
+
       function
       | Conj cs -> Printer.conjunction (List.map print_next cs)
       | other -> print_next other

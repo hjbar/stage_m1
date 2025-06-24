@@ -42,7 +42,7 @@ rule read = parse
   | ":"		 { COLON }
   | '.'		 { PERIOD }
   | "--"         { line_comment lexbuf; read lexbuf }
-  | _ as c	
+  | _ as c
     { failwith
         (Printf.sprintf
            "Unexpected character during lexing: %c" c) }

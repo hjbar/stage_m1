@@ -4,7 +4,7 @@ open PPrint
 
 (** ?w *)
 let inference_variable w =
-  string "?" ^^ w
+  group (string "?" ^^ w)
 
 (** $t -> $u *)
 let arrow t u = group @@
@@ -28,13 +28,15 @@ let lambda ~input ~body = group @@
   ^//^ body
 
 (** let $var = $def in $body *)
-let let_ ~var ~def ~body = group @@
-  string "let"
-  ^/^ var
-  ^/^ string "="
-  ^/^ def
-  ^/^ string "in"
-  ^//^ body
+let let_ ~var ~def ~body =
+  group begin
+    group begin
+      group (string "let" ^/^ var ^/^ string "=")
+      ^^ nest 2 (break 1 ^^ def)
+      ^/^ string "in"
+    end
+    ^//^ body
+  end
 
 (** $t $u *)
 let app t u = group @@
@@ -116,7 +118,7 @@ let incompatible ty1 ty2 =
   ^^ hardline ^^ string "incompatible with" ^^ hardline ^^
   group (blank 2 ^^ nest 2 ty2)
 
-let cycle v =
+let cycle v = group @@
   string "cycle on constraint variable" ^/^ v
 
 let with_header header doc =

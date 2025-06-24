@@ -49,31 +49,38 @@ let map f = function
   | Prod ts -> Prod (List.map f ts)
 
 
+let fold f acc = function
+  | Var _alpha -> acc
+  | Arrow (t1, t2) ->
+    let acc = f acc t1 in
+    f acc t2
+  | Prod ts -> List.fold_left f acc ts
+
+
 let merge f s1 s2 =
   match (s1, s2) with
-  | Var alpha, Var beta ->
-    if TyVar.eq alpha beta then Some (Var alpha) else None
-  | Var _, _ | _, Var _ -> None
+  | Var alpha, Var beta when TyVar.eq alpha beta -> Some (Var alpha)
   | Arrow (a1, a2), Arrow (b1, b2) ->
     let c1 = f a1 b1 in
     let c2 = f a2 b2 in
+
     Some (Arrow (c1, c2))
-  | Arrow _, _ | _, Arrow _ -> None
-  | Prod as1, Prod as2 ->
-    if List.length as1 <> List.length as2 then None
-    else Some (Prod (List.map2 f as1 as2))
+  | Prod as1, Prod as2 when List.compare_lengths as1 as2 = 0 ->
+    Some (Prod (List.map2 f as1 as2))
+  | _ -> None
 
 
 let global_tyvar : string -> TyVar.t =
   (* There are no binders for type variables, which are scoped
      globally for the whole term. *)
-  let tenv = Hashtbl.create 5 in
+  let tenv = Hashtbl.create 16 in
+
   fun alpha ->
-    match Hashtbl.find tenv alpha with
-    | alpha_var -> alpha_var
-    | exception Not_found ->
+    match Hashtbl.find_opt tenv alpha with
+    | Some alpha_var -> alpha_var
+    | None ->
       let alpha_var = TyVar.fresh alpha in
-      Hashtbl.add tenv alpha alpha_var;
+      Hashtbl.replace tenv alpha alpha_var;
       alpha_var
 
 
@@ -85,5 +92,5 @@ let freshen freshen = function
 
 let print p = function
   | Var v -> TyVar.print v
-  | Prod ts -> Printer.product (List.map p ts)
   | Arrow (t1, t2) -> Printer.arrow (p t1) (p t2)
+  | Prod ts -> Printer.product (List.map p ts)

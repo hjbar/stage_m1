@@ -39,8 +39,17 @@ module Make (T : Utils.Functor) = struct
       let env = Env.add x x_var env in
       (env, x_var)
     in
-    let rec freshen env = function
-      | Var x -> Var (Env.find x env)
+    let rec freshen env loco =
+      let freshen env ?(loco = loco) t = freshen env loco t in
+      function
+      | Var x -> begin
+        match Env.find_opt x env with
+        | None ->
+          Utils.print_loco loco;
+          Printf.ksprintf invalid_arg
+            "Constraint variable '%s' is unbound at this point" x
+        | Some v -> Var v
+      end
       | App (t1, t2) -> App (freshen env t1, freshen env t2)
       | Abs (x, t) ->
         let env, x = bind env x in
@@ -54,7 +63,7 @@ module Make (T : Utils.Functor) = struct
         LetTuple (xs, freshen env t1, freshen env_inner t2)
       | Annot (t, ty) -> Annot (freshen env t, STLC.freshen_ty ty)
       | Do p -> Do (T.map (freshen env) p)
-      | Loc (loc, t) -> Loc (loc, freshen env t)
+      | Loc (loc, t) -> Loc (loc, freshen env ~loco:(Some loc) t)
     in
-    fun t -> freshen Env.empty t
+    fun t -> freshen Env.empty None t
 end

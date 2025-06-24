@@ -60,7 +60,7 @@ module Env = struct
     { var; structure }
 
 
-  (* Functions to add  variables to the environment *)
+  (* Functions to add variables to the environment *)
 
   let add var structure env =
     let data = Option.map (Structure.map (fun v -> uvar v env)) structure in

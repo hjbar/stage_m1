@@ -4,7 +4,7 @@ let map = Seq.map
 
 let delay f = fun () -> f () ()
 
-let return x = Seq.return x
+let return = Seq.return
 
 let bind s f = Seq.concat_map f s
 
@@ -14,4 +14,4 @@ let one_of = Array.to_seq
 
 let sum seqs = seqs |> List.to_seq |> Seq.concat
 
-let run s = s
+let run = Fun.id
