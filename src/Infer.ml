@@ -262,4 +262,12 @@ module Make (T : Utils.Functor) = struct
 
       F.LetTuple (bindings, t', u')
     | Do p -> Do (T.map (fun t -> has_type env t w) p)
+
+  (** Transform a given program we want to type into a constraint, using a
+      let-constraint as a wrapper *)
+  let let_wrapper (term : Untyped.term) : (F.term * F.scheme, err) Constraint.t
+      =
+    let s = Constraint.SVar.fresh "final_scheme" in
+    let w = Constraint.Var.fresh "final_term" in
+    Let ([ (s, w) ], has_type Env.empty term w, decode_scheme s)
 end

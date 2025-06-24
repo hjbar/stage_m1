@@ -58,14 +58,7 @@ let call_parser ~config parser_fun input_path =
       loc
 
 let call_typer ~config (term : Untyped.term) =
-  let cst =
-    let open Constraint in
-    let s = SVar.fresh "final_scheme" in
-    let w = Var.fresh "final_term" in
-
-    Let
-      ([ (s, w) ], Infer.has_type Infer.Env.empty term w, Infer.decode_scheme s)
-  in
+  let cst = Infer.let_wrapper term in
 
   if config.show_constraint then
     print_section "Generated constraint"

@@ -14,10 +14,8 @@ module Make (T : Utils.Functor) : sig
 
   type 'a constraint_ = ('a, err) Constraint.t
 
-  val decode : Constraint.variable -> F.ty constraint_
-
-  val decode_scheme : Constraint.scheme_variable -> F.scheme constraint_
-
   val has_type :
     Env.t -> Untyped.term -> Constraint.variable -> F.term constraint_
+
+  val let_wrapper : Untyped.term -> (F.term * F.scheme, err) Constraint.t
 end
