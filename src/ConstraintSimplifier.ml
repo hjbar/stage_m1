@@ -61,7 +61,7 @@ module Make (T : Utils.Functor) = struct
         else begin
           match Unif.unifiable env v1 v2 with
           | false -> (VarSet.empty, False)
-          | true | (exception Not_found) ->
+          | true | (exception Invalid_argument _) ->
             (VarSet.of_list [ v1; v2 ], Eq (v1, v2))
         end
       | Exist (v, s, c) ->

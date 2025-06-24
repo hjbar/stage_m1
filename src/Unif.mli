@@ -6,7 +6,13 @@
     - which inference variables are equal to each other
     - for each inference variable, its known structure (if any) *)
 
+(* Variable type *)
+
 type var = Constraint.variable
+
+(* Structure type *)
+
+type structure = var Structure.t option
 
 (** [repr] represents all the knowledge so far about an inference variable, or
     rather an equivalence class of inference variables that are equal to each
@@ -15,22 +21,37 @@ type var = Constraint.variable
     - [structure] is the known structure (if any) of these variables *)
 type repr = {
   var : var;
-  structure : Constraint.structure option;
+  structure : structure;
 }
 
+(* Signature of the Environment module *)
+
 module Env : sig
+  (* type [t] *)
+
   type t
 
-  val empty : t
+  (* Empty environment *)
+
+  val empty : unit -> t
+
+  (* Membership test functions *)
 
   val mem : var -> t -> bool
 
-  val add : var -> Constraint.structure option -> t -> t
+  (* Functions to add variables to the environment *)
+
+  val add : var -> structure -> t -> t
 
   (** [repr x env] gets the representant of [x] in [env].
-
       @raise [Not_found] if [x] is not bound in [env]. *)
   val repr : var -> t -> repr
+
+  (* Debugging functions *)
+
+  val debug_var : var -> repr -> PPrint.document
+
+  val debug_env : t -> PPrint.document
 end
 
 (** Unification errors:
@@ -49,7 +70,8 @@ type err =
 (** [unify env v1 v2] takes the current equation environment [env], and tries to
     update it with the knowledge that [v1], [v2] must be equal. If this equality
     would introduce an error, we fail with the error report, otherwise we return
-    the updated equation environment. *)
+    the updated equation environment. Can raise Invalid_argument if v1 or v2 are
+    not is the original environment. *)
 val unify : Env.t -> var -> var -> (Env.t, err) result
 
 (** [unifiable env v1 v2] tests if unifying [v1] and [v2] in the equation

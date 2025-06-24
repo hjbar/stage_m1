@@ -148,7 +148,7 @@ module Make (M : Utils.MonadPlus) = struct
     in
 
     let constraint_ = untyped |> cut_size ~size |> constraint_ in
-    let nf = Solver.eval ~log:false Unif.Env.empty constraint_ in
+    let nf = Solver.eval ~log:false (Unif.Env.empty ()) constraint_ in
     loop nf
 
 
@@ -166,6 +166,6 @@ module Make (M : Utils.MonadPlus) = struct
     in
 
     let constraint_ = constraint_ untyped in
-    let nf = Solver.eval ~log:false Unif.Env.empty constraint_ in
+    let nf = Solver.eval ~log:false (Unif.Env.empty ()) constraint_ in
     loop ~fuel:size nf
 end
