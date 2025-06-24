@@ -10,21 +10,38 @@ module Make (T : Utils.Functor) = struct
   (* Type definitions *)
 
   (** The "environment" of the constraint generator maps each program variable
-      to an inference variable representing its (monomorphic) type.
+      to either an inference variable representing its (monomorphic) type or an
+      inference scheme variable representing its (polymorphic) scheme.
 
-      For example, to infer the type of the term [lambda x. t], we will
-      eventually call [has_type env t] with an environment mapping [x] to a
-      local inference variable representing its type. *)
+      For example:
+      - To infer the type of the term [lambda x. t], we will eventually call
+        [has_type env t] with an environment mapping [x] to a local inference
+        variable representing its type.
+      - To infer the type of the term [let x = t in u], we will eventually call
+        [has_type env t] and [has_type env u] with an environment mapping [x] to
+        a local inference scheme variable representing its scheme. *)
   module Env = struct
     module Map = Untyped.Var.Map
 
-    type t = variable Map.t
+    type t = {
+      variables : variable Map.t;
+      schemes : scheme_variable Map.t;
+    }
 
-    let empty = Map.empty
+    let empty = { variables = Map.empty; schemes = Map.empty }
 
-    let find_variable x env = Map.find x env
+    let findopt_variable x env = Map.find_opt x env.variables
 
-    let add_variable x v env = Map.add x v env
+    let find_scheme x env = Map.find x env.schemes
+
+    let add_variable x v env =
+      let variables = Map.add x v env.variables in
+      { env with variables }
+
+
+    let add_scheme x s env =
+      let schemes = Map.add x s env.schemes in
+      { env with schemes }
   end
 
   type env = Env.t
@@ -41,13 +58,19 @@ module Make (T : Utils.Functor) = struct
 
   let exist v s c = Exist (v, s, c)
 
+  let let_ s v c1 c2 = Let ([ (s, v) ], c1, c2)
+
   let decode v = MapErr (Decode v, fun e -> Cycle e)
+
+  let decode_scheme s = MapErr (DecodeScheme s, fun e -> Cycle e)
 
   (* Helper functions for generating fresh variable names *)
 
   let fresh_var = Constraint.Var.fresh
 
   let fresh_var_name x = Constraint.Var.fresh (Untyped.Var.name x)
+
+  let fresh_scheme = Constraint.SVar.fresh
 
   (** This is a helper function to implement constraint generation for the
       [Annot] construct.
@@ -107,16 +130,26 @@ module Make (T : Utils.Functor) = struct
       ]}
       but the actually generated constraint may be more complex/verbose.
 
-      Precondition: when calling [has_type env t], [env] must map each term
-      variable that is free in [t] to an inference variable. *)
+      Precondition: when calling [has_type env t], [env] must map every term
+      variable free in [t] to either an inference variable or a scheme variable.
+  *)
   let rec has_type (env : env) (t : Untyped.term) (w : variable) :
     (STLC.term, err) t =
     match t with
     | Untyped.Loc (loc, t) -> Constraint.Loc (loc, has_type env t w)
-    | Untyped.Var x ->
-      (* [[x : w]] := (E(x) = w) *)
-      let+ () = eq w (Env.find_variable x env) in
-      STLC.Var x
+    | Untyped.Var x -> begin
+      (* [[x : w]] := (E(x) = w) if w is in the environment's variables
+         [[x : w]] := (E(x) = Instance(s, w)) where s is the scheme of x *)
+      match Env.findopt_variable x env with
+      | Some wx ->
+        let+ () = eq w wx in
+        STLC.Var x
+      | None ->
+        let sch = Env.find_scheme x env in
+
+        let+ tys = Instance (sch, w) in
+        STLC.TyApp (STLC.Var x, tys)
+    end
     | Untyped.App (t, u) ->
       (* [[t u : w]] := ∃wu. [[t : wu -> w]] ∧ [[u : wu]] *)
       let wu = fresh_var "wu" in
@@ -143,14 +176,20 @@ module Make (T : Utils.Functor) = struct
          and+ tyx = decode wx in
          STLC.Abs (x, tyx, t')
     | Untyped.Let (x, t, u) ->
-      (* [[let x = t in u : w]] := ∃wt. [[t : wt]] ∧ [[u : w]](E,x↦wt) *)
-      let wt = Constraint.Var.fresh (Untyped.Var.name x) in
+      (* [[let x = t in u : w]] := Let (x, s, [[t : wt]], [[u : w]](E,x ↦ s))
+         where wt is a fresh variable and s is a fresh scheme variable *)
+      let wt = fresh_var_name x in
+      let s = fresh_scheme "s" in
 
-      exist wt None
-      @@ let+ t' = has_type env t wt
-         and+ tyx = decode wt
-         and+ u' = has_type (Env.add_variable x wt env) u w in
-         STLC.Let (x, tyx, t', u')
+      let inner_env = Env.add_scheme x s env in
+
+      let+ t', (u', scheme) =
+        let_ s wt (has_type env t wt)
+        @@ let+ u' = has_type inner_env u w
+           and+ scheme = decode_scheme s in
+           (u', scheme)
+      in
+      STLC.Let (x, scheme, TyAbs (fst scheme, t'), u')
     | Untyped.Annot (t, ty) ->
       (* [[(t : ty) : w]] := ∃(wt = ty). [[t : wt]] /\ [[wt = w]] *)
       bind ty @@ fun wt ->
@@ -229,10 +268,10 @@ module Make (T : Utils.Functor) = struct
 
 
   (** Transform a given program we want to type into a constraint, using a
-      exist-constraint as a wrapper *)
-  let exist_wrapper (term : Untyped.term) :
-    (STLC.term * STLC.ty, err) Constraint.t =
-    let open Constraint in
-    let w = Var.fresh "final_type" in
-    Exist (w, None, Conj (has_type Untyped.Var.Map.empty term w, decode w))
+      let-constraint as a wrapper *)
+  let let_wrapper (term : Untyped.term) :
+    (STLC.term * STLC.scheme, err) Constraint.t =
+    let s = Constraint.SVar.fresh "final_scheme" in
+    let w = Constraint.Var.fresh "final_term" in
+    Let ([ (s, w) ], has_type Env.empty term w, decode_scheme s)
 end

@@ -10,6 +10,7 @@
 (* We found it convenient to include some type definitions both inside
    and outside the Make functor. Please don't let this small quirk
    distract you. *)
+
 module Types = struct
   (* Constraint variables *)
 
@@ -22,6 +23,12 @@ module Types = struct
   type ty =
     | Var of variable
     | Constr of structure
+
+  (* Scheme variables *)
+
+  module SVar = Utils.Variables ()
+
+  type scheme_variable = SVar.t
 end
 
 include Types
@@ -33,7 +40,7 @@ module Make (T : Utils.Functor) = struct
     | Clash of STLC.ty Utils.clash
     | Cycle of variable Utils.cycle
 
-  (** A value of type [('a, 'e) t] is a constraint whose resolution will either
+  (** A value of type [('a, 'e)) t] is a constraint whose resolution will either
       succeed, and produce a witness of type ['a], or fail and produce error
       information at type ['e].
 
@@ -58,10 +65,15 @@ module Make (T : Utils.Functor) = struct
     | Exist : variable * structure option * ('a, 'e) t -> ('a, 'e) t
     | Decode : variable -> (STLC.ty, variable Utils.cycle) t
     | Do : ('a, 'e) t T.t -> ('a, 'e) t
+    | DecodeScheme : scheme_variable -> (STLC.scheme, variable Utils.cycle) t
+    | Instance : scheme_variable * variable -> (STLC.ty list, eq_error) t
+    | Let :
+        (scheme_variable * variable) list * ('a, 'e) t * ('b, 'e) t
+        -> ('a * 'b, 'e) t
 
   (** ['a on_sol] represents an elaborated witness of type ['a] that depends on
       the solution to the whole constraint -- represented by a mapping from
-      inference variables to elaborated types, [variable -> STLC.ty].
+      inference variables to elaborated types, [variable -> F.ty].
 
       This is used in the success constraint above
       [Ret : 'a on_sol -> ('a, 'e) t]; using just [Ret : 'a -> ('a, 'e) t] would
@@ -112,4 +124,8 @@ module Make (T : Utils.Functor) = struct
     | KConj1 : ('ok2, 'err) t -> ('ok1, 'err, 'ok1 * 'ok2, 'err) cont_frame
     | KConj2 : 'ok1 on_sol -> ('ok2, 'err, 'ok1 * 'ok2, 'err) cont_frame
     | KExist : variable -> ('ok, 'err, 'ok, 'err) cont_frame
+    | KLet1 :
+        (scheme_variable * variable) list * ('ok2, 'err) t
+        -> ('ok1, 'err, 'ok1 * 'ok2, 'err) cont_frame
+    | KLet2 : 'ok1 on_sol -> ('ok2, 'err, 'ok1 * 'ok2, 'err) cont_frame
 end

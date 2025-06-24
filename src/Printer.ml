@@ -6,6 +6,9 @@ open PPrint
 let inference_variable w =
   group (string "?" ^^ w)
 
+(** ?s *)
+let scheme_variable s = group (string "?scheme_" ^^ s)
+
 (** $t -> $u *)
 let arrow t u = group @@
   t ^/^ string "->" ^/^ u
@@ -20,12 +23,38 @@ let annot term ty = group @@
     term ^/^ colon ^//^ ty
   ) rparen
 
+(** ∀$ty1. ∀$ty2. ... *)
+let print_quantifier quantifiers =
+  group (concat_map (fun var -> string "∀" ^^ var ^^ string ". ") quantifiers)
+
+
+(** ∀$ty1. ∀$ty2. ... $ty *)
+let scheme quantifiers ty = group (quantifiers ^^ ty)
+
+(** x[$ty1, $ty2, ...] *)
+let ty_app t tys =
+  group (t ^^ lbracket ^^ separate (comma ^^ space) tys ^^ rbracket)
+
+
+(** (x : ty) *)
+let let_binding x ty =
+  group
+    begin
+      lparen ^^ x ^^ space ^^ colon ^^ space ^^ ty ^^ rparen
+    end
+
+
 (** lambda $input. $body *)
 let lambda ~input ~body = group @@
   string "lambda"
   ^/^ input
   ^^ string "."
   ^//^ body
+
+(** Λ $input. $body *)
+let big_lambda ~input ~body =
+  group (group (string "Λ" ^/^ separate space input ^^ string ".") ^//^ body)
+
 
 (** let $var = $def in $body *)
 let let_ ~var ~def ~body =
@@ -98,6 +127,34 @@ let decode v = group @@
   string "decode" ^^ break 1 ^^ v
 
 let do_ = string "do?"
+
+(** decode_scheme $s *)
+let decode_scheme sch_var = group (string "decode_scheme" ^^ break 1 ^^ sch_var)
+
+(** $s ≤ w *)
+let instance sch_var var =
+  group (sch_var ^^ break 1 ^^ utf8string "≤" ^^ break 1 ^^ var)
+
+(** let x1:w1, x2:w2... = $c1 in $c2 *)
+let let_sch bindings c1 c2 =
+  let binding (sch_var, var) = sch_var ^/^ colon ^/^ var in
+
+  group
+    begin
+      group
+        begin
+          string "let"
+          ^/^ separate_map (comma ^^ break 1) binding bindings
+          ^/^ string "="
+        end
+      ^^ nest 2 (break 1 ^^ c1)
+      ^/^ string "in"
+      ^//^ c2
+    end
+
+(** let true in $c2 *)
+let let_sch_2 c2 =
+  group (string "let " ^^ true_ ^^ break 1 ^^ string "in" ^^ break 1 ^^ c2)
 
 (** hole {$env} $c *)
 let hole ~env c =

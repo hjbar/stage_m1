@@ -17,5 +17,5 @@ module Make (T : Utils.Functor) : sig
   val has_type :
     Env.t -> Untyped.term -> Constraint.variable -> STLC.term constraint_
 
-  val exist_wrapper : Untyped.term -> (STLC.term * STLC.ty, err) Constraint.t
+  val let_wrapper : Untyped.term -> (STLC.term * STLC.scheme, err) Constraint.t
 end

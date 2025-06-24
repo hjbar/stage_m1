@@ -2,7 +2,12 @@ module Make (T : Utils.Functor) : sig
   module Constraint := Constraint.Make(T)
 
   module Env : sig
-    type t = Unif.Env.t
+    module SMap : Map.S with type key = Constraint.SVar.t
+
+    type t = {
+      unif : Unif.Env.t;
+      schemes : Generalization.scheme SMap.t;
+    }
 
     val empty : unit -> t
 

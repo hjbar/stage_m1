@@ -8,20 +8,25 @@ module Make (T : Utils.Functor) = struct
   module ConstraintPrinter = ConstraintPrinter.Make (T)
 
   module Env = struct
-    type t = Unif.Env.t
+    module SMap = Constraint.SVar.Map
 
-    let empty () = Unif.Env.empty ()
+    type t = {
+      unif : Unif.Env.t;
+      schemes : Generalization.scheme SMap.t;
+    }
 
-    let debug env = Unif.Env.debug_env env
+    let empty () = { unif = Unif.Env.empty (); schemes = SMap.empty }
+
+    let debug env = Unif.Env.debug_env env.unif
   end
 
   type env = Env.t
 
   type log = PPrint.document list
 
-  let do_log ~dir env c k =
+  let do_log ~dir (env : env) c k =
     let open PPrint in
-    let env = Unif.Env.debug_env env in
+    let env = Unif.Env.debug_env env.unif in
     let dir =
       match dir with
       | `Init -> "--"
@@ -49,17 +54,41 @@ module Make (T : Utils.Functor) = struct
 
   let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t) :
     (a, e) normal_constraint =
+    (* We recommend calling the function [add_to_log] below
+       whenever you get an updated environment.
+
+       $ dune exec -- minihell --log-solver foo.test
+
+       will show a log that will let you see the evolution
+       of your input constraint as the solver progresses,
+       which is useful for debugging.
+
+       (You can also tweak this code temporarily to print stuff
+       on stderr right away if you need dirtier ways to debug.)
+    *)
     let add_to_log ~dir env c k =
       if log || Debug.debug then do_log ~dir env c k
     in
     let at_loc = Utils.at_loc in
+    let result_to_constr = function
+      | Ok v -> Constraint.Ret v
+      | Error (_loco, e) -> Constraint.Err e
+    in
+    let decode_error env loco = function
+      | Unif.Cycle cy -> (loco, Constraint.Cycle cy)
+      | Clash (y1, y2) ->
+        let decoder = Decode.decode env.Env.unif () in
+        at_loc loco @@ fun () ->
+        (loco, Constraint.Clash (decoder y1, decoder y2))
+    in
     let rec eval : type a1 e1 a e.
       env ->
       Utils.loc option * (a1, e1) Constraint.t ->
       (a1, e1, a, e) Constraint.cont ->
       (a, e) normal_constraint =
      fun env (loco, c) k ->
-      let add_to_log = add_to_log ~dir:`Enter in
+      let dir = `Enter in
+
       match c with
       | Loc (loc, c) -> eval env (Some loc, c) k
       | Ret v -> continue env (Ok v) k
@@ -68,31 +97,78 @@ module Make (T : Utils.Functor) = struct
       | MapErr (c, f) -> eval env (loco, c) (Next ((loco, KMapErr f), k))
       | Conj (c, d) -> eval env (loco, c) (Next ((loco, KConj1 d), k))
       | Eq (x1, x2) -> begin
-        match at_loc loco @@ fun () -> Unif.unify env x1 x2 with
-        | Ok env ->
-          add_to_log env c k;
+        match at_loc loco @@ fun () -> Unif.unify env.unif x1 x2 with
+        | Error err -> continue env (Error (decode_error env loco err)) k
+        | Ok unif ->
+          let env = { env with unif } in
+          add_to_log ~dir env c k;
           continue env (Ok (fun _sol -> ())) k
-        | Error (Cycle cy) -> continue env (Error (loco, Constraint.Cycle cy)) k
-        | Error (Clash (y1, y2)) ->
-          let decoder = Decode.decode env () in
-          at_loc loco @@ fun () ->
-          continue env
-            (Error (loco, Constraint.Clash (decoder y1, decoder y2)))
-            k
       end
       | Exist (x, s, c) ->
-        let env = Unif.Env.add_flexible x s env in
-        add_to_log env c k;
+        let env = { env with unif = Unif.Env.add_flexible x s env.unif } in
+        add_to_log ~dir env c k;
         eval env (loco, c) (Next ((loco, KExist x), k))
       | Decode v ->
         continue env (Ok (fun sol -> at_loc loco @@ fun () -> sol v)) k
       | Do p -> NDo (T.map (fun c -> eval env (loco, c) k) p)
+      | DecodeScheme sch_var -> begin
+        let scheme = Env.SMap.find sch_var env.schemes in
+
+        let body sol = sol (Generalization.body scheme) in
+
+        let quantifiers sol =
+          scheme
+          |> Generalization.quantifiers
+          |> List.map
+               begin
+                 fun var ->
+                   let (STLC.Constr ty) = sol var in
+                   match ty with
+                   | Var v -> v
+                   | Arrow _ | Prod _ -> assert false
+               end
+        in
+
+        continue env (Ok (fun sol -> (quantifiers sol, body sol))) k
+      end
+      | Instance (sch_var, w) -> begin
+        let sch = Env.SMap.find sch_var env.schemes in
+
+        let unif, result = Generalization.instantiate sch w env.unif in
+
+        let env = { env with unif } in
+        add_to_log ~dir env c k;
+
+        let res =
+          match result with
+          | Error err -> Error (decode_error env loco err)
+          | Ok witnesses -> Ok (fun sol -> List.map sol witnesses)
+        in
+
+        continue env res k
+      end
+      | Let (bindings, c1, c2) ->
+        let env =
+          List.fold_left
+            begin
+              fun (env : env) (_, var) ->
+                let unif = Generalization.enter env.unif in
+                let unif = Unif.Env.add_flexible var None unif in
+                { env with unif }
+            end
+            env bindings
+        in
+        add_to_log ~dir env c k;
+
+        eval env (loco, c1) (Next ((loco, KLet1 (bindings, c2)), k))
     and continue : type a1 e1 a e.
       env ->
       (a1 Constraint.on_sol, Utils.loc option * e1) result ->
       (a1, e1, a, e) Constraint.cont ->
       (a, e) normal_constraint =
      fun env res k ->
+      let dir = `Continue in
+
       match res with
       | Error (loco, e) -> begin
         match k with
@@ -102,6 +178,8 @@ module Make (T : Utils.Functor) = struct
         | Next ((_, KConj1 _), k) -> continue env (Error (loco, e)) k
         | Next ((_, KConj2 _), k) -> continue env (Error (loco, e)) k
         | Next ((_, KExist _), k) -> continue env (Error (loco, e)) k
+        | Next ((_, KLet1 _), k) -> continue env (Error (loco, e)) k
+        | Next ((_, KLet2 _), k) -> continue env (Error (loco, e)) k
       end
       | Ok v -> begin
         match k with
@@ -123,6 +201,23 @@ module Make (T : Utils.Functor) = struct
              We must those keep these variables in the environment
              to be able to provide the solution at the end. *)
           continue env res k
+        | Next ((loco, KLet1 (bindings, c)), k) as k0 ->
+          let sch_vars, vars = List.split bindings in
+
+          let unif, schemes = Generalization.exit vars env.unif in
+          let env = { env with unif } in
+
+          let schemes =
+            List.fold_right2 Env.SMap.add sch_vars schemes env.schemes
+          in
+          let env = { env with schemes } in
+          add_to_log ~dir env (result_to_constr res) k0;
+
+          eval env (loco, c) (Next ((loco, KLet2 v), k))
+        | Next ((loco, KLet2 w), k) ->
+          continue env
+            (Ok (fun sol -> at_loc loco @@ fun () -> (w sol, v sol)))
+            k
         | Next ((_, KMapErr _), k) -> continue env (Ok v) k
       end
     in

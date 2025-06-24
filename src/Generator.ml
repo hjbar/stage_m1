@@ -164,15 +164,15 @@ module Make (M : Utils.MonadPlus) = struct
 
   (* Generate the initial constraint to type a given untyped term *)
 
-  let constraint_ untyped : (STLC.term * STLC.ty, Infer.err) Constraint.t =
-    Infer.exist_wrapper untyped
+  let constraint_ untyped : (STLC.term * STLC.scheme, Infer.err) Constraint.t =
+    Infer.let_wrapper untyped
 
 
   (* Generate a typed term of a given size from a monadic untyped term *)
 
-  let typed_cut_early ~size untyped : (STLC.term * STLC.ty) M.t =
+  let typed_cut_early ~size untyped : (STLC.term * STLC.scheme) M.t =
     let rec loop : type a e. (a, e) Solver.normal_constraint -> a M.t = function
-      | NRet (env, v) -> M.return @@ v (Decode.decode env ())
+      | NRet (env, v) -> M.return @@ v (Decode.decode env.unif ())
       | NErr _ -> M.fail
       | NDo m -> M.bind m loop
     in
@@ -182,7 +182,7 @@ module Make (M : Utils.MonadPlus) = struct
     loop nf
 
 
-  let typed_cut_late ~size untyped : (STLC.term * STLC.ty) M.t =
+  let typed_cut_late ~size untyped : (STLC.term * STLC.scheme) M.t =
     let rec loop : type a e.
       fuel:int -> (a, e) Solver.normal_constraint -> a M.t =
      fun ~fuel nf ->
@@ -190,7 +190,7 @@ module Make (M : Utils.MonadPlus) = struct
       else
         match nf with
         | (NRet _ | NErr _) when fuel > 0 -> M.fail
-        | NRet (env, v) -> M.return @@ v (Decode.decode env ())
+        | NRet (env, v) -> M.return @@ v (Decode.decode env.unif ())
         | NErr _ -> M.fail
         | NDo m -> M.bind m (loop ~fuel:(fuel - 1))
     in

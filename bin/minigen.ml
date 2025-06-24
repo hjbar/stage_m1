@@ -202,7 +202,7 @@ let generate config (module M : SearchImpl) =
   untyped |> typed ~size:config.size |> M.run
 
 
-let produce_doc_of_term config (term, ty) =
+let produce_doc_of_term config (term, scheme) =
   let term_doc = STLCPrinter.print_term term in
 
   match config.types with
@@ -213,7 +213,7 @@ let produce_doc_of_term config (term, ty) =
     ^^ hardline
     ^^ hardline
     ^^ string "Inferred type : "
-    ^^ STLCPrinter.print_ty ty
+    ^^ STLCPrinter.print_scheme scheme
 
 
 let produce_terms config =

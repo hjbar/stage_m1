@@ -7,6 +7,10 @@ module Make (T : Utils.Functor) = struct
     Printer.inference_variable (Constraint.Var.print v)
 
 
+  let print_sch_var (sch_var : Constraint.scheme_variable) : PPrint.document =
+    Printer.scheme_variable (Constraint.SVar.print sch_var)
+
+
   let print_sat_constraint (c : sat_constraint) : PPrint.document =
     let rec print_top = fun c -> print_left_open c
     and print_left_open =
@@ -19,6 +23,7 @@ module Make (T : Utils.Functor) = struct
               (print_var v, Option.map (Structure.print print_var) s)
             in
             let bindings, body = peel c in
+
             (binding :: bindings, body)
           | other -> ([], print_next other)
         in
@@ -30,6 +35,13 @@ module Make (T : Utils.Functor) = struct
 
       function
       | Conj cs -> Printer.conjunction (List.map print_next cs)
+      | Let (bindings, c1, c2) ->
+        let print_binding (sch_var, var) =
+          (print_sch_var sch_var, print_var var)
+        in
+        Printer.let_sch
+          (List.map print_binding bindings)
+          (print_next c1) (print_next c2)
       | other -> print_next other
     and print_atom = function
       | Loc (_loc, c) -> print_top c
@@ -37,7 +49,10 @@ module Make (T : Utils.Functor) = struct
       | False -> Printer.false_
       | Eq (v1, v2) -> Printer.eq (print_var v1) (print_var v2)
       | Do _ -> Printer.do_
-      | (Exist _ | Conj _) as other -> PPrint.parens (print_top other)
+      | DecodeScheme sch_var -> Printer.decode_scheme (print_sch_var sch_var)
+      | Instance (sch_var, var) ->
+        Printer.instance (print_sch_var sch_var) (print_var var)
+      | (Exist _ | Conj _ | Let _) as other -> PPrint.parens (print_top other)
     in
     print_top c
 
@@ -53,6 +68,14 @@ module Make (T : Utils.Functor) = struct
         | KConj1 c2 -> Printer.conjunction [ rest; print_sat_constraint c2 ]
         | KConj2 -> Printer.conjunction [ Printer.true_; rest ]
         | KExist v -> Printer.exist [ (print_var v, None) ] rest
+        | KLet1 (bindings, c2) ->
+          let print_binding (sch_var, var) =
+            (print_sch_var sch_var, print_var var)
+          in
+          Printer.let_sch
+            (List.map print_binding bindings)
+            rest (print_sat_constraint c2)
+        | KLet2 -> Printer.let_sch_2 rest
       end
       | [] -> Printer.hole ~env (print_sat_constraint c)
     in
