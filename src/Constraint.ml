@@ -95,4 +95,18 @@ module Make (T : Utils.Functor) = struct
       For more details on binding operators, see
       https://v2.ocaml.org/releases/5.1/manual/bindingops.html *)
   let ( and+ ) c1 c2 = Conj (c1, c2)
+
+  (* The continuation of a constraint (used mostly in the solver) *)
+  type ('ok1, 'err1, 'ok, 'err) cont =
+    | Done : ('ok, 'err, 'ok, 'err) cont
+    | Next :
+        ('ok1, 'err1, 'ok2, 'err2) cont_frame * ('ok2, 'err2, 'ok, 'err) cont
+        -> ('ok1, 'err1, 'ok, 'err) cont
+
+  and ('ok1, 'err1, 'ok, 'err) cont_frame =
+    | KMap : ('ok1 -> 'ok2) -> ('ok1, 'err, 'ok2, 'err) cont_frame
+    | KMapErr : ('err1 -> 'err2) -> ('ok, 'err1, 'ok, 'err2) cont_frame
+    | KConj1 : ('ok2, 'err) t -> ('ok1, 'err, 'ok1 * 'ok2, 'err) cont_frame
+    | KConj2 : 'ok1 on_sol -> ('ok2, 'err, 'ok1 * 'ok2, 'err) cont_frame
+    | KExist : variable -> ('ok, 'err, 'ok, 'err) cont_frame
 end

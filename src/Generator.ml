@@ -141,34 +141,31 @@ module Make (M : Utils.MonadPlus) = struct
 
 
   let typed_cut_early ~size untyped : (STLC.term * STLC.ty) M.t =
-    let open struct type env = Solver.env end in
-    let rec loop : type a e. env -> (a, e) Constraint.t -> a M.t =
-     fun env cstr ->
-      let _logs, env, nf = Solver.eval ~log:false env cstr in
-      match nf with
-      | NRet v ->
-        let decoder = Decode.decode env () in
-        M.return (v decoder)
+    let rec loop : type a e. (a, e) Solver.normal_constraint -> a M.t = function
+      | NRet (env, v) -> M.return @@ v (Decode.decode env ())
       | NErr _ -> M.fail
-      | NDo p -> M.bind p (fun cstr -> loop env cstr)
+      | NDo m -> M.bind m loop
     in
-    untyped |> cut_size ~size |> constraint_ |> loop Unif.Env.empty
+
+    let constraint_ = untyped |> cut_size ~size |> constraint_ in
+    let nf = Solver.eval ~log:false Unif.Env.empty constraint_ in
+    loop nf
 
 
   let typed_cut_late ~size untyped : (STLC.term * STLC.ty) M.t =
-    let open struct type env = Solver.env end in
-    let rec loop : type a e. fuel:int -> env -> (a, e) Constraint.t -> a M.t =
-     fun ~fuel env cstr ->
+    let rec loop : type a e.
+      fuel:int -> (a, e) Solver.normal_constraint -> a M.t =
+     fun ~fuel nf ->
       if fuel < 0 then M.fail
       else
-        let _logs, env, nf = Solver.eval ~log:false env cstr in
         match nf with
         | (NRet _ | NErr _) when fuel > 0 -> M.fail
-        | NRet v ->
-          let decoder = Decode.decode env () in
-          M.return (v decoder)
+        | NRet (env, v) -> M.return @@ v (Decode.decode env ())
         | NErr _ -> M.fail
-        | NDo p -> M.bind p (fun cstr -> loop ~fuel:(fuel - 1) env cstr)
+        | NDo m -> M.bind m (loop ~fuel:(fuel - 1))
     in
-    loop ~fuel:size Unif.Env.empty (constraint_ untyped)
+
+    let constraint_ = constraint_ untyped in
+    let nf = Solver.eval ~log:false Unif.Env.empty constraint_ in
+    loop ~fuel:size nf
 end

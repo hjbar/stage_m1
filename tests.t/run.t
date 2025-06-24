@@ -106,6 +106,7 @@ to the bin/dune content.)
 
 
 
+
 `id_int` is the monomorphic identity on the type `int`. Note
 that we have not implemented support for a built-in `int`
 type, this is just an abstract/rigid type variable: `Constr
@@ -132,6 +133,7 @@ type, this is just an abstract/rigid type variable: `Constr
 
 
 
+
 ## Logging the constraint-solving process
 
 You can ask `minihell` to show how the constraint evolves as
@@ -151,43 +153,43 @@ the inference variables.
       ∧ decode ?final_type
   
   Constraint solving log:
-    ∃?final_type.
-      decode ?final_type
-      ∧ (∃?x ?wt (?warr = ?x -> ?wt).
-        (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-        ∧ decode ?x
-        ∧ ?final_type = ?warr)
-    ∃?final_type.
-      decode ?final_type
-      ∧ (∃?x ?wt (?warr = ?x -> ?wt).
-        (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-        ∧ decode ?x
-        ∧ ?final_type = ?warr)
-    ∃?x ?final_type.
-      decode ?final_type
-      ∧ (∃?wt (?warr = ?x -> ?wt).
-        (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-        ∧ decode ?x
-        ∧ ?final_type = ?warr)
-    ∃?x ?wt ?final_type.
-      decode ?final_type
-      ∧ (∃(?warr = ?x -> ?wt).
-        (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-        ∧ decode ?x
-        ∧ ?final_type = ?warr)
-    ∃?x ?wt (?warr = ?x -> ?wt) ?final_type.
-      decode ?final_type
-      ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
+  ∃?final_type.
+    decode ?final_type
+    ∧ (∃?x ?wt (?warr = ?x -> ?wt).
+      (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
       ∧ decode ?x
-      ∧ ?final_type = ?warr
-    ∃?x ?wt (?final_type = ?x -> ?wt).
-      decode ?final_type ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x) ∧ decode ?x
-    ∃?x ?wt (?int = int) (?final_type = ?x -> ?wt).
-      decode ?final_type ∧ ?int = ?wt ∧ ?int = ?x ∧ decode ?x
-    ∃?wt (?int = int) (?final_type = ?int -> ?wt).
-      decode ?final_type ∧ ?int = ?wt ∧ decode ?int
-    ∃(?int = int) (?final_type = ?int -> ?int).
-      decode ?final_type ∧ decode ?int
+      ∧ ?final_type = ?warr)
+  ∃?final_type.
+    decode ?final_type
+    ∧ (∃?x ?wt (?warr = ?x -> ?wt).
+      (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
+      ∧ decode ?x
+      ∧ ?final_type = ?warr)
+  ∃?x ?final_type.
+    decode ?final_type
+    ∧ (∃?wt (?warr = ?x -> ?wt).
+      (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
+      ∧ decode ?x
+      ∧ ?final_type = ?warr)
+  ∃?x ?wt ?final_type.
+    decode ?final_type
+    ∧ (∃(?warr = ?x -> ?wt).
+      (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
+      ∧ decode ?x
+      ∧ ?final_type = ?warr)
+  ∃?x ?wt (?warr = ?x -> ?wt) ?final_type.
+    decode ?final_type
+    ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
+    ∧ decode ?x
+    ∧ ?final_type = ?warr
+  ∃?x ?wt (?final_type = ?x -> ?wt).
+    decode ?final_type ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x) ∧ decode ?x
+  ∃?x ?wt (?int = int) (?final_type = ?x -> ?wt).
+    decode ?final_type ∧ ?int = ?wt ∧ ?int = ?x ∧ decode ?x
+  ∃?wt (?int = int) (?final_type = ?int -> ?wt).
+    decode ?final_type ∧ ?int = ?wt ∧ decode ?int
+  ∃(?int = int) (?final_type = ?int -> ?int).
+    decode ?final_type ∧ decode ?int
   
   Inferred type:
     int -> int
@@ -195,6 +197,7 @@ the inference variables.
   Elaborated term:
     lambda (x : int). x
   
+
 
 
 
@@ -218,6 +221,7 @@ the inference variables.
     incompatible with
       β -> α
   
+
 
 
 
@@ -254,6 +258,7 @@ the inference variables.
 
 
 
+
   $ minihell $FLAGS uncurry.test
   Input term:
     lambda f. lambda p. let (x, y) = p in f x y
@@ -285,6 +290,7 @@ the inference variables.
   
 
 
+
 ## Cyclic types
 
 Unification can sometimes create cyclic types. We decide to reject
@@ -307,52 +313,53 @@ a lot of those.)
       ∧ decode ?final_type
   
   Constraint solving log:
-    ∃?final_type.
-      decode ?final_type
-      ∧ (∃?x ?wt (?warr = ?x -> ?wt).
-        (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-        ∧ decode ?x
-        ∧ ?final_type = ?warr)
-    ∃?final_type.
-      decode ?final_type
-      ∧ (∃?x ?wt (?warr = ?x -> ?wt).
-        (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-        ∧ decode ?x
-        ∧ ?final_type = ?warr)
-    ∃?x ?final_type.
-      decode ?final_type
-      ∧ (∃?wt (?warr = ?x -> ?wt).
-        (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-        ∧ decode ?x
-        ∧ ?final_type = ?warr)
-    ∃?x ?wt ?final_type.
-      decode ?final_type
-      ∧ (∃(?warr = ?x -> ?wt).
-        (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
-        ∧ decode ?x
-        ∧ ?final_type = ?warr)
-    ∃?x ?wt (?warr = ?x -> ?wt) ?final_type.
-      decode ?final_type
-      ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
+  ∃?final_type.
+    decode ?final_type
+    ∧ (∃?x ?wt (?warr = ?x -> ?wt).
+      (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
       ∧ decode ?x
-      ∧ ?final_type = ?warr
-    ∃?x ?wt (?final_type = ?x -> ?wt).
-      decode ?final_type
-      ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
+      ∧ ?final_type = ?warr)
+  ∃?final_type.
+    decode ?final_type
+    ∧ (∃?x ?wt (?warr = ?x -> ?wt).
+      (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
       ∧ decode ?x
-    ∃?x ?wu ?wt (?final_type = ?x -> ?wt).
-      decode ?final_type
-      ∧ (∃(?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
+      ∧ ?final_type = ?warr)
+  ∃?x ?final_type.
+    decode ?final_type
+    ∧ (∃?wt (?warr = ?x -> ?wt).
+      (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
       ∧ decode ?x
-    ∃?wu ?wt (?wt/1 = ?wu -> ?wt) ?x ?wu ?wt (?final_type = ?x -> ?wt).
-      decode ?final_type ∧ ?wu = ?x ∧ ?wt/1 = ?x ∧ decode ?x
-    ∃?wu ?wt (?wt/1 = ?wu -> ?wt) ?wt (?final_type = ?wt/1 -> ?wt).
-      decode ?final_type ∧ ⊥ ∧ decode ?wt/1
+      ∧ ?final_type = ?warr)
+  ∃?x ?wt ?final_type.
+    decode ?final_type
+    ∧ (∃(?warr = ?x -> ?wt).
+      (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
+      ∧ decode ?x
+      ∧ ?final_type = ?warr)
+  ∃?x ?wt (?warr = ?x -> ?wt) ?final_type.
+    decode ?final_type
+    ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
+    ∧ decode ?x
+    ∧ ?final_type = ?warr
+  ∃?x ?wt (?final_type = ?x -> ?wt).
+    decode ?final_type
+    ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
+    ∧ decode ?x
+  ∃?x ?wu ?wt (?final_type = ?x -> ?wt).
+    decode ?final_type
+    ∧ (∃(?wt/1 = ?wu -> ?wt). ?wu = ?x ∧ ?wt/1 = ?x)
+    ∧ decode ?x
+  ∃?wu ?wt (?wt/1 = ?wu -> ?wt) ?x ?wu ?wt (?final_type = ?x -> ?wt).
+    decode ?final_type ∧ ?wu = ?x ∧ ?wt/1 = ?x ∧ decode ?x
+  ∃?wu ?wt (?wt/1 = ?wu -> ?wt) ?wt (?final_type = ?wt/1 -> ?wt).
+    decode ?final_type ∧ ⊥ ∧ decode ?wt/1
   
   Error:
     cycle on constraint variable
     ?wu
   
+
 
 
 ## Generator tests
@@ -363,179 +370,181 @@ fine if your own implementation produces different (sensible) results.
 There are not many programs with size 3, 4 and 5.
 
   $ minigen --search exhaustive --types --size 2 --count 100
-  lambda (z/3 : α/1). z/3
+  lambda (x/5 : α/1). x/5
   
   Inferred type : α/1 -> α/1
 
   $ minigen --search exhaustive --types --size 3 --count 100
-  lambda (x/11 : β/4). lambda (y/15 : γ/4). x/11
+  lambda (v/14 : α/7). lambda (u/19 : β/7). v/14
   
-  Inferred type : β/4 -> γ/4 -> β/4
+  Inferred type : α/7 -> β/7 -> α/7
   
   
   
-  lambda (x/11 : α/5). lambda (y/15 : δ/4). y/15
+  lambda (v/14 : δ/7). lambda (u/19 : γ/7). u/19
   
-  Inferred type : α/5 -> δ/4 -> δ/4
+  Inferred type : δ/7 -> γ/7 -> γ/7
 
   $ minigen --search exhaustive --types --size 4 --count 100
   lambda
-  (v/4e : β/11). lambda (u/65 : δ/11). lambda (z/6a : γ/11). v/4e
+  (v/6a : δ/2a). lambda (w/86 : β/2b). lambda (z/8c : α/2b). v/6a
   
-  Inferred type : β/11 -> δ/11 -> γ/11 -> β/11
-  
-  
-  
-  lambda
-  (v/4e : γ/12). lambda (u/65 : α/12). lambda (z/6a : β/12). u/65
-  
-  Inferred type : γ/12 -> α/12 -> β/12 -> α/12
+  Inferred type : δ/2a -> β/2b -> α/2b -> δ/2a
   
   
   
   lambda
-  (v/4e : β/13). lambda (u/65 : α/13). lambda (z/6a : δ/12). z/6a
+  (v/6a : α/2c). lambda (w/86 : γ/2b). lambda (z/8c : δ/2b). w/86
   
-  Inferred type : β/13 -> α/13 -> δ/12 -> δ/12
-  
-  
-  
-  lambda (v/4e : γ/14). let (z/7e : γ/14) = v/4e in v/4e
-  
-  Inferred type : γ/14 -> γ/14
-  
-  
-  
-  lambda (v/4e : δ/14). let (z/7e : δ/14) = v/4e in z/7e
-  
-  Inferred type : δ/14 -> δ/14
-  
-  
-  
-  lambda (v/4e : α/17). (v/4e, v/4e)
-  
-  Inferred type : α/17 -> {α/17 * α/17}
+  Inferred type : α/2c -> γ/2b -> δ/2b -> γ/2b
   
   
   
   lambda
-  (v/4e : {β/19 * γ/19}).
-    let ((y/b6 : β/19), (z/b5 : γ/19)) = v/4e in v/4e
+  (v/6a : δ/2c). lambda (w/86 : γ/2c). lambda (z/8c : β/2c). z/8c
   
-  Inferred type : {β/19 * γ/19} -> {β/19 * γ/19}
+  Inferred type : δ/2c -> γ/2c -> β/2c -> β/2c
+  
+  
+  
+  lambda (v/6a : α/32). let (z/a0 : α/32) = v/6a in v/6a
+  
+  Inferred type : α/32 -> α/32
+  
+  
+  
+  lambda (v/6a : β/32). let (z/a0 : β/32) = v/6a in z/a0
+  
+  Inferred type : β/32 -> β/32
+  
+  
+  
+  lambda (v/6a : γ/39). (v/6a, v/6a)
+  
+  Inferred type : γ/39 -> {γ/39 * γ/39}
   
   
   
   lambda
-  (v/4e : {α/1a * δ/19}).
-    let ((y/b6 : α/1a), (z/b5 : δ/19)) = v/4e in z/b5
+  (v/6a : {δ/40 * α/41}).
+    let ((u/d8 : δ/40), (v/d8 : α/41)) = v/6a in v/6a
   
-  Inferred type : {α/1a * δ/19} -> δ/19
+  Inferred type : {δ/40 * α/41} -> {δ/40 * α/41}
   
   
   
   lambda
-  (v/4e : {β/1a * γ/1a}).
-    let ((y/b6 : β/1a), (z/b5 : γ/1a)) = v/4e in y/b6
+  (v/6a : {β/41 * γ/41}).
+    let ((u/d8 : β/41), (v/d8 : γ/41)) = v/6a in u/d8
   
-  Inferred type : {β/1a * γ/1a} -> β/1a
+  Inferred type : {β/41 * γ/41} -> β/41
   
   
   
-  let (u/cb : β/21 -> β/21) = lambda (v/db : β/21). v/db in u/cb
+  lambda
+  (v/6a : {α/42 * δ/41}).
+    let ((u/d8 : α/42), (v/d8 : δ/41)) = v/6a in v/d8
   
-  Inferred type : β/21 -> β/21
+  Inferred type : {α/42 * δ/41} -> δ/41
+  
+  
+  
+  let (u/ef : β/53 -> β/53) = lambda (z/104 : β/53). z/104 in u/ef
+  
+  Inferred type : β/53 -> β/53
 
 An example of random sampling output at higher size.
 
   $ minigen --seed 42 --types --size 6 --count 10
   lambda
-  (v/5 : δ/16c).
+  (z/1 : δ/bd).
     lambda
-    (u/6 : {β/16c * γ/16c}).
+    (x/2a : {β/bd * γ/bd}).
       lambda
-      (w/71 : α/16c). let ((z/284 : β/16c), (u/284 : γ/16c)) = u/6 in w/71
+      (u/7a : α/bd). let ((x/290 : β/bd), (y/290 : γ/bd)) = x/2a in u/7a
   
-  Inferred type : δ/16c -> {β/16c * γ/16c} -> α/16c -> α/16c
-  
-  
-  
-  lambda
-  (v/5 : β/1de).
-    (lambda (x/336 : α/1de). lambda (y/336 : δ/1dd). y/336, v/5)
-  
-  Inferred type : β/1de -> {α/1de -> δ/1dd -> δ/1dd * β/1de}
+  Inferred type : δ/bd -> {β/bd * γ/bd} -> α/bd -> α/bd
   
   
   
   lambda
-  (v/5 : β/271). let (v/18 : {β/271 * β/271}) = (v/5, v/5) in v/18
+  (z/1 : β/f9).
+    (lambda (x/345 : α/f9). lambda (y/345 : δ/f8). y/345, z/1)
   
-  Inferred type : β/271 -> {β/271 * β/271}
+  Inferred type : β/f9 -> {α/f9 -> δ/f8 -> δ/f8 * β/f9}
   
   
   
   lambda
-  (v/5 : {{δ/279 * α/27a} * β/27a}).
+  (z/1 : {γ/fa * β/fb}).
     let
-    ((v/43e : {δ/279 * α/27a}), (w/43e : β/27a))
+    ((u/34f : γ/fa), (v/34f : β/fb))
     =
-    v/5
-    in let ((x/440 : δ/279), (y/440 : α/27a)) = v/43e in x/440
+    z/1
+    in lambda (w/34f : α/fb). lambda (x/351 : δ/fa). u/34f
   
-  Inferred type : {{δ/279 * α/27a} * β/27a} -> δ/279
+  Inferred type : {γ/fa * β/fb} -> α/fb -> δ/fa -> γ/fa
   
   
   
-  lambda (v/5 : β/2a5). ((v/5, v/5), v/5)
+  (
+    lambda (u/3e2 : β/128). lambda (v/3e2 : γ/128). u/3e2,
+    lambda (w/3e2 : δ/128). w/3e2
+  )
   
-  Inferred type : β/2a5 -> {{β/2a5 * β/2a5} * β/2a5}
+  Inferred type : {β/128 -> γ/128 -> β/128 * δ/128 -> δ/128}
+  
+  
+  
+  lambda
+  (z/1 : α/14a). let (x/1a : {α/14a * α/14a}) = (z/1, z/1) in x/1a
+  
+  Inferred type : α/14a -> {α/14a * α/14a}
+  
+  
+  
+  lambda
+  (z/1 : {{β/14f * γ/14f} * δ/14f}).
+    let
+    ((u/456 : {β/14f * γ/14f}), (v/456 : δ/14f))
+    =
+    z/1
+    in let ((w/456 : β/14f), (x/458 : γ/14f)) = u/456 in w/456
+  
+  Inferred type : {{β/14f * γ/14f} * δ/14f} -> β/14f
+  
+  
+  
+  lambda (z/1 : β/169). ((z/1, z/1), z/1)
+  
+  Inferred type : β/169 -> {{β/169 * β/169} * β/169}
+  
+  
+  
+  lambda
+  (z/1 : {γ/16e * δ/16e}).
+    let
+    ((x/4b3 : γ/16e), (y/4b3 : δ/16e))
+    =
+    z/1
+    in let (z/4b2 : γ/16e) = x/4b3 in z/1
+  
+  Inferred type : {γ/16e * δ/16e} -> {γ/16e * δ/16e}
   
   
   
   let
-  (x/1 : α/2ba -> γ/2b9 -> δ/2b9 -> γ/2b9)
+  (w/4 : α/171 -> γ/171 -> β/171 -> α/171)
   =
   lambda
-  (x/2f : α/2ba). lambda (y/2f : γ/2b9). lambda (y/15d : δ/2b9). y/2f
-  in x/1
+  (y/31 : α/171). lambda (z/30 : γ/171). lambda (x/81 : β/171). y/31
+  in w/4
   
-  Inferred type : α/2ba -> γ/2b9 -> δ/2b9 -> γ/2b9
-  
-  
-  
-  (lambda (z/f : α/403 -> δ/402 -> δ/402). z/f)
-    (lambda (v/26 : α/403). lambda (y/1bc : δ/402). y/1bc)
-  
-  Inferred type : α/403 -> δ/402 -> δ/402
+  Inferred type : α/171 -> γ/171 -> β/171 -> α/171
   
   
   
   lambda
-  (v/5 : β/4f4). let (v/18 : {β/4f4 * β/4f4}) = (v/5, v/5) in v/5
+  (z/1 : α/2bf). let (x/1a : {α/2bf * α/2bf}) = (z/1, z/1) in z/1
   
-  Inferred type : β/4f4 -> β/4f4
-  
-  
-  
-  lambda
-  (v/5 : α/523).
-    lambda
-    (u/6 : δ/523).
-      lambda
-      (w/71 : {β/523 * γ/523}).
-        let ((z/88d : β/523), (u/88d : γ/523)) = w/71 in v/5
-  
-  Inferred type : α/523 -> δ/523 -> {β/523 * γ/523} -> α/523
-  
-  
-  
-  lambda
-  (v/5 : {α/59a * β/59a}).
-    let
-    (v/18 : {α/59a * β/59a})
-    =
-    let ((z/93d : α/59a), (u/93d : β/59a)) = v/5 in v/5
-    in v/18
-  
-  Inferred type : {α/59a * β/59a} -> {α/59a * β/59a}
+  Inferred type : α/2bf -> α/2bf

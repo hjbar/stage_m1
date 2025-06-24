@@ -56,22 +56,22 @@ let call_parser ~config parser_fun input_path =
 
 let call_typer ~config (term : Untyped.term) =
   let cst = Infer.exist_wrapper term in
+
   if config.show_constraint then
     print_section "Generated constraint"
       (ConstraintPrinter.print_constraint cst);
-  let logs, result =
-    let logs, env, nf = Solver.eval ~log:config.log_solver Unif.Env.empty cst in
-    let result =
-      match nf with
-      | NRet v -> Ok (v (Decode.decode env ()))
-      | NErr e -> Error e
-      | NDo _ -> .
-    in
-    (logs, result)
+
+  let nf =
+    if config.log_solver then prerr_endline "Constraint solving log:";
+    let p = Solver.eval ~log:config.log_solver Unif.Env.empty cst in
+    if config.log_solver then prerr_newline ();
+    p
   in
-  if config.log_solver then
-    print_section "Constraint solving log" PPrint.(separate hardline logs);
-  result
+
+  match nf with
+  | NRet (env, v) -> Ok (v (Decode.decode env ()))
+  | NErr e -> Error e
+  | NDo _ -> .
 
 
 let print_result ~config result =

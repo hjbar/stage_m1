@@ -14,54 +14,27 @@ module Make (T : Utils.Functor) = struct
 
   type log = PPrint.document list
 
-  let make_logger c0 =
-    let logs = Queue.create () in
+  let do_log c0 =
     let c0_erased = SatConstraint.erase c0 in
-    let add_to_log env =
-      let doc =
-        c0_erased
-        |> ConstraintSimplifier.simplify env
-        |> ConstraintPrinter.print_sat_constraint
-      in
-      Queue.add doc logs
-    in
-    let get_log () = logs |> Queue.to_seq |> List.of_seq in
-    (add_to_log, get_log)
+    fun env ->
+      c0_erased
+      |> ConstraintSimplifier.simplify env
+      |> ConstraintPrinter.print_sat_constraint
+      |> Utils.string_of_doc
+      |> prerr_endline
 
 
   (** See [../README.md] ("High-level description") or [Solver.mli] for a
       description of normal constraints and our expectations regarding the
       [eval] function. *)
-  type ('a, 'e) normal_constraint =
-    | NRet of 'a Constraint.on_sol
-    | NErr of 'e
-    | NDo of ('a, 'e) Constraint.t T.t
-
-  let normal_pair nc nd =
-    let open Constraint in
-    let ( let+ ) nf f = T.map f nf in
-    match (nc, nd) with
-    | NErr e, _ | _, NErr e -> NErr e
-    | NDo p, NDo q ->
-      NDo
-        (let+ c = p in
-         Conj (c, Do q) )
-    | NDo p, NRet w ->
-      NDo
-        (let+ c = p in
-         Conj (c, Ret w) )
-    | NRet v, NDo q ->
-      NDo
-        (let+ d = q in
-         Conj (Ret v, d) )
-    | NRet v, NRet w -> NRet (fun sol -> (v sol, w sol))
-
+  type ('ok, 'err) normal_constraint =
+    | NRet : env * 'a Constraint.on_sol -> ('a, 'e) normal_constraint
+    | NErr : 'e -> ('a, 'e) normal_constraint
+    | NDo : ('a, 'e) normal_constraint T.t -> ('a, 'e) normal_constraint
 
   let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t) :
-    log * env * (a, e) normal_constraint =
-    let add_to_log, get_log =
-      if log || Debug.debug then make_logger c0 else (ignore, fun _ -> [])
-    in
+    (a, e) normal_constraint =
+    let add_to_log = if log || Debug.debug then do_log c0 else ignore in
 
     let exception Located of Utils.loc * exn * Printexc.raw_backtrace in
     let locate_exn loc exn =
@@ -72,76 +45,81 @@ module Make (T : Utils.Functor) = struct
         raise @@ Located (loc, base_exn, bt)
     in
 
-    let env = ref env in
-    let rec eval : type a e. (a, e) Constraint.t -> (a, e) normal_constraint =
-      let open Constraint in
-      let ( let+ ) nf f = T.map f nf in
-      function
-      | Loc (loc, c) -> begin try eval c with exn -> locate_exn loc exn end
-      | Ret v -> NRet v
-      | Err e -> NErr e
-      | Map (c, f) -> begin
-        match eval c with
-        | NRet v -> NRet (fun sol -> f (v sol))
-        | NErr e -> NErr e
-        | NDo p ->
-          NDo
-            (let+ c = p in
-             Map (c, f) )
+    let rec eval : type a1 e1 a e.
+      env ->
+      (a1, e1) Constraint.t ->
+      (a1, e1, a, e) Constraint.cont ->
+      (a, e) normal_constraint =
+     fun env c k ->
+      match c with
+      | Loc (loc, c) -> begin
+        try eval env c k with exn -> locate_exn loc exn
       end
-      | MapErr (c, f) -> begin
-        match eval c with
-        | NRet v -> NRet v
-        | NErr e -> NErr (f e)
-        | NDo p ->
-          NDo
-            (let+ c = p in
-             MapErr (c, f) )
+      | Ret v -> continue env (Ok v) k
+      | Err e -> continue env (Error e) k
+      | Map (c, f) -> eval env c (Next (KMap f, k))
+      | MapErr (c, f) -> eval env c (Next (KMapErr f, k))
+      | Conj (c, d) -> eval env c (Next (KConj1 d, k))
+      | Eq (x1, x2) -> begin
+        match Unif.unify env x1 x2 with
+        | Ok env ->
+          add_to_log env;
+
+          continue env (Ok (fun _sol -> ())) k
+        | Error (Cycle cy) -> continue env (Error (Constraint.Cycle cy)) k
+        | Error (Clash (y1, y2)) ->
+          let decoder = Decode.decode env () in
+          continue env (Error (Constraint.Clash (decoder y1, decoder y2))) k
       end
-      | Conj (c, d) -> begin
-        match eval c with
-        | NErr e -> NErr e
-        | nc -> normal_pair nc (eval d)
-      end
-      | Eq (x1, x2) ->
-        let result = Unif.unify !env x1 x2 in
-        begin
-          match result with
-          | Ok new_env ->
-            env := new_env;
-            add_to_log !env;
-            NRet (fun _sol -> ())
-          | Error (Cycle cy) -> NErr (Cycle cy)
-          | Error (Clash (y1, y2)) ->
-            let decoder = Decode.decode !env () in
-            NErr (Clash (decoder y1, decoder y2))
-        end
       | Exist (x, s, c) ->
-        (* Our solver may re-enter existentials
-           that it has already traversed. In this
-           case we do not want to re-bind them in the
-           environment, but reuse the previous binding
-           which accumulated information through unifications. *)
-        if not (Unif.Env.mem x !env) then env := Unif.Env.add x s !env;
-        add_to_log !env;
-        begin
-          match eval c with
-          | NRet v -> NRet v
-          | NErr e -> NErr e
-          | NDo p ->
-            NDo
-              (let+ c = p in
-               Exist (x, s, c) )
-        end
-      | Decode v -> NRet (fun sol -> sol v)
-      | Do p -> NDo p
+        let env = Unif.Env.add x s env in
+        add_to_log env;
+
+        eval env c (Next (KExist x, k))
+      | Decode v -> continue env (Ok (fun sol -> sol v)) k
+      | Do p -> NDo (T.map (fun c -> eval env c k) p)
+    and continue : type a1 e1 a e.
+      env ->
+      (a1 Constraint.on_sol, e1) result ->
+      (a1, e1, a, e) Constraint.cont ->
+      (a, e) normal_constraint =
+     fun env res k ->
+      match res with
+      | Error e -> begin
+        match k with
+        | Done -> NErr e
+        | Next (KMapErr f, k) -> continue env (Error (f e)) k
+        | Next (KMap _, k) -> continue env (Error e) k
+        | Next (KConj1 _, k) -> continue env (Error e) k
+        | Next (KConj2 _, k) -> continue env (Error e) k
+        | Next (KExist _, k) -> continue env (Error e) k
+      end
+      | Ok v -> begin
+        match k with
+        | Done -> NRet (env, v)
+        | Next (KMap f, k) -> continue env (Ok (fun sol -> f (v sol))) k
+        | Next (KConj1 c, k) -> eval env c (Next (KConj2 v, k))
+        | Next (KConj2 w, k) -> continue env (Ok (fun sol -> (w sol, v sol))) k
+        | Next (KExist _x, k) ->
+          (* We could in theory remove [x] from the solver environment
+             at this point, as it is not in scope for the rest of the
+             constraint. But our notion of "solution" for the whole
+             constraint expects a map with witnesses for all variables,
+             even those that are bound locally with an existential.
+             We must those keep these variables in the environment
+             to be able to provide the solution at the end. *)
+          continue env res k
+        | Next (KMapErr _, k) -> continue env (Ok v) k
+      end
     in
 
-    add_to_log !env;
-    match eval c0 with
+    let k0 = Constraint.Done in
+    add_to_log env;
+
+    match eval env c0 k0 with
     | exception Located (loc, exn, bt) ->
       Printf.eprintf "Error at %s" (MenhirLib.LexerUtil.range loc);
       Printexc.raise_with_backtrace exn bt
     | exception exn -> raise exn
-    | result -> (get_log (), !env, result)
+    | result -> result
 end
