@@ -60,7 +60,7 @@ module Make (T : Utils.Functor) = struct
   let eval (type a e) ~log (env : env) (c0 : (a, e) Constraint.t) :
     log * env * (a, e) normal_constraint =
     let add_to_log, get_log =
-      if log then make_logger c0 else (ignore, fun _ -> [])
+      if log || Debug.debug then make_logger c0 else (ignore, fun _ -> [])
     in
     let env = ref env in
     let rec eval : type a e. (a, e) Constraint.t -> (a, e) normal_constraint =
