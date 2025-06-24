@@ -19,6 +19,7 @@ module Make (T : Utils.Functor) = struct
     | LetTuple of 'tev list * 't term_ * 't term_
     | Annot of 't term_ * 'tyv STLC.ty_
     | Do of 't term_ T.t
+    | Loc of Utils.loc * 't term_
     constraint 't = < tevar : 'tev ; tyvar : 'tyv >
 
   (** [raw_term] are terms with raw [string] for their variables. Several
@@ -53,6 +54,7 @@ module Make (T : Utils.Functor) = struct
         LetTuple (xs, freshen env t1, freshen env_inner t2)
       | Annot (t, ty) -> Annot (freshen env t, STLC.freshen_ty ty)
       | Do p -> Do (T.map (freshen env) p)
+      | Loc (loc, t) -> Loc (loc, freshen env t)
     in
     fun t -> freshen Env.empty t
 end

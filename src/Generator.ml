@@ -133,6 +133,7 @@ module Make (M : Utils.MonadPlus) = struct
         bin ~size t u (fun t' u' -> LetTuple (xs, t', u'))
       | Annot (t, ty) -> un ~size t (fun t' -> Annot (t', ty))
       | Do m -> Do (M.map (cut_size ~size) m)
+      | Loc (loc, t) -> un ~size t @@ fun t' -> Loc (loc, t')
 
 
   let constraint_ untyped : (STLC.term, Infer.err) Constraint.t =

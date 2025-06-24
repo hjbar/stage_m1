@@ -5,6 +5,7 @@ module Make (T : Utils.Functor) = struct
   type t = sat_constraint
 
   and sat_constraint =
+    | Loc of Utils.loc * sat_constraint
     | Exist of variable * structure option * sat_constraint
     | Conj of sat_constraint list (* [True] is [Conj []] *)
     | Eq of variable * variable
@@ -14,6 +15,7 @@ module Make (T : Utils.Functor) = struct
 
   let rec erase : type a e. (a, e) Constraint.t -> sat_constraint = function
     | Exist (v, c, s) -> Exist (v, c, erase s)
+    | Loc (loc, c) -> Loc (loc, erase c)
     | Map (c, _) -> erase c
     | MapErr (c, _) -> erase c
     | Ret _v -> Conj []
@@ -21,6 +23,7 @@ module Make (T : Utils.Functor) = struct
     | Conj (_, _) as conj ->
       let rec peel : type a e. (a, e) Constraint.t -> sat_constraint list =
         function
+        | Loc (_loc, c) -> peel c
         | Map (c, _) -> peel c
         | MapErr (c, _) -> peel c
         | Conj (c1, c2) -> peel c1 @ peel c2

@@ -199,7 +199,7 @@ the inference variables.
 
   $ minihell $FLAGS error.test
   Input term:
-    (lambda x. (x : int)) (lambda y. y)
+    lambda x. (x : int) lambda y. y
   
   Generated constraint:
     ∃?final_type.
