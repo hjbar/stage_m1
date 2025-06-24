@@ -16,10 +16,10 @@ module Make (M : Utils.MonadPlus) = struct
   let ( let+ ) s f = M.map f s
 
   module Env = struct
-    type t =
-      { tevars : TeVarSet.t
-      ; tyvars : TyVarSet.t ref
-      }
+    type t = {
+      tevars : TeVarSet.t;
+      tyvars : TyVarSet.t ref;
+    }
 
     let empty () = { tevars = TeVarSet.empty; tyvars = ref TyVarSet.empty }
 
@@ -84,6 +84,7 @@ module Make (M : Utils.MonadPlus) = struct
 
     gen (Env.empty ())
 
+
   let untyped_vanille : Untyped.term =
     let rec gen fv =
       let open Untyped in
@@ -99,20 +100,23 @@ module Make (M : Utils.MonadPlus) = struct
       let tuple_inner_fv = y :: x :: fv in
 
       M.sum
-        [ (* One of the existing available variables *)
-          M.sum @@ List.map (fun v -> M.return @@ Var v) fv
-        ; (* or any term constructor recursively filled in. *)
+        [
+          (* One of the existing available variables *)
+          M.sum @@ List.map (fun v -> M.return @@ Var v) fv;
+          (* or any term constructor recursively filled in. *)
           M.one_of
-            [| App (gen fv, gen fv)
-             ; Abs (x, gen inner_fv)
-             ; Let (x, gen fv, gen inner_fv)
-             ; Tuple [ gen fv; gen fv ]
-             ; LetTuple ([ x; y ], gen fv, gen tuple_inner_fv)
-            |]
+            [|
+              App (gen fv, gen fv);
+              Abs (x, gen inner_fv);
+              Let (x, gen fv, gen inner_fv);
+              Tuple [ gen fv; gen fv ];
+              LetTuple ([ x; y ], gen fv, gen tuple_inner_fv);
+            |];
         ]
     in
 
     gen []
+
 
   (* Generate a monadic untyped term of size [~size]
      from a descriptive monadic untyped term *)
@@ -129,7 +133,8 @@ module Make (M : Utils.MonadPlus) = struct
 
       if size < 2 then Do M.fail
       else
-        do_ @@ M.sum
+        do_
+        @@ M.sum
         @@ List.init (size - 1)
              begin
                fun idx ->
@@ -161,10 +166,12 @@ module Make (M : Utils.MonadPlus) = struct
       | Do m -> Do (M.map (cut_size ~size) m)
       | Loc (loc, t) -> un ~size t @@ fun t' -> Loc (loc, t')
 
+
   (* Generate the initial constraint to type a given untyped term *)
 
   let constraint_ untyped : (F.term * F.scheme, Infer.err) Constraint.t =
     Infer.let_wrapper untyped
+
 
   (* Generate a typed term of a given size from a monadic untyped term *)
 
@@ -178,6 +185,7 @@ module Make (M : Utils.MonadPlus) = struct
     let constraint_ = untyped |> cut_size ~size |> constraint_ in
     let nf = Solver.eval ~log:false Solver.Env.empty constraint_ in
     loop nf
+
 
   let typed_cut_late ~size untyped : (F.term * F.scheme) M.t =
     let rec loop : type a e.

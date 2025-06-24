@@ -8,19 +8,23 @@ module Infer = Infer.Make (Utils.Empty)
 module ConstraintPrinter = ConstraintPrinter.Make (Utils.Empty)
 module Solver = Solver.Make (Utils.Empty)
 
-type config =
-  { show_source : bool
-  ; show_constraint : bool
-  ; log_solver : bool
-  ; show_type : bool
-  ; show_typed_term : bool
-  }
+type config = {
+  show_source : bool;
+  show_constraint : bool;
+  log_solver : bool;
+  show_type : bool;
+  show_typed_term : bool;
+}
 
 module LexUtil = MenhirLib.LexerUtil
 
 let print_section header doc =
-  doc |> Printer.with_header header |> Utils.string_of_doc |> print_endline
+  doc
+  |> Printer.with_header header
+  |> Utils.string_of_doc
+  |> print_endline
   |> print_newline
+
 
 let call_parser ~config parser_fun input_path =
   let ch = open_in input_path in
@@ -57,6 +61,7 @@ let call_parser ~config parser_fun input_path =
       (Filename.quote input_path)
       loc
 
+
 let call_typer ~config (term : Untyped.term) =
   let cst = Infer.let_wrapper term in
 
@@ -76,6 +81,7 @@ let call_typer ~config (term : Untyped.term) =
   | NErr e -> Error e
   | NDo _ -> .
 
+
 let print_result ~config result =
   match result with
   | Ok (term, scheme) ->
@@ -94,10 +100,12 @@ let print_result ~config result =
       v |> Constraint.Var.print |> Printer.inference_variable |> Printer.cycle
   end
 
+
 let process ~config input_path =
   let ast = call_parser ~config UntypedParser.term_eof input_path in
   let result = call_typer ~config ast in
   print_result ~config result
+
 
 let parse_args () =
   let show_source = ref false in
@@ -112,33 +120,36 @@ let parse_args () =
   let usage = Printf.sprintf "Usage: %s [options] <filenames>" Sys.argv.(0) in
   let spec =
     Arg.align
-      [ ("--show-source", Arg.Set show_source, " Show input source")
-      ; ( "--show-constraint"
-        , Arg.Set show_constraint
-        , " Show the generated constraint" )
-      ; ( "--log-solver"
-        , Arg.Set log_solver
-        , " Log intermediate constraints during solving" )
-      ; ("--show-type", Arg.Set show_type, " Show the inferred type (or error)")
-      ; ( "--show-typed-term"
-        , Arg.Set show_typed_term
-        , " Show the inferred type (or error)" )
+      [
+        ("--show-source", Arg.Set show_source, " Show input source");
+        ( "--show-constraint",
+          Arg.Set show_constraint,
+          " Show the generated constraint" );
+        ( "--log-solver",
+          Arg.Set log_solver,
+          " Log intermediate constraints during solving" );
+        ("--show-type", Arg.Set show_type, " Show the inferred type (or error)");
+        ( "--show-typed-term",
+          Arg.Set show_typed_term,
+          " Show the inferred type (or error)" );
       ]
   in
 
   Arg.parse spec add_input usage;
 
   let config =
-    { show_source = !show_source
-    ; show_constraint = !show_constraint
-    ; log_solver = !log_solver
-    ; show_type = !show_type
-    ; show_typed_term = !show_typed_term
+    {
+      show_source = !show_source;
+      show_constraint = !show_constraint;
+      log_solver = !log_solver;
+      show_type = !show_type;
+      show_typed_term = !show_typed_term;
     }
   in
   let input_paths = inputs |> Queue.to_seq |> List.of_seq in
 
   (config, input_paths)
+
 
 let () =
   let config, input_paths = parse_args () in

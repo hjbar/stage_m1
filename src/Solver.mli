@@ -4,10 +4,10 @@ module Make (T : Utils.Functor) : sig
   module Env : sig
     module SMap : Map.S with type key = Constraint.SVar.t
 
-    type t =
-      { unif : Unif.Env.t
-      ; schemes : Generalization.scheme SMap.t
-      }
+    type t = {
+      unif : Unif.Env.t;
+      schemes : Generalization.scheme SMap.t;
+    }
 
     val empty : t
 
@@ -29,7 +29,8 @@ module Make (T : Utils.Functor) : sig
 
           We propose an evaluation rule of the form [eval E[Do p] = NDo E[p]]
           where a [Do (p : ('a1, 'e1) Constraint.t T.t)] node placed inside an
-          evaluation context [E] bubbles "all the way to the top" in the result. *)
+          evaluation context [E] bubbles "all the way to the top" in the result.
+      *)
 
   (** If [~log:true] is passed in input, print to stderr a list of intermediate
       steps (obtained from the solver environment and the original constraint by

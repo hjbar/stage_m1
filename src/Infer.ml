@@ -23,10 +23,10 @@ module Make (T : Utils.Functor) = struct
   module Env = struct
     module Map = Untyped.Var.Map
 
-    type t =
-      { variables : variable Map.t
-      ; schemes : scheme_variable Map.t
-      }
+    type t = {
+      variables : variable Map.t;
+      schemes : scheme_variable Map.t;
+    }
 
     let empty = { variables = Map.empty; schemes = Map.empty }
 
@@ -37,6 +37,7 @@ module Make (T : Utils.Functor) = struct
     let add_variable x v env =
       let variables = Map.add x v env.variables in
       { env with variables }
+
 
     let add_scheme x s env =
       let schemes = Map.add x s env.schemes in
@@ -107,6 +108,7 @@ module Make (T : Utils.Functor) = struct
 
       loop tys @@ fun ws -> exist wprod (Some (Prod ws)) @@ k wprod
 
+
   (** This function generates a typing constraint from an untyped term:
       [has_type env t w] generates a constraint [C] which contains [w] as a free
       inference variable, such that [C] has a solution if and only if [t] is
@@ -118,13 +120,13 @@ module Make (T : Utils.Functor) = struct
       More precisely, one possible generated constraint would be:
       {[
         Exist
-          ( v
-          , None
-          , Map
+          ( v,
+            None,
+            Map
               ( Conj
-                  ( Exist (arr, Some (Arrow (v, v)), Eq (arr, w))
-                  , MapErr (Decode v, fun e -> Cycle e) )
-              , fun ((), ty) -> Abs (x, ty, Var x) ) )
+                  ( Exist (arr, Some (Arrow (v, v)), Eq (arr, w)),
+                    MapErr (Decode v, fun e -> Cycle e) ),
+                fun ((), ty) -> Abs (x, ty, Var x) ) )
       ]}
       but the actually generated constraint may be more complex/verbose.
 
@@ -166,7 +168,8 @@ module Make (T : Utils.Functor) = struct
 
       let env = Env.add_variable x wx env in
 
-      exist wx None @@ exist wt None
+      exist wx None
+      @@ exist wt None
       @@ exist warr (Some (Arrow (wx, wt)))
       @@ let+ () = eq w warr
          and+ t' = has_type env t wt
@@ -262,6 +265,7 @@ module Make (T : Utils.Functor) = struct
 
       F.LetTuple (bindings, t', u')
     | Do p -> Do (T.map (fun t -> has_type env t w) p)
+
 
   (** Transform a given program we want to type into a constraint, using a
       let-constraint as a wrapper *)

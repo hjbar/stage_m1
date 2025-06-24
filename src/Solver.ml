@@ -12,23 +12,27 @@ module Make (T : Utils.Functor) = struct
   module Env = struct
     module SMap = Constraint.SVar.Map
 
-    type t =
-      { unif : Unif.Env.t
-      ; schemes : Generalization.scheme SMap.t
-      }
+    type t = {
+      unif : Unif.Env.t;
+      schemes : Generalization.scheme SMap.t;
+    }
 
     let empty = { unif = Unif.Env.empty (); schemes = SMap.empty }
 
     let debug_schemes schemes =
       let open PPrint in
-      schemes |> Constraint.SVar.Map.bindings
+      schemes
+      |> Constraint.SVar.Map.bindings
       |> List.map
            begin
              fun (s, sch) ->
-               Constraint.SVar.print s ^^ colon ^^ space
+               Constraint.SVar.print s
+               ^^ colon
+               ^^ space
                ^^ Generalization.debug_scheme sch
            end
       |> separate hardline
+
 
     let debug { unif; schemes } =
       let open PPrint in
@@ -71,7 +75,9 @@ module Make (T : Utils.Functor) = struct
     let dir = match dir with `Enter -> "-> " | `Continue -> "<- " in
 
     nest 2 (string dir ^^ ConstraintPrinter.print_constraint_in_context ~env c k)
-    |> Utils.string_of_doc |> print_endline
+    |> Utils.string_of_doc
+    |> print_endline
+
 
   (** See [../README.md] ("High-level description") or [Solver.mli] for a
       description of normal constraints and our expectations regarding the
@@ -114,10 +120,10 @@ module Make (T : Utils.Functor) = struct
     in
 
     let rec eval : type a1 e1 a e.
-         env
-      -> (a1, e1) Constraint.t
-      -> (a1, e1, a, e) Constraint.cont
-      -> (a, e) normal_constraint =
+      env ->
+      (a1, e1) Constraint.t ->
+      (a1, e1, a, e) Constraint.cont ->
+      (a, e) normal_constraint =
      fun env c k ->
       let dir = `Enter in
 
@@ -156,7 +162,8 @@ module Make (T : Utils.Functor) = struct
         let body sol = sol (Generalization.body scheme) in
 
         let quantifiers sol =
-          scheme |> Generalization.quantifiers
+          scheme
+          |> Generalization.quantifiers
           |> List.map
                begin
                  fun var ->
@@ -201,10 +208,10 @@ module Make (T : Utils.Functor) = struct
 
         eval env c1 (Next (KLet1 (bindings, c2), k))
     and continue : type a1 e1 a e.
-         env
-      -> (a1 Constraint.on_sol, e1) result
-      -> (a1, e1, a, e) Constraint.cont
-      -> (a, e) normal_constraint =
+      env ->
+      (a1 Constraint.on_sol, e1) result ->
+      (a1, e1, a, e) Constraint.cont ->
+      (a, e) normal_constraint =
      fun env res k ->
       let dir = `Continue in
 

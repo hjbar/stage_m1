@@ -4,6 +4,7 @@ let print_quantifier (quantifiers : TyVar.t list) : PPrint.document =
   PPrint.group
     (quantifiers |> List.map F.TyVar.print |> Printer.print_quantifier)
 
+
 let print_ty (ty : ty) : PPrint.document =
   let rec print t =
     let print_self = print
@@ -20,8 +21,10 @@ let print_ty (ty : ty) : PPrint.document =
 
   PPrint.group (print ty)
 
+
 let print_scheme ((quantifiers, ty) : scheme) : PPrint.document =
   Printer.scheme (print_quantifier quantifiers) (print_ty ty)
+
 
 let print_term : term -> PPrint.document =
   let print_binding x tau = Printer.annot (TeVar.print x) (print_ty tau) in

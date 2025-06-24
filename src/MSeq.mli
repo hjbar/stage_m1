@@ -5,7 +5,8 @@ include Utils.MonadPlus
     {[
       (let open MSeq in
        sum [ return 1; return 2; return 3 ] )
-      |> MSeq.run (* list of all solutions *) |> List.of_seq
+      |> MSeq.run
+      (* list of all solutions *) |> List.of_seq
     ]}
     should be the list [[1; 2; 3]] -- or maybe the same elements in some other
     order. *)

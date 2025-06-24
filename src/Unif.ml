@@ -32,34 +32,34 @@ type pool = var list IntMap.t
 type uvar = unode UF.rref
 
 (* Data associated with a variable *)
-and unode =
-  { var : var
-  ; data : uvar Structure.t option
-  ; status : status
-  ; rank : rank
-  }
+and unode = {
+  var : var;
+  data : uvar Structure.t option;
+  status : status;
+  rank : rank;
+}
 
 (* The user-facing representation hides union-find nodes,
    replaced by the corresponding constraint variables. *)
 
-type repr =
-  { var : var
-  ; structure : structure
-  ; status : status
-  ; rank : rank
-  }
+type repr = {
+  var : var;
+  structure : structure;
+  status : status;
+  rank : rank;
+}
 
 (* Environment module implementation *)
 
 module Env = struct
   (* Definition of the type [t] *)
 
-  type t =
-    { store : unode UF.store
-    ; map : uvar Constraint.Var.Map.t
-    ; pool : pool
-    ; young : rank
-    }
+  type t = {
+    store : unode UF.store;
+    map : uvar Constraint.Var.Map.t;
+    pool : pool;
+    young : rank;
+  }
 
   (* Empty environment *)
 
@@ -69,6 +69,7 @@ module Env = struct
     let pool = IntMap.empty in
     let young = base_rank - 1 in
     { store; map; pool; young }
+
 
   (* Functions to check whether parts of the environment are empty *)
 
@@ -80,6 +81,7 @@ module Env = struct
     match IntMap.find_opt rank env.pool with
     | None | Some [] -> true
     | Some _ -> false
+
 
   (* Membership test functions *)
 
@@ -96,10 +98,12 @@ module Env = struct
 
     { var; structure; status; rank }
 
+
   let get_young env = env.young
 
   let get_pool rank env =
     Option.value ~default:[] @@ IntMap.find_opt rank env.pool
+
 
   (* Conversion functions *)
 
@@ -112,6 +116,7 @@ module Env = struct
     let rank = repr.rank in
 
     { var; data; status; rank }
+
 
   (* Functions to add or register variables to the environment *)
 
@@ -126,11 +131,13 @@ module Env = struct
 
     { env with map }
 
+
   let register var ~rank env =
     let l = Option.value ~default:[] @@ IntMap.find_opt rank env.pool in
     let pool = IntMap.add rank (var :: l) env.pool in
 
     { env with pool }
+
 
   let add_flexible var structure env =
     let status = Flexible in
@@ -138,11 +145,13 @@ module Env = struct
 
     env |> add { var; structure; status; rank } |> register var ~rank
 
+
   (* Functions to remove variables from the environment *)
 
   let unbind var env =
     let map = Constraint.Var.Map.remove var env.map in
     { env with map }
+
 
   (* Setter functions *)
 
@@ -159,15 +168,18 @@ module Env = struct
     UF.set env.store node unode;
     env
 
+
   (* Functions to manipulate the environment's young rank *)
 
   let incr_young env =
     let young = env.young + 1 in
     { env with young }
 
+
   let decr_young env =
     let young = env.young - 1 in
     { env with young }
+
 
   (* Functions to manipulate the pool *)
 
@@ -175,12 +187,14 @@ module Env = struct
     let pool = IntMap.remove rank env.pool in
     { env with pool }
 
+
   (* Functions on representatives *)
 
   let is_representative var env =
     match repr var env with
     | var_repr -> Constraint.Var.eq var var_repr.var
     | exception Not_found -> true
+
 
   (* Debugging functions *)
 
@@ -191,7 +205,8 @@ module Env = struct
     if not (Constraint.Var.eq var uvar.var) then
       (* not representative *)
       let doc =
-        Constraint.Var.print var ^^ PP.string " |--> "
+        Constraint.Var.print var
+        ^^ PP.string " |--> "
         ^^ Constraint.Var.print uvar.var
       in
       (doc, `Non_repr)
@@ -215,10 +230,13 @@ module Env = struct
       in
 
       let doc =
-        Constraint.Var.print var ^^ PP.parens rank_doc ^^ PP.space
+        Constraint.Var.print var
+        ^^ PP.parens rank_doc
+        ^^ PP.space
         ^^ structure_doc
       in
       (doc, order)
+
 
   let debug_var var env = debug_uvar var (repr var env) |> fst
 
@@ -238,15 +256,21 @@ module Env = struct
     |> List.sort (fun (_, o1) (_, o2) -> Int.compare o1 o2)
     |> List.map fst
 
+
   let debug_env env =
     let open PPrint in
-    env.map |> Constraint.Var.Map.bindings |> List.map fst
+    env.map
+    |> Constraint.Var.Map.bindings
+    |> List.map fst
     |> List.map (fun v -> debug_uvar v (repr v env))
-    |> sort_debug_vars |> separate hardline
+    |> sort_debug_vars
+    |> separate hardline
+
 
   let debug_pool env =
     let open PPrint in
-    env.pool |> IntMap.bindings
+    env.pool
+    |> IntMap.bindings
     |> List.map
          begin
            fun (rank, variables) ->
@@ -254,7 +278,8 @@ module Env = struct
              let variables_doc =
                variables
                |> List.map (fun v -> debug_uvar v (repr v env))
-               |> sort_debug_vars |> separate alinea
+               |> sort_debug_vars
+               |> separate alinea
              in
              string (Format.sprintf "%d |-->" rank) ^^ alinea ^^ variables_doc
          end
@@ -297,6 +322,7 @@ let check_no_cycle env v =
 
   loop v
 
+
 (* Unification functions *)
 
 let rec unify orig_env v1 v2 : (Env.t, err) result =
@@ -321,12 +347,14 @@ let rec unify orig_env v1 v2 : (Env.t, err) result =
     | () -> Ok env
   end
 
+
 and unify_uvars store (queue : (uvar * uvar) Queue.t) =
   match Queue.take_opt queue with
   | None -> ()
   | Some (u1, u2) ->
     UF.merge store (merge queue) u1 u2 |> ignore;
     unify_uvars store queue
+
 
 and merge queue (n1 : unode) (n2 : unode) : unode =
   let clash () = raise @@ Clash (n1.var, n2.var) in
@@ -367,6 +395,7 @@ and merge queue (n1 : unode) (n2 : unode) : unode =
   let rank = min n1.rank n2.rank in
 
   { var; data; status; rank }
+
 
 let unifiable env v1 v2 =
   match unify env v1 v2 with Ok _ -> true | Error _ -> false

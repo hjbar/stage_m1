@@ -7,10 +7,10 @@ type loc = Lexing.position * Lexing.position
 val string_of_doc : PPrint.document -> string
 
 module Variables () : sig
-  type t = private
-    { name : string
-    ; stamp : int
-    }
+  type t = private {
+    name : string;
+    stamp : int;
+  }
 
   val compare : t -> t -> int
 

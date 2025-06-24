@@ -19,12 +19,14 @@ let annot term ty = group (surround 2 0 lparen (term ^/^ colon ^//^ ty) rparen)
 let print_quantifier quantifiers =
   group (concat_map (fun var -> string "∀" ^^ var ^^ string ". ") quantifiers)
 
+
 (** ∀$ty1. ∀$ty2. ... $ty *)
 let scheme quantifiers ty = group (quantifiers ^^ ty)
 
 (** x[$ty1, $ty2, ...] *)
 let ty_app t tys =
   group (t ^^ lbracket ^^ separate (comma ^^ space) tys ^^ rbracket)
+
 
 (** (x : ty) *)
 let let_binding x ty =
@@ -33,13 +35,16 @@ let let_binding x ty =
       lparen ^^ x ^^ space ^^ colon ^^ space ^^ ty ^^ rparen
     end
 
+
 (** lambda $input. $body *)
 let lambda ~input ~body =
   group (string "lambda" ^/^ input ^^ string "." ^//^ body)
 
+
 (** Λ $input. $body *)
 let big_lambda ~input ~body =
   group (group (string "Λ" ^/^ separate space input ^^ string ".") ^//^ body)
+
 
 (** let $var = $def in $body *)
 let let_ ~var ~def ~body =
@@ -53,6 +58,7 @@ let let_ ~var ~def ~body =
         end
       ^//^ body
     end
+
 
 (** $t $u *)
 let app t u = group (t ^//^ u)
@@ -75,6 +81,7 @@ let tuple p ts =
       end
       rparen
 
+
 (** ∃$w1 $w2 ($w3 = $s) $w4... $wn. $c *)
 let exist bindings body =
   group
@@ -89,10 +96,14 @@ let exist bindings body =
 
   group
     begin
-      utf8string "∃" ^^ ifflat empty space ^^ nest 2 bindings ^^ break 0
+      utf8string "∃"
+      ^^ ifflat empty space
+      ^^ nest 2 bindings
+      ^^ break 0
       ^^ string "."
     end
   ^^ prefix 2 1 empty body
+
 
 let true_ = utf8string "⊤"
 
@@ -105,6 +116,7 @@ let conjunction docs =
   match docs with
   | [] -> true_
   | docs -> separate (break 1 ^^ utf8string "∧" ^^ space) docs
+
 
 (** $v1 = $v2 *)
 let eq v1 v2 = group (v1 ^/^ string "=" ^/^ v2)
@@ -119,6 +131,7 @@ let decode_scheme sch_var = group (string "decode_scheme" ^^ break 1 ^^ sch_var)
 let instance sch_var var =
   group (sch_var ^^ break 1 ^^ utf8string "≤" ^^ break 1 ^^ var)
 
+
 let let_sch bindings c1 c2 =
   let binding (sch_var, var) = sch_var ^/^ colon ^/^ var in
 
@@ -131,11 +144,14 @@ let let_sch bindings c1 c2 =
           ^/^ string "="
         end
       ^^ nest 2 (break 1 ^^ c1)
-      ^/^ string "in" ^//^ c2
+      ^/^ string "in"
+      ^//^ c2
     end
+
 
 let let_sch_2 c2 =
   group (string "let " ^^ true_ ^^ break 1 ^^ string "in" ^^ break 1 ^^ c2)
+
 
 let hole ~env c =
   group
@@ -145,11 +161,15 @@ let hole ~env c =
       ^^ group (surround 2 0 lparen c rparen)
     end
 
+
 (** $ty1 incompatible with $ty2 *)
 let incompatible ty1 ty2 =
   group (blank 2 ^^ nest 2 ty1)
-  ^^ hardline ^^ string "incompatible with" ^^ hardline
+  ^^ hardline
+  ^^ string "incompatible with"
+  ^^ hardline
   ^^ group (blank 2 ^^ nest 2 ty2)
+
 
 let cycle v = group (string "cycle on constraint variable" ^/^ v)
 

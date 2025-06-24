@@ -9,17 +9,19 @@ let string_of_doc doc =
   PPrint.ToBuffer.pretty 0.9 80 buf doc;
   Buffer.contents buf
 
+
 module Variables () = struct
-  type t =
-    { name : string
-    ; stamp : int
-    }
+  type t = {
+    name : string;
+    stamp : int;
+  }
 
   let name v = v.name
 
   let compare n1 n2 =
     let c = Int.compare n1.stamp n2.stamp in
     if c <> 0 then c else String.compare n1.name n2.name
+
 
   let eq n1 n2 = compare n1 n2 = 0
 
@@ -32,6 +34,7 @@ module Variables () = struct
     Hashtbl.replace stamps name (stamp + 1);
     { name; stamp }
 
+
   let namegen names =
     if names = [||] then failwith "namegen: empty names array";
 
@@ -43,9 +46,11 @@ module Variables () = struct
       counter := wrap (!counter + 1);
       fresh names.(idx)
 
+
   let print { name; stamp } =
     if stamp = 0 then PPrint.string name
     else Printf.ksprintf PPrint.string "%s/%x" name stamp
+
 
   module Key = struct
     type nonrec t = t

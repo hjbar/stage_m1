@@ -100,8 +100,8 @@ module Make (T : Utils.Functor) = struct
       After desugaring the binding operators, this is equivalent to
       {[
         Map
-          ( Conj (Decode w1, Decode w2)
-          , fun (ty1, ty2) -> Constr (Arrow (ty1, ty2)) )
+          ( Conj (Decode w1, Decode w2),
+            fun (ty1, ty2) -> Constr (Arrow (ty1, ty2)) )
       ]}
 
       For more details on binding operators, see

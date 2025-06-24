@@ -52,9 +52,11 @@ let shuffle arr =
     arr.(i) <- tmp
   done
 
+
 let one_of arr =
   shuffle arr;
   One_of (Array.to_list arr)
+
 
 let one_of_list = function [] -> Fail | li -> One_of li
 
@@ -64,6 +66,7 @@ let list_pop_rand = function
     let len = List.length li in
     let i = Random.int len in
     Some (List.nth li i, List.filteri (fun j _ -> j <> i) li)
+
 
 let tries = ref 1
 
@@ -109,6 +112,7 @@ let rec next : type a. a t -> a option * a t =
       | None -> retry None (bind ta f)
       | Some a -> next (bind_cons (f a) ta f)
     end
+
 
 let rec run orig_gen =
   start := !tries;

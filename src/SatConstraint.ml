@@ -59,6 +59,7 @@ module Make (T : Utils.Functor) = struct
     | Instance (sch_var, var) -> Instance (sch_var, var)
     | Let (bindings, c1, c2) -> Let (bindings, erase c1, erase c2)
 
+
   let erase_cont_frame : type a1 e1 a2 e2.
     (a1, e1, a2, e2) Constraint.cont_frame -> sat_cont_frame option = function
     | KMap _ -> None
@@ -68,6 +69,7 @@ module Make (T : Utils.Functor) = struct
     | KExist v -> Some (KExist v)
     | KLet1 (bindings, c2) -> Some (KLet1 (bindings, erase c2))
     | KLet2 _v -> Some KLet2
+
 
   let rec erase_cont : type a1 e1 a e.
     (a1, e1, a, e) Constraint.cont -> sat_cont = function

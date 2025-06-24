@@ -20,7 +20,7 @@ val enter : Unif.Env.t -> Unif.Env.t
 val exit : Unif.var list -> Unif.Env.t -> Unif.Env.t * scheme list
 
 val instantiate :
-     scheme
-  -> Unif.var
-  -> Unif.Env.t
-  -> Unif.Env.t * (Unif.var list, Unif.err) result
+  scheme ->
+  Unif.var ->
+  Unif.Env.t ->
+  Unif.Env.t * (Unif.var list, Unif.err) result

@@ -37,6 +37,7 @@ let adjust_rank (repr : repr) (k : rank) (env : env) : env * repr =
 
   (env, repr)
 
+
 (* Create a new flexible variable in the environment *)
 
 let fresh_flexible ?(name = "fresh") (structure : structure) (env : env) :
@@ -44,6 +45,7 @@ let fresh_flexible ?(name = "fresh") (structure : structure) (env : env) :
   let var = Var.fresh name in
   let env = Env.add_flexible var structure env in
   (env, var)
+
 
 (* Set up the environment before entering a new level *)
 
@@ -54,17 +56,18 @@ let enter (env : env) : env =
   assert (Env.pool_k_is_empty young env);
   env
 
+
 (* The set of all young variables. A variable is considered
    young if it is currently registered in the youngest pool.
    This implies that its rank is at most [state.young]. *)
 
-type generation =
-  { inhabitants : variable list (* All young variables *)
-  ; by_rank : variable list IntMap.t (* All young variables indexed by rank *)
-  ; is_young : variable -> bool
-      (* True if the given variable belongs to the same
+type generation = {
+  inhabitants : variable list (* All young variables *);
+  by_rank : variable list IntMap.t (* All young variables indexed by rank *);
+  is_young : variable -> bool;
+    (* True if the given variable belongs to the same
      equivalence class as some young variable v' *)
-  }
+}
 
 (* Before exiting, create a generation describing the young generation *)
 
@@ -105,6 +108,7 @@ let discover_young_generation (env : env) : generation =
 
   (* Final result *)
   { inhabitants; by_rank; is_young }
+
 
 (* Update the rank of every variable in the young generation *)
 
@@ -173,6 +177,7 @@ let update_ranks (generation : generation) (env : env) : env =
   (* Return the updated environment *)
   !env
 
+
 (* Return a list of variables that have become generic *)
 
 let generalize (generation : generation) (env : env) : env * variable list =
@@ -215,14 +220,14 @@ let generalize (generation : generation) (env : env) : env * variable list =
   (* Return the updated environment and the list of generic variables *)
   (!env, l)
 
+
 (* Representation of a scheme *)
 
-type scheme =
-  { root : variable (* A root variable: must be generic *)
-  ; generics : variable list (* All generic variables of the scheme *)
-  ; quantifiers : variable list
-      (* All generic variables that have no structure *)
-  }
+type scheme = {
+  root : variable; (* A root variable: must be generic *)
+  generics : variable list (* All generic variables of the scheme *);
+  quantifiers : variable list; (* All generic variables that have no structure *)
+}
 
 (* Utility function: get the "body" of a scheme *)
 
@@ -247,6 +252,7 @@ let debug_scheme { root; quantifiers; generics } =
   in
 
   quantifiers_doc ^^ root_doc ^^ generics_doc
+
 
 (* Transform root into a scheme.
    Assertion: should be called only after generalization *)
@@ -279,6 +285,7 @@ let schemify (env : env) (quantifiers : variable list) (root : variable) :
   (* Construct and return the scheme *)
   { root; generics; quantifiers }
 
+
 (* Function to exit, to terminate the process of generalization *)
 
 let exit (roots : variable list) (env : env) : env * scheme list =
@@ -308,10 +315,12 @@ let exit (roots : variable list) (env : env) : env * scheme list =
   (* Return the updated environment, list of quantifiers, and schemes *)
   (env, schemes)
 
+
 (* Instantiate a scheme with a constraint variable *)
 
-let instantiate ({ root; generics; quantifiers } : scheme) (var : variable)
-  (env : env) : env * (variable list, err) result =
+let instantiate
+  ({ root; generics; quantifiers } : scheme) (var : variable) (env : env) :
+  env * (variable list, err) result =
   (* Create a flexible copy without structure for each generic variable *)
   let (env : env), (mapping : (variable, variable) Hashtbl.t) =
     let ht = Hashtbl.create 16 in

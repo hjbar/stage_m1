@@ -35,10 +35,12 @@ let iter f = function
     f t2
   | Prod ts -> List.iter f ts
 
+
 let map f = function
   | Var alpha -> Var alpha
   | Arrow (t1, t2) -> Arrow (f t1, f t2)
   | Prod ts -> Prod (List.map f ts)
+
 
 let fold f acc = function
   | Var _alpha -> acc
@@ -46,6 +48,7 @@ let fold f acc = function
     let acc = f acc t1 in
     f acc t2
   | Prod ts -> List.fold_left f acc ts
+
 
 let merge f s1 s2 =
   match (s1, s2) with
@@ -58,6 +61,7 @@ let merge f s1 s2 =
   | Prod as1, Prod as2 when List.compare_lengths as1 as2 = 0 ->
     Some (Prod (List.map2 f as1 as2))
   | _ -> None
+
 
 let global_tyvar : string -> TyVar.t =
   (* There are no binders for type variables, which are scoped
@@ -72,10 +76,12 @@ let global_tyvar : string -> TyVar.t =
       Hashtbl.replace tenv alpha alpha_var;
       alpha_var
 
+
 let freshen freshen = function
   | Var alpha -> Var (global_tyvar alpha)
   | Arrow (t1, t2) -> Arrow (freshen t1, freshen t2)
   | Prod ts -> Prod (List.map freshen ts)
+
 
 let print p = function
   | Var v -> TyVar.print v

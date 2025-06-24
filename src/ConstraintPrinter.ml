@@ -6,8 +6,10 @@ module Make (T : Utils.Functor) = struct
   let print_var (v : Constraint.variable) : PPrint.document =
     Printer.inference_variable (Constraint.Var.print v)
 
+
   let print_sch_var (sch_var : Constraint.scheme_variable) : PPrint.document =
     Printer.scheme_variable (Constraint.SVar.print sch_var)
+
 
   let print_sat_constraint (c : sat_constraint) : PPrint.document =
     let rec print_top = fun c -> print_left_open c
@@ -54,8 +56,10 @@ module Make (T : Utils.Functor) = struct
     in
     print_top c
 
-  let print_sat_constraint_in_context ~(env : PPrint.document)
-    (c : sat_constraint) (k : sat_cont) : PPrint.document =
+
+  let print_sat_constraint_in_context
+    ~(env : PPrint.document) (c : sat_constraint) (k : sat_cont) :
+    PPrint.document =
     let rec print_cont = function
       | frame :: rest -> begin
         let rest = print_cont rest in
@@ -77,10 +81,15 @@ module Make (T : Utils.Functor) = struct
     in
     print_cont k
 
+
   let print_constraint (type a e) (c : (a, e) Constraint.t) : PPrint.document =
     print_sat_constraint (erase c)
 
-  let print_constraint_in_context (type a1 e1 a e) ~(env : PPrint.document)
-    (c : (a1, e1) Constraint.t) (k : (a1, e1, a, e) Constraint.cont) =
+
+  let print_constraint_in_context
+    (type a1 e1 a e)
+    ~(env : PPrint.document)
+    (c : (a1, e1) Constraint.t)
+    (k : (a1, e1, a, e) Constraint.cont) =
     print_sat_constraint_in_context ~env (erase c) (erase_cont k)
 end

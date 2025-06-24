@@ -37,12 +37,12 @@ type pool = var list IntMap.t
     other:
     - [var] is a choice of canonical representant for the equivalence class
     - [structure] is the known structure (if any) of these variables *)
-type repr =
-  { var : var
-  ; structure : structure
-  ; status : status
-  ; rank : rank
-  }
+type repr = {
+  var : var;
+  structure : structure;
+  status : status;
+  rank : rank;
+}
 
 (* Signature of the Environment module *)
 
