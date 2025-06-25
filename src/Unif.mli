@@ -57,6 +57,14 @@ module Env : sig
 
   val empty : unit -> t
 
+  (* Functions to check whether parts of the environment are empty *)
+
+  val map_is_empty : t -> bool
+
+  val pool_is_empty : t -> bool
+
+  val pool_k_is_empty : rank -> t -> bool
+
   (* Membership test functions *)
 
   val mem : var -> t -> bool
@@ -93,8 +101,6 @@ module Env : sig
 
   (* Functions to manipulate the pool *)
 
-  val pool_k_is_empty : rank -> t -> bool
-
   val clean_pool : rank -> t -> t
 
   (* Functions on representatives *)
@@ -103,9 +109,11 @@ module Env : sig
 
   (* Debugging functions *)
 
-  val debug_var : var -> repr -> PPrint.document
+  val debug_var : var -> t -> PPrint.document
 
   val debug_env : t -> PPrint.document
+
+  val debug_pool : t -> PPrint.document
 end
 
 (** Unification errors:

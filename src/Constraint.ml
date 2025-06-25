@@ -37,7 +37,7 @@ module Make (T : Utils.Functor) = struct
   include Types
 
   type eq_error =
-    | Clash of STLC.ty Utils.clash
+    | Clash of Typed.ty Utils.clash
     | Cycle of variable Utils.cycle
 
   (** A value of type [('a, 'e)) t] is a constraint whose resolution will either
@@ -63,10 +63,10 @@ module Make (T : Utils.Functor) = struct
     | Conj : ('a, 'e) t * ('b, 'e) t -> ('a * 'b, 'e) t
     | Eq : variable * variable -> (unit, eq_error) t
     | Exist : variable * structure option * ('a, 'e) t -> ('a, 'e) t
-    | Decode : variable -> (STLC.ty, variable Utils.cycle) t
+    | Decode : variable -> (Typed.ty, variable Utils.cycle) t
     | Do : ('a, 'e) t T.t -> ('a, 'e) t
-    | DecodeScheme : scheme_variable -> (STLC.scheme, variable Utils.cycle) t
-    | Instance : scheme_variable * variable -> (STLC.ty list, eq_error) t
+    | DecodeScheme : scheme_variable -> (Typed.scheme, variable Utils.cycle) t
+    | Instance : scheme_variable * variable -> (Typed.ty list, eq_error) t
     | Let :
         (scheme_variable * variable) list * ('a, 'e) t * ('b, 'e) t
         -> ('a * 'b, 'e) t
@@ -88,7 +88,7 @@ module Make (T : Utils.Functor) = struct
       when resolving other parts of the whole constraint that handle the
       application of [0]. We have to solve the whole constraint, and then come
       back to elaborate an explictly-typed term [lambda (y : int). 42]. *)
-  and 'a on_sol = (variable -> STLC.ty) -> 'a
+  and 'a on_sol = (variable -> Typed.ty) -> 'a
 
   let ( let+ ) c f = Map (c, f)
 

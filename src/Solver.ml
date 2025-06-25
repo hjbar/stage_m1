@@ -17,7 +17,50 @@ module Make (T : Utils.Functor) = struct
 
     let empty () = { unif = Unif.Env.empty (); schemes = SMap.empty }
 
-    let debug env = Unif.Env.debug_env env.unif
+    let debug_schemes schemes =
+      let open PPrint in
+      schemes
+      |> Constraint.SVar.Map.bindings
+      |> List.map
+           begin
+             fun (s, sch) ->
+               Constraint.SVar.print s
+               ^^ colon
+               ^^ space
+               ^^ Generalization.debug_scheme sch
+           end
+      |> separate hardline
+
+
+    let debug { unif; schemes } =
+      let open PPrint in
+      let has_no_schemes = SMap.is_empty schemes in
+      let schemes_doc =
+        if has_no_schemes then empty
+        else
+          group
+            (string "Schemes :" ^^ nest 2 (hardline ^^ debug_schemes schemes))
+      in
+
+      let has_no_env = Unif.Env.map_is_empty unif in
+      let env_doc =
+        if has_no_env then empty
+        else
+          group (string "Env :" ^^ nest 2 (hardline ^^ Unif.Env.debug_env unif))
+      in
+
+      let pool_doc =
+        if Unif.Env.pool_is_empty unif then empty
+        else
+          group
+            (string "Pool :" ^^ nest 2 (hardline ^^ Unif.Env.debug_pool unif))
+      in
+
+      schemes_doc
+      ^^ (if has_no_schemes then empty else hardline)
+      ^^ env_doc
+      ^^ (if has_no_env then empty else hardline)
+      ^^ pool_doc
   end
 
   type env = Env.t
@@ -26,7 +69,7 @@ module Make (T : Utils.Functor) = struct
 
   let do_log ~dir (env : env) c k =
     let open PPrint in
-    let env = Unif.Env.debug_env env.unif in
+    let env = Env.debug env in
     let dir =
       match dir with
       | `Init -> "--"
@@ -122,7 +165,7 @@ module Make (T : Utils.Functor) = struct
           |> List.map
                begin
                  fun var ->
-                   let (STLC.Constr ty) = sol var in
+                   let (Typed.Constr ty) = sol var in
                    match ty with
                    | Var v -> v
                    | Arrow _ | Prod _ -> assert false

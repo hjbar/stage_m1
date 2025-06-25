@@ -1,8 +1,8 @@
-open STLC
+open Typed
 
 let print_quantifier (quantifiers : TyVar.t list) : PPrint.document =
   PPrint.group
-    (quantifiers |> List.map STLC.TyVar.print |> Printer.print_quantifier)
+    (quantifiers |> List.map Typed.TyVar.print |> Printer.print_quantifier)
 
 
 let print_ty (ty : ty) : PPrint.document =

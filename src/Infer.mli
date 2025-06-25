@@ -9,13 +9,14 @@ module Make (T : Utils.Functor) : sig
   end
 
   type err =
-    | Clash of STLC.ty Utils.clash
+    | Clash of Typed.ty Utils.clash
     | Cycle of Constraint.variable Utils.cycle
 
   type 'a constraint_ = ('a, err) Constraint.t
 
   val has_type :
-    Env.t -> Untyped.term -> Constraint.variable -> STLC.term constraint_
+    Env.t -> Untyped.term -> Constraint.variable -> Typed.term constraint_
 
-  val let_wrapper : Untyped.term -> (STLC.term * STLC.scheme, err) Constraint.t
+  val let_wrapper :
+    Untyped.term -> (Typed.term * Typed.scheme, err) Constraint.t
 end

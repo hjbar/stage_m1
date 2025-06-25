@@ -47,7 +47,7 @@ module Make (T : Utils.Functor) = struct
   type env = Env.t
 
   type err = eq_error =
-    | Clash of STLC.ty Utils.clash
+    | Clash of Typed.ty Utils.clash
     | Cycle of Constraint.variable Utils.cycle
 
   type 'a constraint_ = ('a, err) Constraint.t
@@ -84,7 +84,7 @@ module Make (T : Utils.Functor) = struct
       could be the constraint [∃(?w1 = ?v2 -> ?v3). ∃(?w2 = ?v1 -> ?w1). k ?w2],
       or equivalently [∃?w3 ?w4. ?w3 = ?v1 -> ?w4 ∧ ?w4 = ?v2 -> ?v3 ∧ k ?w3].
   *)
-  let rec bind (Constr ty : STLC.ty) (k : Constraint.variable -> ('a, 'e) t) :
+  let rec bind (Constr ty : Typed.ty) (k : Constraint.variable -> ('a, 'e) t) :
     ('a, 'e) t =
     match ty with
     | Var v ->
@@ -134,7 +134,7 @@ module Make (T : Utils.Functor) = struct
       variable free in [t] to either an inference variable or a scheme variable.
   *)
   let rec has_type (env : env) (t : Untyped.term) (w : variable) :
-    (STLC.term, err) t =
+    (Typed.term, err) t =
     match t with
     | Untyped.Loc (loc, t) -> Constraint.Loc (loc, has_type env t w)
     | Untyped.Var x -> begin
@@ -143,12 +143,12 @@ module Make (T : Utils.Functor) = struct
       match Env.findopt_variable x env with
       | Some wx ->
         let+ () = eq w wx in
-        STLC.Var x
+        Typed.Var x
       | None ->
         let sch = Env.find_scheme x env in
 
         let+ tys = Instance (sch, w) in
-        STLC.TyApp (STLC.Var x, tys)
+        Typed.TyApp (Typed.Var x, tys)
     end
     | Untyped.App (t, u) ->
       (* [[t u : w]] := ∃wu. [[t : wu -> w]] ∧ [[u : wu]] *)
@@ -159,7 +159,7 @@ module Make (T : Utils.Functor) = struct
       @@ exist wt (Some (Arrow (wu, w)))
       @@ let+ t' = has_type env t wt
          and+ u' = has_type env u wu in
-         STLC.App (t', u')
+         Typed.App (t', u')
     | Untyped.Abs (x, t) ->
       (* [[fun x -> t : w]] := ∃wx wt. w = wx -> wt ∧ [[t : wt]](E,x ↦ wx) *)
       let wx = fresh_var_name x in
@@ -174,7 +174,7 @@ module Make (T : Utils.Functor) = struct
       @@ let+ () = eq w warr
          and+ t' = has_type env t wt
          and+ tyx = decode wx in
-         STLC.Abs (x, tyx, t')
+         Typed.Abs (x, tyx, t')
     | Untyped.Let (x, t, u) ->
       (* [[let x = t in u : w]] := Let (x, s, [[t : wt]], [[u : w]](E,x ↦ s))
          where wt is a fresh variable and s is a fresh scheme variable *)
@@ -189,13 +189,13 @@ module Make (T : Utils.Functor) = struct
            and+ scheme = decode_scheme s in
            (u', scheme)
       in
-      STLC.Let (x, scheme, TyAbs (fst scheme, t'), u')
+      Typed.Let (x, scheme, TyAbs (fst scheme, t'), u')
     | Untyped.Annot (t, ty) ->
       (* [[(t : ty) : w]] := ∃(wt = ty). [[t : wt]] /\ [[wt = w]] *)
       bind ty @@ fun wt ->
       let+ () = eq wt w
       and+ t' = has_type env t wt in
-      STLC.Annot (t', ty)
+      Typed.Annot (t', ty)
     | Untyped.Tuple ts ->
       (* [[(t₁, t₂ ... tₙ) : w]] :=
          ∃w₁.
@@ -227,7 +227,7 @@ module Make (T : Utils.Functor) = struct
            []
       in
 
-      STLC.Tuple ts
+      Typed.Tuple ts
     | Untyped.LetTuple (xs, t, u) ->
       (* [[let (x₁, x₂ ... xₙ) = t in u : w]] :=
          ∃w₁, w₂... wₙ.
@@ -263,14 +263,14 @@ module Make (T : Utils.Functor) = struct
         has_type env u w
       in
 
-      STLC.LetTuple (bindings, t', u')
+      Typed.LetTuple (bindings, t', u')
     | Do p -> Do (T.map (fun t -> has_type env t w) p)
 
 
   (** Transform a given program we want to type into a constraint, using a
       let-constraint as a wrapper *)
   let let_wrapper (term : Untyped.term) :
-    (STLC.term * STLC.scheme, err) Constraint.t =
+    (Typed.term * Typed.scheme, err) Constraint.t =
     let s = Constraint.SVar.fresh "final_scheme" in
     let w = Constraint.Var.fresh "final_term" in
     Let ([ (s, w) ], has_type Env.empty term w, decode_scheme s)

@@ -7,7 +7,7 @@ module Make (M : Utils.MonadPlus) = struct
   module Solver = Solver.Make (M)
   module TeVar = Untyped.Var
   module TeVarSet = TeVar.Set
-  module TyVarSet = STLC.TyVar.Set
+  module TyVarSet = Typed.TyVar.Set
 
   (* Define untyped terms for generation *)
 
@@ -164,13 +164,14 @@ module Make (M : Utils.MonadPlus) = struct
 
   (* Generate the initial constraint to type a given untyped term *)
 
-  let constraint_ untyped : (STLC.term * STLC.scheme, Infer.err) Constraint.t =
+  let constraint_ untyped : (Typed.term * Typed.scheme, Infer.err) Constraint.t
+      =
     Infer.let_wrapper untyped
 
 
   (* Generate a typed term of a given size from a monadic untyped term *)
 
-  let typed_cut_early ~size untyped : (STLC.term * STLC.scheme) M.t =
+  let typed_cut_early ~size untyped : (Typed.term * Typed.scheme) M.t =
     let rec loop : type a e. (a, e) Solver.normal_constraint -> a M.t = function
       | NRet (env, v) -> M.return @@ v (Decode.decode env.unif ())
       | NErr _ -> M.fail
@@ -182,7 +183,7 @@ module Make (M : Utils.MonadPlus) = struct
     loop nf
 
 
-  let typed_cut_late ~size untyped : (STLC.term * STLC.scheme) M.t =
+  let typed_cut_late ~size untyped : (Typed.term * Typed.scheme) M.t =
     let rec loop : type a e.
       fuel:int -> (a, e) Solver.normal_constraint -> a M.t =
      fun ~fuel nf ->

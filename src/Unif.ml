@@ -73,6 +73,18 @@ module Env = struct
     { store; map; pools; young }
 
 
+  (* Functions to check whether parts of the environment are empty *)
+
+  let map_is_empty env = Constraint.Var.Map.is_empty env.map
+
+  let pool_is_empty env = RankMap.is_empty env.pools
+
+  let pool_k_is_empty rank env =
+    match RankMap.find_opt rank env.pools with
+    | None | Some [] -> true
+    | Some _ -> false
+
+
   (* Membership test functions *)
 
   let mem var env = Constraint.Var.Map.mem var env.map
@@ -175,12 +187,6 @@ module Env = struct
 
   (* Functions to manipulate the pools *)
 
-  let pool_k_is_empty rank env =
-    match RankMap.find_opt rank env.pools with
-    | None | Some [] -> true
-    | Some _ -> false
-
-
   let clean_pool rank env =
     let pools = RankMap.remove rank env.pools in
     { env with pools }
@@ -196,22 +202,63 @@ module Env = struct
 
   (* Debugging functions *)
 
-  let debug_var var uvar =
+  let debug_uvar var uvar =
     let module PP = PPrint in
     let ( ^^ ) = PP.( ^^ ) in
 
     if not (Constraint.Var.eq var uvar.var) then
       (* not representative *)
-      Constraint.Var.print var
-      ^^ PP.string " |--> "
-      ^^ Constraint.Var.print uvar.var
+      let doc =
+        Constraint.Var.print var
+        ^^ PP.string " |--> "
+        ^^ Constraint.Var.print uvar.var
+      in
+      (doc, `Non_repr)
     else
+      let order =
+        match uvar.status with
+        | Flexible -> `Rank uvar.rank
+        | Generic -> `Generic
+      in
+
+      let rank_doc =
+        match uvar.status with
+        | Flexible -> PP.string (string_of_int uvar.rank)
+        | Generic -> PP.string "G"
+      in
+
       let structure_doc =
         match uvar.structure with
         | None -> PP.empty
         | Some s -> PP.string "= " ^^ Structure.print Constraint.Var.print s
       in
-      Constraint.Var.print var ^^ PP.space ^^ structure_doc
+
+      let doc =
+        Constraint.Var.print var
+        ^^ PP.parens rank_doc
+        ^^ PP.space
+        ^^ structure_doc
+      in
+      (doc, order)
+
+
+  let debug_var var env = debug_uvar var (repr var env) |> fst
+
+  let sort_debug_vars l =
+    l
+    |> List.map
+         begin
+           fun (doc, order) ->
+             let cmp =
+               match order with
+               | `Non_repr -> min_int
+               | `Rank n -> n
+               | `Generic -> max_int
+             in
+             (doc, cmp)
+         end
+    |> List.sort (fun (_, o1) (_, o2) -> Int.compare o1 o2)
+    |> List.map fst
 
 
   let debug_env env =
@@ -219,7 +266,27 @@ module Env = struct
     env.map
     |> Constraint.Var.Map.bindings
     |> List.map fst
-    |> List.map (fun v -> debug_var v (repr v env))
+    |> List.map (fun v -> debug_uvar v (repr v env))
+    |> sort_debug_vars
+    |> separate hardline
+
+
+  let debug_pool env =
+    let open PPrint in
+    env.pools
+    |> RankMap.bindings
+    |> List.map
+         begin
+           fun (rank, variables) ->
+             let alinea = hardline ^^ space ^^ space ^^ space in
+             let variables_doc =
+               variables
+               |> List.map (fun v -> debug_uvar v (repr v env))
+               |> sort_debug_vars
+               |> separate alinea
+             in
+             string (Format.sprintf "%d |-->" rank) ^^ alinea ^^ variables_doc
+         end
     |> separate hardline
 end
 

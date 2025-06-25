@@ -93,12 +93,12 @@ to the bin/dune content.)
     lambda x. x
   
   Generated constraint:
-    ∃?final_type.
-      (∃?x ?wt (?warr = ?x -> ?wt). ?final_type = ?warr ∧ ?wt = ?x ∧ decode ?x)
-      ∧ decode ?final_type
+    let ?scheme_final_scheme : ?final_term =
+      ∃?x ?wt (?warr = ?x -> ?wt). ?final_term = ?warr ∧ ?wt = ?x ∧ decode ?x
+    in decode_scheme ?scheme_final_scheme
   
   Inferred type:
-    α -> α
+    ∀α. α -> α
   
   Elaborated term:
     lambda (x : α). x
@@ -112,19 +112,19 @@ to the bin/dune content.)
 `id_int` is the monomorphic identity on the type `int`. Note
 that we have not implemented support for a built-in `int`
 type, this is just an abstract/rigid type variable: `Constr
-(Var ...)` at type `STLC.ty`.
+(Var ...)` at type `Typed.ty`.
 
   $ minihell $FLAGS id_int.test
   Input term:
     lambda x. (x : int)
   
   Generated constraint:
-    ∃?final_type.
-      (∃?x ?wt (?warr = ?x -> ?wt).
-        ?final_type = ?warr
+    let ?scheme_final_scheme : ?final_term =
+      ∃?x ?wt (?warr = ?x -> ?wt).
+        ?final_term = ?warr
         ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-        ∧ decode ?x)
-      ∧ decode ?final_type
+        ∧ decode ?x
+    in decode_scheme ?scheme_final_scheme
   
   Inferred type:
     int -> int
@@ -149,122 +149,171 @@ the inference variables.
     lambda x. (x : int)
   
   Generated constraint:
-    ∃?final_type.
-      (∃?x ?wt (?warr = ?x -> ?wt).
-        ?final_type = ?warr
+    let ?scheme_final_scheme : ?final_term =
+      ∃?x ?wt (?warr = ?x -> ?wt).
+        ?final_term = ?warr
         ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-        ∧ decode ?x)
-      ∧ decode ?final_type
+        ∧ decode ?x
+    in decode_scheme ?scheme_final_scheme
   
   Constraint solving log:
   -- hole {}
     (
-      ∃?final_type.
-        (∃?x ?wt (?warr = ?x -> ?wt).
-          ?final_type = ?warr
+      let ?scheme_final_scheme : ?final_term =
+        ∃?x ?wt (?warr = ?x -> ?wt).
+          ?final_term = ?warr
           ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-          ∧ decode ?x)
-        ∧ decode ?final_type
+          ∧ decode ?x
+      in decode_scheme ?scheme_final_scheme
     )
-  -> hole {final_type }
+  -> hole
+    {
+      Env :
+        final_term(0)
+      Pool :
+        0 |-->
+           final_term(0)
+    }
     (
-      (∃?x ?wt (?warr = ?x -> ?wt).
-        ?final_type = ?warr
-        ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
-        ∧ decode ?x)
-      ∧ decode ?final_type
+      let ?scheme_final_scheme : ?final_term =
+        ∃?x ?wt (?warr = ?x -> ?wt).
+          ?final_term = ?warr
+          ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
+          ∧ decode ?x
+      in decode_scheme ?scheme_final_scheme
     )
-  -> ∃?final_type.
+  -> let ?scheme_final_scheme : ?final_term =
       hole
       {
-        final_type
-        x
+        Env :
+          final_term(0)
+          x(0)
+        Pool :
+          0 |-->
+             x(0)
+             final_term(0)
       }
       (
         ∃?wt (?warr = ?x -> ?wt).
-          ?final_type = ?warr
+          ?final_term = ?warr
           ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
           ∧ decode ?x
       )
-    ∧ decode ?final_type
+    in decode_scheme ?scheme_final_scheme
   -> ∃?x.
-      ∃?final_type.
+      let ?scheme_final_scheme : ?final_term =
         hole
         {
-          final_type
-          wt
-          x
+          Env :
+            final_term(0)
+            wt(0)
+            x(0)
+          Pool :
+            0 |-->
+               wt(0)
+               x(0)
+               final_term(0)
         }
         (
           ∃(?warr = ?x -> ?wt).
-            ?final_type = ?warr
+            ?final_term = ?warr
             ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
             ∧ decode ?x
         )
-      ∧ decode ?final_type
+      in decode_scheme ?scheme_final_scheme
   -> ∃?wt.
       ∃?x.
-        ∃?final_type.
+        let ?scheme_final_scheme : ?final_term =
           hole
           {
-            final_type
-            warr = x -> wt
-            wt
-            x
+            Env :
+              final_term(0)
+              warr(0) = x -> wt
+              wt(0)
+              x(0)
+            Pool :
+              0 |-->
+                 warr(0) = x -> wt
+                 wt(0)
+                 x(0)
+                 final_term(0)
           }
           (
-            ?final_type = ?warr
+            ?final_term = ?warr
             ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
             ∧ decode ?x
           )
-        ∧ decode ?final_type
+        in decode_scheme ?scheme_final_scheme
   -> ∃?warr.
       ∃?wt.
         ∃?x.
-          ∃?final_type.
+          let ?scheme_final_scheme : ?final_term =
             hole
             {
-              final_type = x -> wt
-              warr |--> final_type
-              wt
-              x
+              Env :
+                warr |--> final_term
+                final_term(0) = x -> wt
+                wt(0)
+                x(0)
+              Pool :
+                0 |-->
+                   warr |--> final_term
+                   wt(0)
+                   x(0)
+                   final_term(0) = x -> wt
             }
-            (?final_type = ?warr)
-          ∧ decode ?final_type
+            (?final_term = ?warr)
+          in decode_scheme ?scheme_final_scheme
     ∧ decode ?x
     ∧ ∃(?int = int). ?int = ?wt ∧ ?int = ?x
   -> ⊤
     ∧ ∃?warr.
       ∃?wt.
         ∃?x.
-          ∃?final_type.
+          let ?scheme_final_scheme : ?final_term =
             hole
             {
-              final_type = x -> wt
-              int = int
-              warr |--> final_type
-              wt
-              x
+              Env :
+                warr |--> final_term
+                final_term(0) = x -> wt
+                int(0) = int
+                wt(0)
+                x(0)
+              Pool :
+                0 |-->
+                   warr |--> final_term
+                   int(0) = int
+                   wt(0)
+                   x(0)
+                   final_term(0) = x -> wt
             }
             (?int = ?wt ∧ ?int = ?x)
-          ∧ decode ?final_type
+          in decode_scheme ?scheme_final_scheme
     ∧ decode ?x
   -> ∃?int.
       ⊤
       ∧ ∃?warr.
         ∃?wt.
           ∃?x.
-            ∃?final_type.
+            let ?scheme_final_scheme : ?final_term =
               hole
               {
-                final_type = x -> int
-                int = int
-                warr |--> final_type
-                wt |--> int
-                x
+                Env :
+                  warr |--> final_term
+                  wt |--> int
+                  final_term(0) = x -> int
+                  int(0) = int
+                  x(0)
+                Pool :
+                  0 |-->
+                     warr |--> final_term
+                     wt |--> int
+                     int(0) = int
+                     x(0)
+                     final_term(0) = x -> int
               }
               (?int = ?wt)
-            ∧ decode ?final_type
+            in decode_scheme ?scheme_final_scheme
       ∧ decode ?x
     ∧ ?int = ?x
   -> ⊤
@@ -273,18 +322,41 @@ the inference variables.
       ∧ ∃?warr.
         ∃?wt.
           ∃?x.
-            ∃?final_type.
+            let ?scheme_final_scheme : ?final_term =
               hole
               {
-                final_type = int -> int
-                int = int
-                warr |--> final_type
-                wt |--> int
-                x |--> int
+                Env :
+                  warr |--> final_term
+                  wt |--> int
+                  x |--> int
+                  final_term(0) = int -> int
+                  int(0) = int
+                Pool :
+                  0 |-->
+                     warr |--> final_term
+                     wt |--> int
+                     x |--> int
+                     int(0) = int
+                     final_term(0) = int -> int
               }
               (?int = ?x)
-            ∧ decode ?final_type
+            in decode_scheme ?scheme_final_scheme
       ∧ decode ?x
+  <- let ?scheme_final_scheme : ?final_term =
+      hole
+      {
+        Schemes :
+          final_scheme: final_term [final_term int]
+        Env :
+          warr |--> final_term
+          wt |--> int
+          x |--> int
+          final_term(G) = int -> int
+          int(G) = int
+  
+      }
+      (⊤)
+    in decode_scheme ?scheme_final_scheme
   
   Inferred type:
     int -> int
@@ -305,13 +377,13 @@ the inference variables.
     lambda x. (x : int) lambda y. y
   
   Generated constraint:
-    ∃?final_type.
-      (∃?wu (?wt = ?wu -> ?final_type).
+    let ?scheme_final_scheme : ?final_term =
+      ∃?wu (?wt = ?wu -> ?final_term).
         (∃?x ?wt/1 (?warr = ?x -> ?wt/1).
           ?wt = ?warr ∧ (∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x) ∧ decode ?x)
         ∧ (∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
-          ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y))
-      ∧ decode ?final_type
+          ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
+    in decode_scheme ?scheme_final_scheme
   
   File "error_incompatible_types.test", line 1, characters 23-34:
   Error:
@@ -332,9 +404,9 @@ the inference variables.
     lambda f. lambda x. lambda y. f (x, y)
   
   Generated constraint:
-    ∃?final_type.
-      (∃?f ?wt (?warr = ?f -> ?wt).
-        ?final_type = ?warr
+    let ?scheme_final_scheme : ?final_term =
+      ∃?f ?wt (?warr = ?f -> ?wt).
+        ?final_term = ?warr
         ∧ (∃?x ?wt/1 (?warr/1 = ?x -> ?wt/1).
           ?wt = ?warr/1
           ∧ (∃?y ?wt/2 (?warr/2 = ?y -> ?wt/2).
@@ -346,11 +418,11 @@ the inference variables.
                 ∧ (∃?w2. ?w2 = ?y ∧ (∃(?wprod = {?w1 * ?w2}). ?wu = ?wprod))))
             ∧ decode ?y)
           ∧ decode ?x)
-        ∧ decode ?f)
-      ∧ decode ?final_type
+        ∧ decode ?f
+    in decode_scheme ?scheme_final_scheme
   
   Inferred type:
-    ({γ * β} -> α) -> γ -> β -> α
+    ∀β. ∀γ. ∀α. ({γ * β} -> α) -> γ -> β -> α
   
   Elaborated term:
     lambda (f : {γ * β} -> α). lambda (x : γ). lambda (y : β). f (x, y)
@@ -366,9 +438,9 @@ the inference variables.
     lambda f. lambda p. let (x, y) = p in f x y
   
   Generated constraint:
-    ∃?final_type.
-      (∃?f ?wt (?warr = ?f -> ?wt).
-        ?final_type = ?warr
+    let ?scheme_final_scheme : ?final_term =
+      ∃?f ?wt (?warr = ?f -> ?wt).
+        ?final_term = ?warr
         ∧ (∃?p ?wt/1 (?warr/1 = ?p -> ?wt/1).
           ?wt = ?warr/1
           ∧ (∃?x ?y (?wt/2 = {?x * ?y}).
@@ -379,11 +451,11 @@ the inference variables.
               (∃?wu/1 (?wt/4 = ?wu/1 -> ?wt/3). ?wt/4 = ?f ∧ ?wu/1 = ?x)
               ∧ ?wu = ?y))
           ∧ decode ?p)
-        ∧ decode ?f)
-      ∧ decode ?final_type
+        ∧ decode ?f
+    in decode_scheme ?scheme_final_scheme
   
   Inferred type:
-    (β -> γ -> α) -> {β * γ} -> α
+    ∀β. ∀γ. ∀α. (β -> γ -> α) -> {β * γ} -> α
   
   Elaborated term:
     lambda
@@ -409,123 +481,173 @@ a lot of those.)
     lambda x. x x
   
   Generated constraint:
-    ∃?final_type.
-      (∃?x ?wt (?warr = ?x -> ?wt).
-        ?final_type = ?warr
+    let ?scheme_final_scheme : ?final_term =
+      ∃?x ?wt (?warr = ?x -> ?wt).
+        ?final_term = ?warr
         ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
-        ∧ decode ?x)
-      ∧ decode ?final_type
+        ∧ decode ?x
+    in decode_scheme ?scheme_final_scheme
   
   Constraint solving log:
   -- hole {}
     (
-      ∃?final_type.
-        (∃?x ?wt (?warr = ?x -> ?wt).
-          ?final_type = ?warr
+      let ?scheme_final_scheme : ?final_term =
+        ∃?x ?wt (?warr = ?x -> ?wt).
+          ?final_term = ?warr
           ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
-          ∧ decode ?x)
-        ∧ decode ?final_type
+          ∧ decode ?x
+      in decode_scheme ?scheme_final_scheme
     )
-  -> hole {final_type }
+  -> hole
+    {
+      Env :
+        final_term(0)
+      Pool :
+        0 |-->
+           final_term(0)
+    }
     (
-      (∃?x ?wt (?warr = ?x -> ?wt).
-        ?final_type = ?warr
-        ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
-        ∧ decode ?x)
-      ∧ decode ?final_type
+      let ?scheme_final_scheme : ?final_term =
+        ∃?x ?wt (?warr = ?x -> ?wt).
+          ?final_term = ?warr
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
+          ∧ decode ?x
+      in decode_scheme ?scheme_final_scheme
     )
-  -> ∃?final_type.
+  -> let ?scheme_final_scheme : ?final_term =
       hole
       {
-        final_type
-        x
+        Env :
+          final_term(0)
+          x(0)
+        Pool :
+          0 |-->
+             x(0)
+             final_term(0)
       }
       (
         ∃?wt (?warr = ?x -> ?wt).
-          ?final_type = ?warr
+          ?final_term = ?warr
           ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
           ∧ decode ?x
       )
-    ∧ decode ?final_type
+    in decode_scheme ?scheme_final_scheme
   -> ∃?x.
-      ∃?final_type.
+      let ?scheme_final_scheme : ?final_term =
         hole
         {
-          final_type
-          wt
-          x
+          Env :
+            final_term(0)
+            wt(0)
+            x(0)
+          Pool :
+            0 |-->
+               wt(0)
+               x(0)
+               final_term(0)
         }
         (
           ∃(?warr = ?x -> ?wt).
-            ?final_type = ?warr
+            ?final_term = ?warr
             ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
             ∧ decode ?x
         )
-      ∧ decode ?final_type
+      in decode_scheme ?scheme_final_scheme
   -> ∃?wt.
       ∃?x.
-        ∃?final_type.
+        let ?scheme_final_scheme : ?final_term =
           hole
           {
-            final_type
-            warr = x -> wt
-            wt
-            x
+            Env :
+              final_term(0)
+              warr(0) = x -> wt
+              wt(0)
+              x(0)
+            Pool :
+              0 |-->
+                 warr(0) = x -> wt
+                 wt(0)
+                 x(0)
+                 final_term(0)
           }
           (
-            ?final_type = ?warr
+            ?final_term = ?warr
             ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
             ∧ decode ?x
           )
-        ∧ decode ?final_type
+        in decode_scheme ?scheme_final_scheme
   -> ∃?warr.
       ∃?wt.
         ∃?x.
-          ∃?final_type.
+          let ?scheme_final_scheme : ?final_term =
             hole
             {
-              final_type = x -> wt
-              warr |--> final_type
-              wt
-              x
+              Env :
+                warr |--> final_term
+                final_term(0) = x -> wt
+                wt(0)
+                x(0)
+              Pool :
+                0 |-->
+                   warr |--> final_term
+                   wt(0)
+                   x(0)
+                   final_term(0) = x -> wt
             }
-            (?final_type = ?warr)
-          ∧ decode ?final_type
+            (?final_term = ?warr)
+          in decode_scheme ?scheme_final_scheme
     ∧ decode ?x
     ∧ ∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x
   -> ⊤
     ∧ ∃?warr.
       ∃?wt.
         ∃?x.
-          ∃?final_type.
+          let ?scheme_final_scheme : ?final_term =
             hole
             {
-              final_type = x -> wt
-              warr |--> final_type
-              wt
-              wu
-              x
+              Env :
+                warr |--> final_term
+                final_term(0) = x -> wt
+                wt(0)
+                wu(0)
+                x(0)
+              Pool :
+                0 |-->
+                   warr |--> final_term
+                   wu(0)
+                   wt(0)
+                   x(0)
+                   final_term(0) = x -> wt
             }
             (∃(?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
-          ∧ decode ?final_type
+          in decode_scheme ?scheme_final_scheme
     ∧ decode ?x
   -> ∃?wu.
       ⊤
       ∧ ∃?warr.
         ∃?wt.
           ∃?x.
-            ∃?final_type.
+            let ?scheme_final_scheme : ?final_term =
               hole
               {
-                final_type = x -> wt
-                warr |--> final_type
-                wt
-                wu
-                x
-                wt/1 = wu -> wt
+                Env :
+                  warr |--> final_term
+                  final_term(0) = x -> wt
+                  wt(0)
+                  wu(0)
+                  x(0)
+                  wt/1(0) = wu -> wt
+                Pool :
+                  0 |-->
+                     warr |--> final_term
+                     wt/1(0) = wu -> wt
+                     wu(0)
+                     wt(0)
+                     x(0)
+                     final_term(0) = x -> wt
               }
               (?wt/1 = ?x ∧ ?wu = ?x)
-            ∧ decode ?final_type
+            in decode_scheme ?scheme_final_scheme
       ∧ decode ?x
   -> ∃?wt/1.
       ∃?wu.
@@ -533,18 +655,27 @@ a lot of those.)
         ∧ ∃?warr.
           ∃?wt.
             ∃?x.
-              ∃?final_type.
+              let ?scheme_final_scheme : ?final_term =
                 hole
                 {
-                  final_type = wt/1 -> wt
-                  warr |--> final_type
-                  wt
-                  wu
-                  x |--> wt/1
-                  wt/1 = wu -> wt
+                  Env :
+                    warr |--> final_term
+                    x |--> wt/1
+                    final_term(0) = wt/1 -> wt
+                    wt(0)
+                    wu(0)
+                    wt/1(0) = wu -> wt
+                  Pool :
+                    0 |-->
+                       warr |--> final_term
+                       x |--> wt/1
+                       wt/1(0) = wu -> wt
+                       wu(0)
+                       wt(0)
+                       final_term(0) = wt/1 -> wt
                 }
                 (?wt/1 = ?x)
-              ∧ decode ?final_type
+              in decode_scheme ?scheme_final_scheme
         ∧ decode ?x
     ∧ ?wu = ?x
   
@@ -576,56 +707,62 @@ There are not many programs with size 3, 4 and 5.
   $ minigen --search exhaustive --types --size 2 --count 100
   lambda (x/5 : α/1). x/5
   
-  Inferred type : α/1 -> α/1
+  Inferred type : ∀α/1. α/1 -> α/1
 
   $ minigen --search exhaustive --types --size 3 --count 100
   lambda (v/14 : α/7). lambda (u/19 : β/7). v/14
   
-  Inferred type : α/7 -> β/7 -> α/7
+  Inferred type : ∀α/7. ∀β/7. α/7 -> β/7 -> α/7
   
   
   
   lambda (v/14 : δ/7). lambda (u/19 : γ/7). u/19
   
-  Inferred type : δ/7 -> γ/7 -> γ/7
+  Inferred type : ∀γ/7. ∀δ/7. δ/7 -> γ/7 -> γ/7
 
   $ minigen --search exhaustive --types --size 4 --count 100
   lambda
   (v/6a : δ/2a). lambda (w/86 : β/2b). lambda (z/8c : α/2b). v/6a
   
-  Inferred type : δ/2a -> β/2b -> α/2b -> δ/2a
+  Inferred type : ∀δ/2a. ∀α/2b. ∀β/2b. δ/2a
+  ->
+  β/2b -> α/2b -> δ/2a
   
   
   
   lambda
   (v/6a : α/2c). lambda (w/86 : γ/2b). lambda (z/8c : δ/2b). w/86
   
-  Inferred type : α/2c -> γ/2b -> δ/2b -> γ/2b
+  Inferred type : ∀γ/2b. ∀δ/2b. ∀α/2c. α/2c
+  ->
+  γ/2b -> δ/2b -> γ/2b
   
   
   
   lambda
   (v/6a : δ/2c). lambda (w/86 : γ/2c). lambda (z/8c : β/2c). z/8c
   
-  Inferred type : δ/2c -> γ/2c -> β/2c -> β/2c
+  Inferred type : ∀β/2c. ∀γ/2c. ∀δ/2c. δ/2c
+  ->
+  γ/2c -> β/2c -> β/2c
   
   
   
-  lambda (v/6a : α/32). let (z/a0 : α/32) = v/6a in v/6a
+  lambda (v/6a : α/32). let (z/a0 : α/32) = Λ . v/6a in v/6a
   
-  Inferred type : α/32 -> α/32
+  Inferred type : ∀α/32. α/32 -> α/32
   
   
   
-  lambda (v/6a : β/32). let (z/a0 : β/32) = v/6a in z/a0
+  lambda (v/6a : β/32). let (z/a0 : β/32) = Λ . v/6a in z/a0
   
-  Inferred type : β/32 -> β/32
+  Inferred type : ∀β/32. β/32 -> β/32
   
   
   
   lambda (v/6a : γ/39). (v/6a, v/6a)
   
-  Inferred type : γ/39 -> {γ/39 * γ/39}
+  Inferred type : ∀γ/39. γ/39 -> {γ/39 * γ/39}
   
   
   
@@ -633,7 +770,7 @@ There are not many programs with size 3, 4 and 5.
   (v/6a : {δ/40 * α/41}).
     let ((u/d8 : δ/40), (v/d8 : α/41)) = v/6a in v/6a
   
-  Inferred type : {δ/40 * α/41} -> {δ/40 * α/41}
+  Inferred type : ∀α/41. ∀δ/40. {δ/40 * α/41} -> {δ/40 * α/41}
   
   
   
@@ -641,7 +778,7 @@ There are not many programs with size 3, 4 and 5.
   (v/6a : {β/41 * γ/41}).
     let ((u/d8 : β/41), (v/d8 : γ/41)) = v/6a in u/d8
   
-  Inferred type : {β/41 * γ/41} -> β/41
+  Inferred type : ∀γ/41. ∀β/41. {β/41 * γ/41} -> β/41
   
   
   
@@ -649,13 +786,16 @@ There are not many programs with size 3, 4 and 5.
   (v/6a : {α/42 * δ/41}).
     let ((u/d8 : α/42), (v/d8 : δ/41)) = v/6a in v/d8
   
-  Inferred type : {α/42 * δ/41} -> δ/41
+  Inferred type : ∀α/42. ∀δ/41. {α/42 * δ/41} -> δ/41
   
   
   
-  let (u/ef : β/53 -> β/53) = lambda (z/104 : β/53). z/104 in u/ef
+  let (u/ef : ∀γ/53. γ/53 -> γ/53) =
+    Λ γ/53. lambda (z/104 : γ/53). z/104
+  in
+    u/ef[β/53]
   
-  Inferred type : β/53 -> β/53
+  Inferred type : ∀β/53. β/53 -> β/53
 
 An example of random sampling output at higher size.
 
@@ -667,7 +807,9 @@ An example of random sampling output at higher size.
       lambda
       (u/7a : α/bd). let ((x/290 : β/bd), (y/290 : γ/bd)) = x/2a in u/7a
   
-  Inferred type : δ/bd -> {β/bd * γ/bd} -> α/bd -> α/bd
+  Inferred type : ∀γ/bd. ∀β/bd. ∀α/bd. ∀δ/bd. δ/bd
+  ->
+  {β/bd * γ/bd} -> α/bd -> α/bd
   
   
   
@@ -675,7 +817,9 @@ An example of random sampling output at higher size.
   (z/1 : β/f9).
     (lambda (x/345 : α/f9). lambda (y/345 : δ/f8). y/345, z/1)
   
-  Inferred type : β/f9 -> {α/f9 -> δ/f8 -> δ/f8 * β/f9}
+  Inferred type : ∀β/f9. ∀δ/f8. ∀α/f9. β/f9
+  ->
+  {α/f9 -> δ/f8 -> δ/f8 * β/f9}
   
   
   
@@ -684,7 +828,9 @@ An example of random sampling output at higher size.
     let ((u/34f : γ/fa), (v/34f : β/fb)) = z/1 in
       lambda (w/34f : α/fb). lambda (x/351 : δ/fa). u/34f
   
-  Inferred type : {γ/fa * β/fb} -> α/fb -> δ/fa -> γ/fa
+  Inferred type : ∀γ/fa. ∀δ/fa. ∀α/fb. ∀β/fb. {γ/fa * β/fb}
+  ->
+  α/fb -> δ/fa -> γ/fa
   
   
   
@@ -693,14 +839,17 @@ An example of random sampling output at higher size.
     lambda (w/3e2 : δ/128). w/3e2
   )
   
-  Inferred type : {β/128 -> γ/128 -> β/128 * δ/128 -> δ/128}
+  Inferred type : ∀δ/128. ∀β/128. ∀γ/128. {β/128
+  ->
+  γ/128 -> β/128
+  * δ/128 -> δ/128}
   
   
   
   lambda
-  (z/1 : α/14a). let (x/1a : {α/14a * α/14a}) = (z/1, z/1) in x/1a
+  (z/1 : α/14a). let (x/1a : {α/14a * α/14a}) = Λ . (z/1, z/1) in x/1a
   
-  Inferred type : α/14a -> {α/14a * α/14a}
+  Inferred type : ∀α/14a. α/14a -> {α/14a * α/14a}
   
   
   
@@ -709,36 +858,48 @@ An example of random sampling output at higher size.
     let ((u/456 : {β/14f * γ/14f}), (v/456 : δ/14f)) = z/1 in
       let ((w/456 : β/14f), (x/458 : γ/14f)) = u/456 in w/456
   
-  Inferred type : {{β/14f * γ/14f} * δ/14f} -> β/14f
+  Inferred type : ∀γ/14f. ∀δ/14f. ∀β/14f. {{β/14f * γ/14f}
+  * δ/14f}
+  ->
+  β/14f
   
   
   
   lambda (z/1 : β/169). ((z/1, z/1), z/1)
   
-  Inferred type : β/169 -> {{β/169 * β/169} * β/169}
+  Inferred type : ∀β/169. β/169 -> {{β/169 * β/169} * β/169}
   
   
   
   lambda
   (z/1 : {γ/16e * δ/16e}).
     let ((x/4b3 : γ/16e), (y/4b3 : δ/16e)) = z/1 in
-      let (z/4b2 : γ/16e) = x/4b3 in z/1
+      let (z/4b2 : γ/16e) = Λ . x/4b3 in z/1
   
-  Inferred type : {γ/16e * δ/16e} -> {γ/16e * δ/16e}
+  Inferred type : ∀γ/16e. ∀δ/16e. {γ/16e * δ/16e}
+  ->
+  {γ/16e * δ/16e}
   
   
   
-  let (w/4 : α/171 -> γ/171 -> β/171 -> α/171) =
-    lambda
-    (y/31 : α/171). lambda (z/30 : γ/171). lambda (x/81 : β/171). y/31
+  let
+  (w/4 : ∀δ/171. ∀α/172. ∀β/172. δ/171
+  ->
+  β/172 -> α/172 -> δ/171)
+  =
+    Λ δ/171 α/172 β/172.
+      lambda
+      (y/31 : δ/171). lambda (z/30 : β/172). lambda (x/81 : α/172). y/31
   in
-    w/4
+    w/4[α/171, β/171, γ/171]
   
-  Inferred type : α/171 -> γ/171 -> β/171 -> α/171
+  Inferred type : ∀γ/171. ∀β/171. ∀α/171. α/171
+  ->
+  γ/171 -> β/171 -> α/171
   
   
   
   lambda
-  (z/1 : α/2bf). let (x/1a : {α/2bf * α/2bf}) = (z/1, z/1) in z/1
+  (z/1 : δ/2bf). let (x/1a : {δ/2bf * δ/2bf}) = Λ . (z/1, z/1) in z/1
   
-  Inferred type : α/2bf -> α/2bf
+  Inferred type : ∀δ/2bf. δ/2bf -> δ/2bf

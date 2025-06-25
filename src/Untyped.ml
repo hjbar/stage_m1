@@ -5,7 +5,7 @@
     [T : Functor]. *)
 
 module Make (T : Utils.Functor) = struct
-  module Var = STLC.TeVar
+  module Var = Typed.TeVar
 
   (** ['t term_] is parametrized over the representation of term variables. Most
       of the project code will work with the non-parametrized instance [term]
@@ -17,7 +17,7 @@ module Make (T : Utils.Functor) = struct
     | Let of 'tev * 't term_ * 't term_
     | Tuple of 't term_ list
     | LetTuple of 'tev list * 't term_ * 't term_
-    | Annot of 't term_ * 'tyv STLC.ty_
+    | Annot of 't term_ * 'tyv Typed.ty_
     | Do of 't term_ T.t
     | Loc of Utils.loc * 't term_
     constraint 't = < tevar : 'tev ; tyvar : 'tyv >
@@ -27,7 +27,7 @@ module Make (T : Utils.Functor) = struct
   *)
   type raw_term = < tevar : string ; tyvar : string > term_
 
-  (** [term] are terms using [STLC.TeVar.t] variables, which include a unique
+  (** [term] are terms using [Typed.TeVar.t] variables, which include a unique
       stamp to guarantee uniqueness of binders. This is what most of the code
       manipulates. *)
   type term = < tevar : Var.t ; tyvar : Structure.TyVar.t > term_
@@ -61,7 +61,7 @@ module Make (T : Utils.Functor) = struct
       | LetTuple (xs, t1, t2) ->
         let env_inner, xs = List.fold_left_map bind env xs in
         LetTuple (xs, freshen env t1, freshen env_inner t2)
-      | Annot (t, ty) -> Annot (freshen env t, STLC.freshen_ty ty)
+      | Annot (t, ty) -> Annot (freshen env t, Typed.freshen_ty ty)
       | Do p -> Do (T.map (freshen env) p)
       | Loc (loc, t) -> Loc (loc, freshen env ~loco:(Some loc) t)
     in
