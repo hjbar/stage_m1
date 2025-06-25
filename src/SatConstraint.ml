@@ -59,24 +59,20 @@ module Make (T : Utils.Functor) = struct
     | Instance (sch_var, var) -> Instance (sch_var, var)
     | Let (sch_var, var, c1, c2) -> Let (sch_var, var, erase c1, erase c2)
 
-  let erase_cont_frame
-    : type a1 e1 a2 e2 . (a1, e1, a2, e2) Constraint.cont_frame -> sat_cont_frame option
-    = function
-      | KMap _ -> None
-      | KMapErr _ -> None
-      | KConj1 c -> Some (KConj1 (erase c))
-      | KConj2 _v -> Some KConj2
-      | KExist v -> Some (KExist v)
-      | KLet1 (s, x, c2) -> Some (KLet1 (s, x, erase c2))
-      | KLet2 _v -> Some KLet2
+  let erase_cont_frame : type a1 e1 a2 e2.
+    (a1, e1, a2, e2) Constraint.cont_frame -> sat_cont_frame option = function
+    | KMap _ -> None
+    | KMapErr _ -> None
+    | KConj1 c -> Some (KConj1 (erase c))
+    | KConj2 _v -> Some KConj2
+    | KExist v -> Some (KExist v)
+    | KLet1 (s, x, c2) -> Some (KLet1 (s, x, erase c2))
+    | KLet2 _v -> Some KLet2
 
-  let rec erase_cont 
-    : type a1 e1 a e . (a1, e1, a, e) Constraint.cont -> sat_cont
-    = function
+  let rec erase_cont : type a1 e1 a e.
+    (a1, e1, a, e) Constraint.cont -> sat_cont = function
     | Done -> []
     | Next (frame, rest) ->
-      (match erase_cont_frame frame with
-       | None -> []
-       | Some frame -> [frame])
+      (match erase_cont_frame frame with None -> [] | Some frame -> [ frame ])
       @ erase_cont rest
 end

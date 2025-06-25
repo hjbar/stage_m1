@@ -176,7 +176,7 @@ type, this is just an abstract/rigid type variable: `Constr
     in decode_scheme ?scheme_final_scheme
   
   Inferred type:
-    α -> α
+    ∀α. α -> α
   
   Elaborated term:
     let Λβ. (x : β -> β) = lambda (y : β). y in x[α]
@@ -212,7 +212,7 @@ type, this is just an abstract/rigid type variable: `Constr
     in decode_scheme ?scheme_final_scheme
   
   Inferred type:
-    ∀β. ∀γ. ∀α. ({γ * β} -> α) -> γ -> β -> α
+    ∀γ. ∀β. ∀α. ({γ * β} -> α) -> γ -> β -> α
   
   Elaborated term:
     lambda (f : {γ * β} -> α). lambda (x : γ). lambda (y : β). f (x, y)
@@ -243,7 +243,7 @@ type, this is just an abstract/rigid type variable: `Constr
     in decode_scheme ?scheme_final_scheme
   
   Inferred type:
-    ∀γ. ∀β. ∀α. (β -> γ -> α) -> {β * γ} -> α
+    ∀β. ∀γ. ∀α. (β -> γ -> α) -> {β * γ} -> α
   
   Elaborated term:
     lambda
@@ -372,12 +372,12 @@ type, this is just an abstract/rigid type variable: `Constr
     in decode_scheme ?scheme_final_scheme
   
   Inferred type:
-    ∀α. ∀β. α -> β -> {α * β}
+    int -> bool -> {int * bool}
   
   Elaborated term:
     let Λγ. (id : γ -> γ) = lambda (x : γ). x in
       lambda
-      (a : α).
+      (a : int).
         lambda
         (b : β).
           let (l : α) = id[α] a in
@@ -718,7 +718,6 @@ the inference variables.
           in decode_scheme ?scheme_final_scheme
       ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
         ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-  - ∃?wt/1.
       ∃?x.
         ∃?wt.
           ∃?wu.
@@ -1206,7 +1205,7 @@ There are not many programs with size 3, 4 and 5.
   Inferred type : ∀δ/8. ∀α/9. ∀γ/8. α/9 -> δ/8 -> γ/8 -> γ/8
   
   lambda (v/14 : β/a). let (v/1d : γ/a) = v/14 in v/14
-  
+
   Inferred type : ∀β/a. β/a -> β/a
   
   lambda (v/14 : δ/a). let (v/1d : δ/a) = v/14 in v/1d
@@ -1382,4 +1381,3 @@ We can then restart from an arbitrary point in the enumeration using the `--star
   lambda (x : {β * α}). let ((y : β), (z : α)) = x in z
   
   let Λδ/3. (u/4 : δ/3 -> δ/3) = lambda (v/8 : δ/3). v/8 in u/4[γ/3]
-  

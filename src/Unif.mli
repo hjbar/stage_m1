@@ -51,13 +51,17 @@ module Env : sig
 
   val empty : t
 
+  val map_is_empty : t -> bool
+
+  val pool_is_empty : t -> bool
+
   val get_young : t -> rank
 
   val incr_young : t -> t
 
   val decr_young : t -> t
 
-  val pool_is_empty : rank -> t -> bool
+  val pool_k_is_empty : rank -> t -> bool
 
   val clean_pool : rank -> t -> t
 
@@ -65,7 +69,9 @@ module Env : sig
 
   val mem : var -> t -> bool
 
-  val add_repr : repr -> t -> t
+  val add : repr -> t -> t
+
+  val set : repr -> t -> t
 
   val register : var -> rank:int -> t -> t
 
@@ -81,6 +87,8 @@ module Env : sig
   val is_representative : var -> t -> bool
 
   (* DEBUG *)
+
+  val debug_var : var -> t -> PPrint.document
 
   val debug_env : t -> PPrint.document
 

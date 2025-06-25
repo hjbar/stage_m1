@@ -32,7 +32,7 @@ let adjust_rank (data : data) (k : rank) (env : env) : env * data =
   assert (data.status <> Generic);
 
   let data = { data with rank = min data.rank k } in
-  let env = Env.add_repr data env in
+  let env = Env.set data env in
 
   (env, data)
 
@@ -50,7 +50,7 @@ let enter (env : env) : env =
   let env = Env.incr_young env in
   let young = Env.get_young env in
 
-  assert (Env.pool_is_empty young env);
+  assert (Env.pool_k_is_empty young env);
   env
 
 (* The set of all young variables *)
@@ -67,10 +67,6 @@ type generation =
 (* Before we want to exit, create a generation describing the young generation *)
 
 let discover_young_generation (env : env) : generation =
-  Debug.print_message "DEBUG DISCOVER_YOUNG_GENERATION";
-  Debug.print_header "DEBUG ENV" @@ Unif.Env.debug_env env;
-  Debug.print_header "DEBUG POOL" @@ Unif.Env.debug_pool env;
-
   (* Young of the env *)
   let state_young = Env.get_young env in
 
@@ -86,7 +82,7 @@ let discover_young_generation (env : env) : generation =
       begin
         fun by_rank var ->
           let data = Env.repr var env in
-          Hashtbl.replace cache data.var ();
+          Hashtbl.replace cache var ();
 
           let r = data.rank in
 
@@ -102,7 +98,7 @@ let discover_young_generation (env : env) : generation =
   in
 
   (* Returns true if var is young, false otherwise *)
-  let is_young var = Hashtbl.mem cache (Env.repr var env).var in
+  let is_young var = Hashtbl.mem cache var in
 
   (* Result *)
   { inhabitants; by_rank; is_young }
@@ -110,24 +106,6 @@ let discover_young_generation (env : env) : generation =
 (* updates the rank of every variables in the young generation *)
 
 let update_ranks (generation : generation) (env : env) : env =
-  Debug.print_message "generation by ranks :";
-
-  Debug.print_message
-  @@ IntMap.fold
-       begin
-         fun rank vars acc ->
-           acc
-           ^ Format.sprintf "%d |-->\n" rank
-           ^ List.fold_left
-               begin
-                 fun acc var ->
-                   acc ^ Format.sprintf "\t%s\n" @@ Utils.string_of_doc
-                   @@ Constraint.Var.print var
-               end
-               "" vars
-       end
-       generation.by_rank "";
-
   (* To mark visited variable *)
   let cache = Hashtbl.create 16 in
 
@@ -140,29 +118,26 @@ let update_ranks (generation : generation) (env : env) : env =
     let rec traverse (var : variable) (env : env) : env * rank =
       (* To get the repr of the variable & check its status *)
       let data = Env.repr var env in
+      (* *)
+      (* DEBUG START *)
+      (*
+      if data.status = Generic then begin
+        Debug.print_sub_header "DEBUG CURRENT ENV" @@ Unif.Env.debug_env env;
+        Debug.print_sub_header "DEBUG CURRENT POOL" @@ Unif.Env.debug_pool env;
 
-      Debug.print_header "DEBUG UNIF ENV" @@ Unif.Env.debug_env env;
-      Debug.print_header "DEBUG UNIF POOL" @@ Unif.Env.debug_pool env;
-
-      Constraint.Var.(
-        Debug.print_message
-        @@ Format.sprintf "%s |--> %s"
-             (var |> print |> Utils.string_of_doc)
-             (data.var |> print |> Utils.string_of_doc) );
-
-      Debug.print_message
-      @@ Format.sprintf "%s : %s"
-           (data.var |> Constraint.Var.print |> Utils.string_of_doc)
-           ( match data.status with
-           | Generic -> "Generic"
-           | Flexible -> "Flexible" );
-
+        Utils.(
+          Constraint.Var.(
+            Format.sprintf "(var) %s |--> %s (repr)"
+              (var |> print |> string_of_doc)
+              (data.var |> print |> string_of_doc)
+            |> Debug.print_message ) )
+      end;
+      *)
+      (* DEBUG END *)
+      (* *)
       assert (data.status <> Generic);
 
-      Debug.print_header "DEBUG UNIF ENV" @@ Unif.Env.debug_env env;
-      Debug.print_header "DEBUG UNIF POOL" @@ Unif.Env.debug_pool env;
-
-      (* If we already this variable, stop *)
+      (* If we have already visited this variable, stop *)
       if Hashtbl.mem cache data.var then begin
         assert (data.rank <= k);
         (env, data.rank)
@@ -223,7 +198,7 @@ let generalize (generation : generation) (env : env) : env * variable list =
   let state_young = Env.get_young env in
   let env = ref env in
 
-  (* Compote generics *)
+  (* Compute generics *)
   let l =
     List.filter
       begin
@@ -240,12 +215,12 @@ let generalize (generation : generation) (env : env) : env * variable list =
                  env := Env.register var ~rank !env;
                  false
                end
-               (* r = state.young : make var Generic and grop it if var has no structure *)
+               (* r = state.young : make var Generic and drop it if var has no structure *)
                  else begin
                  assert (rank = state_young);
 
                  let data = { data with status = Generic } in
-                 env := Env.add_repr data !env;
+                 env := Env.set data !env;
 
                  data.structure = None
                end
@@ -282,43 +257,40 @@ let body { root; _ } = root
 
 let quantifiers { quantifiers; _ } = quantifiers
 
-let debug_scheme { root; quantifiers; _ } =
+let debug_scheme { root; quantifiers; generics } =
   let open PPrint in
   let quantifiers_doc =
     concat_map
       (fun var -> string "∀" ^^ Constraint.Var.print var ^^ string ". ")
       quantifiers
   in
-  quantifiers_doc ^^ Constraint.Var.print root
-
-(* Return a monomorphic scheme whose root is the root *)
-
-let trivial (root : variable) : scheme =
-  let generics = [] in
-  let quantifiers = [] in
-  { root; generics; quantifiers }
+  quantifiers_doc ^^ Constraint.Var.print root ^^ space
+  ^^ brackets (separate_map space Constraint.Var.print generics)
 
 (* Transform root into a scheme -- assert : calls after generalization *)
 
-let schemify (root : variable) (env : env) : scheme =
+let schemify (env : env) (root : variable) : scheme =
   (* Compute generics *)
   let cache = Hashtbl.create 16 in
 
-  let rec traverse (var : variable) (acc : variable list) : variable list =
-    let data = Env.repr var env in
+  let traverse (var : variable) : variable list =
+    let rec loop (acc : variable list) (var : variable) : variable list =
+      let data = Env.repr var env in
 
-    if data.status <> Generic || Hashtbl.mem cache data.var then acc
-    else begin
-      Hashtbl.replace cache data.var ();
-      let acc = var :: acc in
+      if data.status <> Generic || Hashtbl.mem cache data.var then acc
+      else begin
+        Hashtbl.replace cache data.var ();
+        let acc = data.var :: acc in
 
-      match data.structure with
-      | None -> List.rev acc
-      | Some structure -> Structure.fold (Fun.flip traverse) acc structure
-    end
+        match data.structure with
+        | None -> acc
+        | Some structure -> Structure.fold loop acc structure
+      end
+    in
+    loop [] var
   in
 
-  let generics = traverse root [] in
+  let generics = List.rev @@ traverse root in
 
   (* Compute quantifiers *)
   let has_no_structure var = (Env.repr var env).structure = None in
@@ -346,7 +318,7 @@ let exit (roots : roots) (env : env) : env * quantifiers * schemes =
   let env, quantifiers = generalize generation env in
 
   (* We build a scheme for every root *)
-  let schemes = List.map (Fun.flip schemify @@ env) roots in
+  let schemes = List.map (schemify env) roots in
 
   (* Clean the environment *)
   let env = Env.clean_pool state_young env in
@@ -392,17 +364,19 @@ let instantiate ({ root; generics; quantifiers } : scheme) (var : variable)
     List.fold_left
       begin
         fun env var ->
-          let var_copy = Hashtbl.find mapping var in
+          let data = Env.repr var env in
+
+          let var_copy = Hashtbl.find mapping data.var in
 
           let structure_copy =
-            Option.map (Structure.map (copy env)) (Env.repr var env).structure
+            Option.map (Structure.map (copy env)) data.structure
           in
 
-          let data =
+          let copy_data =
             { (Env.repr var_copy env) with structure = structure_copy }
           in
 
-          Env.add_repr data env
+          Env.set copy_data env
       end
       env generics
   in

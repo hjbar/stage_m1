@@ -28,8 +28,6 @@ val body : scheme -> root
 
 val quantifiers : scheme -> quantifiers
 
-val trivial : variable -> scheme
-
 val debug_scheme : scheme -> PPrint.document
 
 (* Functions on generalization *)

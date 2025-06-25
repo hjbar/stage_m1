@@ -62,7 +62,7 @@ let config =
 
 let generate (module M : Choice.Intf) =
   let module Gen = Generator.Make (M) in
-  M.run @@ Gen.typed ~size:config.size
+  M.run @@ Gen.typed_cut_early Gen.untyped_gasche ~size:config.size
 
 let () =
   match config.seed with None -> Random.self_init () | Some s -> Random.init s

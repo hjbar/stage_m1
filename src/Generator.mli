@@ -3,9 +3,15 @@ module Make (M : Choice.Intf) : sig
   module Constraint := Constraint.Make(M)
   module Infer := Infer.Make(M)
 
-  val untyped : Untyped.term
+  val untyped_gasche : Untyped.term
 
-  val constraint_ : (STLC.term * STLC.scheme, Infer.err) Constraint.t
+  val untyped_vanille : Untyped.term
 
-  val typed : size:int -> (STLC.term * STLC.scheme) M.t
+  val constraint_ :
+    Untyped.term -> (STLC.term * STLC.scheme, Infer.err) Constraint.t
+
+  val typed_cut_early :
+    size:int -> Untyped.term -> (STLC.term * STLC.scheme) M.t
+
+  val typed_cut_late : size:int -> Untyped.term -> (STLC.term * STLC.scheme) M.t
 end

@@ -1,4 +1,6 @@
-(* One-lien functions *)
+val debug : bool
+
+(* One-line functions *)
 
 val print_document : PPrint.document -> unit
 

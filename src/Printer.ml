@@ -34,11 +34,11 @@ let lambda ~input ~body =
 
 (** let $var = $def in $body *)
 let let_ ~var ~def ~body =
-  group @@
-  group (group (string "let" ^/^ var
-                ^/^ string "=")
-         ^^ nest 2 (break 1 ^^ def)
-         ^/^ string "in")
+  group
+  @@ group
+       ( group (string "let" ^/^ var ^/^ string "=")
+       ^^ nest 2 (break 1 ^^ def)
+       ^/^ string "in" )
   ^//^ body
 
 (** $t $u *)
@@ -108,24 +108,19 @@ let instance sch_var var =
   group @@ sch_var ^^ break 1 ^^ utf8string "≤" ^^ break 1 ^^ var
 
 let let_sch sch_var var c1 c2 =
-  group @@
-  group (string "let" ^/^ sch_var
-         ^/^ colon ^/^ var
-         ^/^ string "=")
+  group
+  @@ group (string "let" ^/^ sch_var ^/^ colon ^/^ var ^/^ string "=")
   ^^ nest 2 (break 1 ^^ c1)
   ^/^ string "in" ^//^ c2
 
 let let_sch_2 c2 =
-  group @@
-  string "let " ^^ true_
-  ^^ break 1 ^^ string "in"
-  ^^ break 1 ^^ c2
+  group @@ string "let " ^^ true_ ^^ break 1 ^^ string "in" ^^ break 1 ^^ c2
 
 let hole ~env c =
-  group @@
-  group (string "hole"
-         ^^ break 1 ^^ group (surround 2 0 lbrace env rbrace))
-  ^^ break 1 ^^ group (surround 2 0 lparen c rparen)
+  group
+  @@ group (string "hole" ^^ break 1 ^^ group (surround 2 0 lbrace env rbrace))
+  ^^ break 1
+  ^^ group (surround 2 0 lparen c rparen)
 
 (** $ty1 incompatible with $ty2 *)
 let incompatible ty1 ty2 =

@@ -117,9 +117,7 @@ module Make (T : Utils.Functor) = struct
     | KConj2 : 'ok1 on_sol -> ('ok2, 'err, 'ok1 * 'ok2, 'err) cont_frame
     | KExist : variable -> ('ok, 'err, 'ok, 'err) cont_frame
     | KLet1 :
-        scheme_variable
-        * variable
-        * ('ok2, 'err) t
+        scheme_variable * variable * ('ok2, 'err) t
         -> ('ok1, 'err, 'ok1 * 'ok2, 'err) cont_frame
     | KLet2 : 'ok1 on_sol -> ('ok2, 'err, 'ok1 * 'ok2, 'err) cont_frame
 end

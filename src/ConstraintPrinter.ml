@@ -27,8 +27,7 @@ module Make (T : Utils.Functor) = struct
         in
 
         let bindings, body = peel ac in
-        if List.is_empty bindings then body
-        else Printer.exist bindings body
+        if List.is_empty bindings then body else Printer.exist bindings body
     and print_conj =
       let _print_self = print_conj
       and print_next = print_atom in
@@ -52,17 +51,20 @@ module Make (T : Utils.Functor) = struct
     in
     print_top c
 
-  let print_sat_constraint_in_context ~(env : PPrint.document) (c : sat_constraint) (k : sat_cont) : PPrint.document =
+  let print_sat_constraint_in_context ~(env : PPrint.document)
+    (c : sat_constraint) (k : sat_cont) : PPrint.document =
     let rec print_cont = function
       | frame :: rest ->
         let rest = print_cont rest in
-        begin match frame with
-        | KConj1 c2 -> Printer.conjunction [rest; print_sat_constraint c2]
-        | KConj2 -> Printer.conjunction [Printer.true_; rest]
-        | KExist v -> Printer.exist [(print_var v, None)] rest
-        | KLet1 (s, v, c2) ->
-          Printer.let_sch (print_sch_var s) (print_var v) rest (print_sat_constraint c2)
-        | KLet2 -> Printer.let_sch_2 rest
+        begin
+          match frame with
+          | KConj1 c2 -> Printer.conjunction [ rest; print_sat_constraint c2 ]
+          | KConj2 -> Printer.conjunction [ Printer.true_; rest ]
+          | KExist v -> Printer.exist [ (print_var v, None) ] rest
+          | KLet1 (s, v, c2) ->
+            Printer.let_sch (print_sch_var s) (print_var v) rest
+              (print_sat_constraint c2)
+          | KLet2 -> Printer.let_sch_2 rest
         end
       | [] -> Printer.hole ~env (print_sat_constraint c)
     in
@@ -71,10 +73,7 @@ module Make (T : Utils.Functor) = struct
   let print_constraint (type a e) (c : (a, e) Constraint.t) : PPrint.document =
     print_sat_constraint (erase c)
 
-  let print_constraint_in_context (type a1 e1 a e)
-      ~(env: PPrint.document)
-      (c : (a1, e1) Constraint.t)
-      (k : (a1, e1, a, e) Constraint.cont)
-    =
+  let print_constraint_in_context (type a1 e1 a e) ~(env : PPrint.document)
+    (c : (a1, e1) Constraint.t) (k : (a1, e1, a, e) Constraint.cont) =
     print_sat_constraint_in_context ~env (erase c) (erase_cont k)
 end
