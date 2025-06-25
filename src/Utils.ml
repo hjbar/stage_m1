@@ -4,6 +4,8 @@ type 'v cycle = Cycle of 'v [@@unboxed]
 
 type loc = Lexing.position * Lexing.position
 
+let string_of_loc loc = MenhirLib.LexerUtil.range loc
+
 let string_of_doc doc =
   let buf = Buffer.create 128 in
   PPrint.ToBuffer.pretty 0.9 80 buf doc;

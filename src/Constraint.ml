@@ -100,7 +100,8 @@ module Make (T : Utils.Functor) = struct
   type ('ok1, 'err1, 'ok, 'err) cont =
     | Done : ('ok, 'err, 'ok, 'err) cont
     | Next :
-        ('ok1, 'err1, 'ok2, 'err2) cont_frame * ('ok2, 'err2, 'ok, 'err) cont
+        (Utils.loc option * ('ok1, 'err1, 'ok2, 'err2) cont_frame)
+        * ('ok2, 'err2, 'ok, 'err) cont
         -> ('ok1, 'err1, 'ok, 'err) cont
 
   and ('ok1, 'err1, 'ok, 'err) cont_frame =

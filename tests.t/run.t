@@ -216,6 +216,8 @@ the inference variables.
           ?wu = ?warr/1 ∧ decode ?y ∧ ?wt/2 = ?y))
       ∧ decode ?final_type
   
+  File "error.test", line 1, characters 23-34:
+  
   Error:
       int
     incompatible with
@@ -354,6 +356,8 @@ a lot of those.)
     decode ?final_type ∧ ?wu = ?x ∧ ?wt/1 = ?x ∧ decode ?x
   ∃?wu ?wt (?wt/1 = ?wu -> ?wt) ?wt (?final_type = ?wt/1 -> ?wt).
     decode ?final_type ∧ ⊥ ∧ decode ?wt/1
+  
+  File "selfapp.test", line 1, characters 0-13:
   
   Error:
     cycle on constraint variable

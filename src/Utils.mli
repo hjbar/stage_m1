@@ -4,6 +4,8 @@ type 'v cycle = Cycle of 'v [@@unboxed]
 
 type loc = Lexing.position * Lexing.position
 
+val string_of_loc : loc -> string
+
 val string_of_doc : PPrint.document -> string
 
 module Variables () : sig

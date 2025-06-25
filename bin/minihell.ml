@@ -70,7 +70,7 @@ let call_typer ~config (term : Untyped.term) =
 
   match nf with
   | NRet (env, v) -> Ok (v (Decode.decode env ()))
-  | NErr e -> Error e
+  | NErr (loco, e) -> Error (loco, e)
   | NDo _ -> .
 
 
@@ -81,7 +81,8 @@ let print_result ~config result =
       print_section "Inferred type" (STLCPrinter.print_ty ty);
     if config.show_typed_term then
       print_section "Elaborated term" (STLCPrinter.print_term term)
-  | Error err ->
+  | Error (loco, err) ->
+    Option.iter (fun loc -> loc |> Utils.string_of_loc |> print_string) loco;
     print_section "Error"
       ( match err with
       | Infer.Clash (ty1, ty2) ->

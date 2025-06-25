@@ -11,7 +11,8 @@ module Make (T : Utils.Functor) : sig
     | NRet : env * 'a Constraint.on_sol -> ('a, 'e) normal_constraint
       (** A succesfully elaborated value. (See Constraint.ml for exaplanations
           on [on_sol].) *)
-    | NErr : 'e -> ('a, 'e) normal_constraint  (** A failed/false constraint. *)
+    | NErr : Utils.loc option * 'e -> ('a, 'e) normal_constraint
+      (** A failed/false constraint. *)
     | NDo : ('a, 'e) normal_constraint T.t -> ('a, 'e) normal_constraint
       (** A constraint whose evaluation encountered an effectful constraint in a
           [Do p] node.
