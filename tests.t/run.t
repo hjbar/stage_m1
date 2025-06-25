@@ -84,6 +84,8 @@ or
 to the bin/dune content.)
 
 
+
+
 ## Simple tests
 
 `id_poly` is just the polymorphic identity.
@@ -107,12 +109,39 @@ to the bin/dune content.)
 
 
 
+  $ minihell $FLAGS id_poly_with_let.test
+  Input term:
+    lambda y. let id = lambda x. x in id y
+  
+  Generated constraint:
+    let ?scheme_final_scheme : ?final_term =
+      ∃?y ?wt (?warr = ?y -> ?wt).
+        ?final_term = ?warr
+        ∧ (let ?scheme_s : ?id =
+          ∃?x ?wt/2 (?warr/1 = ?x -> ?wt/2).
+            ?id = ?warr/1 ∧ ?wt/2 = ?x ∧ decode ?x
+        in
+          ((∃?wu (?wt/1 = ?wu -> ?wt). ?scheme_s ≤ ?wt/1 ∧ ?wu = ?y)
+          ∧ decode_scheme ?scheme_s))
+        ∧ decode ?y
+    in decode_scheme ?scheme_final_scheme
+  
+  Inferred type:
+    ∀α. α -> α
+  
+  Elaborated term:
+    lambda
+    (y : α).
+      let (id : ∀β. β -> β) = Λ β. lambda (x : β). x in id[α] y
+  
+
+
 
 
 `id_int` is the monomorphic identity on the type `int`. Note
 that we have not implemented support for a built-in `int`
 type, this is just an abstract/rigid type variable: `Constr
-(Var ...)` at type `Typed.ty`.
+(Var ...)` at type `F.ty`.
 
   $ minihell $FLAGS id_int.test
   Input term:
@@ -134,6 +163,265 @@ type, this is just an abstract/rigid type variable: `Constr
   
 
 
+
+
+  $ minihell $FLAGS let_poly.test
+  Input term:
+    let x = lambda y. y in x
+  
+  Generated constraint:
+    let ?scheme_final_scheme : ?final_term =
+      let ?scheme_s : ?x =
+        ∃?y ?wt (?warr = ?y -> ?wt). ?x = ?warr ∧ ?wt = ?y ∧ decode ?y
+      in (?scheme_s ≤ ?final_term ∧ decode_scheme ?scheme_s)
+    in decode_scheme ?scheme_final_scheme
+  
+  Inferred type:
+    ∀α. α -> α
+  
+  Elaborated term:
+    let (x : ∀β. β -> β) = Λ β. lambda (y : β). y in x[α]
+  
+
+
+
+
+
+
+## Examples with products
+
+  $ minihell $FLAGS curry.test
+  Input term:
+    lambda f. lambda x. lambda y. f (x, y)
+  
+  Generated constraint:
+    let ?scheme_final_scheme : ?final_term =
+      ∃?f ?wt (?warr = ?f -> ?wt).
+        ?final_term = ?warr
+        ∧ (∃?x ?wt/1 (?warr/1 = ?x -> ?wt/1).
+          ?wt = ?warr/1
+          ∧ (∃?y ?wt/2 (?warr/2 = ?y -> ?wt/2).
+            ?wt/1 = ?warr/2
+            ∧ (∃?wu (?wt/3 = ?wu -> ?wt/2).
+              ?wt/3 = ?f
+              ∧ (∃?w1.
+                ?w1 = ?x
+                ∧ (∃?w2. ?w2 = ?y ∧ (∃(?wprod = {?w1 * ?w2}). ?wu = ?wprod))))
+            ∧ decode ?y)
+          ∧ decode ?x)
+        ∧ decode ?f
+    in decode_scheme ?scheme_final_scheme
+  
+  Inferred type:
+    ∀β. ∀γ. ∀α. ({γ * β} -> α) -> γ -> β -> α
+  
+  Elaborated term:
+    lambda (f : {γ * β} -> α). lambda (x : γ). lambda (y : β). f (x, y)
+  
+
+
+
+
+  $ minihell $FLAGS uncurry.test
+  Input term:
+    lambda f. lambda p. let (x, y) = p in f x y
+  
+  Generated constraint:
+    let ?scheme_final_scheme : ?final_term =
+      ∃?f ?wt (?warr = ?f -> ?wt).
+        ?final_term = ?warr
+        ∧ (∃?p ?wt/1 (?warr/1 = ?p -> ?wt/1).
+          ?wt = ?warr/1
+          ∧ (∃?x ?y (?wt/2 = {?x * ?y}).
+            decode ?y
+            ∧ decode ?x
+            ∧ ?wt/2 = ?p
+            ∧ (∃?wu (?wt/3 = ?wu -> ?wt/1).
+              (∃?wu/1 (?wt/4 = ?wu/1 -> ?wt/3). ?wt/4 = ?f ∧ ?wu/1 = ?x)
+              ∧ ?wu = ?y))
+          ∧ decode ?p)
+        ∧ decode ?f
+    in decode_scheme ?scheme_final_scheme
+  
+  Inferred type:
+    ∀β. ∀γ. ∀α. (β -> γ -> α) -> {β * γ} -> α
+  
+  Elaborated term:
+    lambda
+    (f : β -> γ -> α).
+      lambda (p : {β * γ}). let ((x : β), (y : γ)) = p in f x y
+  
+
+
+
+
+
+
+## Polymorhpism
+
+  $ minihell $FLAGS poly_easy_use.test
+  Input term:
+    lambda a. let id = lambda x. x in let r = id a in r
+  
+  Generated constraint:
+    let ?scheme_final_scheme : ?final_term =
+      ∃?a ?wt (?warr = ?a -> ?wt).
+        ?final_term = ?warr
+        ∧ (let ?scheme_s : ?id =
+          ∃?x ?wt/2 (?warr/1 = ?x -> ?wt/2).
+            ?id = ?warr/1 ∧ ?wt/2 = ?x ∧ decode ?x
+        in
+          ((let ?scheme_s/1 : ?r =
+            ∃?wu (?wt/1 = ?wu -> ?r). ?scheme_s ≤ ?wt/1 ∧ ?wu = ?a
+          in (?scheme_s/1 ≤ ?wt ∧ decode_scheme ?scheme_s/1))
+          ∧ decode_scheme ?scheme_s))
+        ∧ decode ?a
+    in decode_scheme ?scheme_final_scheme
+  
+  Inferred type:
+    ∀α. α -> α
+  
+  Elaborated term:
+    lambda
+    (a : α).
+      let (id : ∀β. β -> β) = Λ β. lambda (x : β). x in
+        let (r : α) = Λ . id[α] a in r
+  
+
+
+
+
+  $ minihell $FLAGS poly_use.test
+  Input term:
+    let id = lambda x. x in
+      lambda a. lambda b. let l = id a in let r = id b in (l, r)
+  
+  Generated constraint:
+    let ?scheme_final_scheme : ?final_term =
+      let ?scheme_s : ?id =
+        ∃?x ?wt/4 (?warr/2 = ?x -> ?wt/4).
+          ?id = ?warr/2 ∧ ?wt/4 = ?x ∧ decode ?x
+      in
+        ((∃?a ?wt (?warr = ?a -> ?wt).
+          ?final_term = ?warr
+          ∧ (∃?b ?wt/1 (?warr/1 = ?b -> ?wt/1).
+            ?wt = ?warr/1
+            ∧ (let ?scheme_s/1 : ?l =
+              ∃?wu/1 (?wt/3 = ?wu/1 -> ?l). ?scheme_s ≤ ?wt/3 ∧ ?wu/1 = ?a
+            in
+              ((let ?scheme_s/2 : ?r =
+                ∃?wu (?wt/2 = ?wu -> ?r). ?scheme_s ≤ ?wt/2 ∧ ?wu = ?b
+              in
+                ((∃?w1.
+                  ?scheme_s/1 ≤ ?w1
+                  ∧ (∃?w2.
+                    ?scheme_s/2 ≤ ?w2 ∧ (∃(?wprod = {?w1 * ?w2}). ?wt/1 = ?wprod)))
+                ∧ decode_scheme ?scheme_s/2))
+              ∧ decode_scheme ?scheme_s/1))
+            ∧ decode ?b)
+          ∧ decode ?a)
+        ∧ decode_scheme ?scheme_s)
+    in decode_scheme ?scheme_final_scheme
+  
+  Inferred type:
+    ∀β. ∀α. α -> β -> {α * β}
+  
+  Elaborated term:
+    let (id : ∀γ. γ -> γ) = Λ γ. lambda (x : γ). x in
+      lambda
+      (a : α).
+        lambda
+        (b : β).
+          let (l : α) = Λ . id[α] a in let (r : β) = Λ . id[β] b in (l, r)
+  
+
+
+
+
+
+  $ minihell $FLAGS poly_annot_use.test
+  Input term:
+    let id = lambda x. x in
+      lambda
+      a. lambda b. let l = id a in let r = id b in ((l : int), (r : bool))
+  
+  Generated constraint:
+    let ?scheme_final_scheme : ?final_term =
+      let ?scheme_s : ?id =
+        ∃?x ?wt/4 (?warr/2 = ?x -> ?wt/4).
+          ?id = ?warr/2 ∧ ?wt/4 = ?x ∧ decode ?x
+      in
+        ((∃?a ?wt (?warr = ?a -> ?wt).
+          ?final_term = ?warr
+          ∧ (∃?b ?wt/1 (?warr/1 = ?b -> ?wt/1).
+            ?wt = ?warr/1
+            ∧ (let ?scheme_s/1 : ?l =
+              ∃?wu/1 (?wt/3 = ?wu/1 -> ?l). ?scheme_s ≤ ?wt/3 ∧ ?wu/1 = ?a
+            in
+              ((let ?scheme_s/2 : ?r =
+                ∃?wu (?wt/2 = ?wu -> ?r). ?scheme_s ≤ ?wt/2 ∧ ?wu = ?b
+              in
+                ((∃?w1.
+                  (∃(?int = int). ?int = ?w1 ∧ ?scheme_s/1 ≤ ?int)
+                  ∧ (∃?w2.
+                    (∃(?bool = bool). ?bool = ?w2 ∧ ?scheme_s/2 ≤ ?bool)
+                    ∧ (∃(?wprod = {?w1 * ?w2}). ?wt/1 = ?wprod)))
+                ∧ decode_scheme ?scheme_s/2))
+              ∧ decode_scheme ?scheme_s/1))
+            ∧ decode ?b)
+          ∧ decode ?a)
+        ∧ decode_scheme ?scheme_s)
+    in decode_scheme ?scheme_final_scheme
+  
+  Inferred type:
+    int -> bool -> {int * bool}
+  
+  Elaborated term:
+    let (id : ∀α. α -> α) = Λ α. lambda (x : α). x in
+      lambda
+      (a : int).
+        lambda
+        (b : bool).
+          let (l : int) = Λ . id[int] a in
+            let (r : bool) = Λ . id[bool] b in ((l : int), (r : bool))
+  
+
+
+
+
+## System F
+
+We test an example where a type variable occurs in the body
+of a definition but not in the inferred type scheme.
+
+  $ minihell $FLAGS poly_silent_var.test
+  Input term:
+    let test = lambda x. lambda z. x lambda y. y in test
+  
+  Generated constraint:
+    let ?scheme_final_scheme : ?final_term =
+      let ?scheme_s : ?test =
+        ∃?x ?wt (?warr = ?x -> ?wt).
+          ?test = ?warr
+          ∧ (∃?wu (?wt/1 = ?wu -> ?wt).
+            (∃?z ?wt/2 (?warr/1 = ?z -> ?wt/2).
+              ?wt/1 = ?warr/1 ∧ ?wt/2 = ?x ∧ decode ?z)
+            ∧ (∃?y ?wt/3 (?warr/2 = ?y -> ?wt/3).
+              ?wu = ?warr/2 ∧ ?wt/3 = ?y ∧ decode ?y))
+          ∧ decode ?x
+      in (?scheme_s ≤ ?final_term ∧ decode_scheme ?scheme_s)
+    in decode_scheme ?scheme_final_scheme
+  
+  Inferred type:
+    ∀α. ∀β. α -> α
+  
+  Elaborated term:
+    let (test : ∀δ. ∀γ. γ -> γ) =
+      Λ δ γ.
+        lambda (x : γ). (lambda (z : δ -> δ). x) (lambda (y : δ). y)
+    in
+      test[β, α]
+  
 
 
 
@@ -368,11 +656,15 @@ the inference variables.
 
 
 
+ $ minihell $FLAGS --log-solver log_solver.test
 
 
-## An erroneous program
 
-  $ minihell $FLAGS error_incompatible_types.test
+
+
+## Clash types
+
+  $ minihell $FLAGS --log-solver error_clash_types.test
   Input term:
     lambda x. (x : int) lambda y. y
   
@@ -385,83 +677,389 @@ the inference variables.
           ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
     in decode_scheme ?scheme_final_scheme
   
-  File "error_incompatible_types.test", line 1, characters 23-34:
+  Constraint solving log:
+  -- hole {}
+    (
+      let ?scheme_final_scheme : ?final_term =
+        ∃?wu (?wt = ?wu -> ?final_term).
+          (∃?x ?wt/1 (?warr = ?x -> ?wt/1).
+            ?wt = ?warr ∧ (∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x) ∧ decode ?x)
+          ∧ (∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+            ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
+      in decode_scheme ?scheme_final_scheme
+    )
+  -> hole
+    {
+      Env :
+        final_term(0)
+      Pool :
+        0 |-->
+           final_term(0)
+    }
+    (
+      let ?scheme_final_scheme : ?final_term =
+        ∃?wu (?wt = ?wu -> ?final_term).
+          (∃?x ?wt/1 (?warr = ?x -> ?wt/1).
+            ?wt = ?warr ∧ (∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x) ∧ decode ?x)
+          ∧ (∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+            ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
+      in decode_scheme ?scheme_final_scheme
+    )
+  -> let ?scheme_final_scheme : ?final_term =
+      hole
+      {
+        Env :
+          final_term(0)
+          wu(0)
+        Pool :
+          0 |-->
+             wu(0)
+             final_term(0)
+      }
+      (
+        ∃(?wt = ?wu -> ?final_term).
+          (∃?x ?wt/1 (?warr = ?x -> ?wt/1).
+            ?wt = ?warr ∧ (∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x) ∧ decode ?x)
+          ∧ (∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+            ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
+      )
+    in decode_scheme ?scheme_final_scheme
+  -> ∃?wu.
+      let ?scheme_final_scheme : ?final_term =
+        hole
+        {
+          Env :
+            final_term(0)
+            wt(0) = wu -> final_term
+            wu(0)
+          Pool :
+            0 |-->
+               wt(0) = wu -> final_term
+               wu(0)
+               final_term(0)
+        }
+        (
+          (∃?x ?wt/1 (?warr = ?x -> ?wt/1).
+            ?wt = ?warr ∧ (∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x) ∧ decode ?x)
+          ∧ (∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+            ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
+        )
+      in decode_scheme ?scheme_final_scheme
+  -> ∃?wt.
+      ∃?wu.
+        let ?scheme_final_scheme : ?final_term =
+          hole
+          {
+            Env :
+              final_term(0)
+              wt(0) = wu -> final_term
+              wu(0)
+              x(0)
+            Pool :
+              0 |-->
+                 x(0)
+                 wt(0) = wu -> final_term
+                 wu(0)
+                 final_term(0)
+          }
+          (
+            ∃?wt/1 (?warr = ?x -> ?wt/1).
+              ?wt = ?warr ∧ (∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x) ∧ decode ?x
+          )
+        in decode_scheme ?scheme_final_scheme
+    ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+      ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
+  -> ∃?x.
+      ∃?wt.
+        ∃?wu.
+          let ?scheme_final_scheme : ?final_term =
+            hole
+            {
+              Env :
+                final_term(0)
+                wt(0) = wu -> final_term
+                wu(0)
+                x(0)
+                wt/1(0)
+              Pool :
+                0 |-->
+                   wt/1(0)
+                   x(0)
+                   wt(0) = wu -> final_term
+                   wu(0)
+                   final_term(0)
+            }
+            (
+              ∃(?warr = ?x -> ?wt/1).
+                ?wt = ?warr
+                ∧ (∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x)
+                ∧ decode ?x
+            )
+          in decode_scheme ?scheme_final_scheme
+      ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+        ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
+  -> ∃?wt/1.
+      ∃?x.
+        ∃?wt.
+          ∃?wu.
+            let ?scheme_final_scheme : ?final_term =
+              hole
+              {
+                Env :
+                  final_term(0)
+                  warr(0) = x -> wt/1
+                  wt(0) = wu -> final_term
+                  wu(0)
+                  x(0)
+                  wt/1(0)
+                Pool :
+                  0 |-->
+                     warr(0) = x -> wt/1
+                     wt/1(0)
+                     x(0)
+                     wt(0) = wu -> final_term
+                     wu(0)
+                     final_term(0)
+              }
+              (
+                ?wt = ?warr
+                ∧ (∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x)
+                ∧ decode ?x
+              )
+            in decode_scheme ?scheme_final_scheme
+        ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+          ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
+  -> ∃?warr.
+      ∃?wt/1.
+        ∃?x.
+          ∃?wt.
+            ∃?wu.
+              let ?scheme_final_scheme : ?final_term =
+                hole
+                {
+                  Env :
+                    warr |--> wt
+                    x |--> wu
+                    wt/1 |--> final_term
+                    final_term(0)
+                    wt(0) = wu -> final_term
+                    wu(0)
+                  Pool :
+                    0 |-->
+                       warr |--> wt
+                       wt/1 |--> final_term
+                       x |--> wu
+                       wt(0) = wu -> final_term
+                       wu(0)
+                       final_term(0)
+                }
+                (?wt = ?warr)
+              in decode_scheme ?scheme_final_scheme
+          ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+            ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
+    ∧ decode ?x
+    ∧ ∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x
+  -> ⊤
+    ∧ ∃?warr.
+      ∃?wt/1.
+        ∃?x.
+          ∃?wt.
+            ∃?wu.
+              let ?scheme_final_scheme : ?final_term =
+                hole
+                {
+                  Env :
+                    warr |--> wt
+                    x |--> wu
+                    wt/1 |--> final_term
+                    final_term(0)
+                    int(0) = int
+                    wt(0) = wu -> final_term
+                    wu(0)
+                  Pool :
+                    0 |-->
+                       warr |--> wt
+                       wt/1 |--> final_term
+                       x |--> wu
+                       int(0) = int
+                       wt(0) = wu -> final_term
+                       wu(0)
+                       final_term(0)
+                }
+                (?int = ?wt/1 ∧ ?int = ?x)
+              in decode_scheme ?scheme_final_scheme
+          ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+            ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
+    ∧ decode ?x
+  -> ∃?int.
+      ⊤
+      ∧ ∃?warr.
+        ∃?wt/1.
+          ∃?x.
+            ∃?wt.
+              ∃?wu.
+                let ?scheme_final_scheme : ?final_term =
+                  hole
+                  {
+                    Env :
+                      final_term |--> int
+                      warr |--> wt
+                      x |--> wu
+                      wt/1 |--> int
+                      int(0) = int
+                      wt(0) = wu -> int
+                      wu(0)
+                    Pool :
+                      0 |-->
+                         warr |--> wt
+                         wt/1 |--> int
+                         x |--> wu
+                         final_term |--> int
+                         int(0) = int
+                         wt(0) = wu -> int
+                         wu(0)
+                  }
+                  (?int = ?wt/1)
+                in decode_scheme ?scheme_final_scheme
+            ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+              ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
+      ∧ decode ?x
+    ∧ ?int = ?x
+  -> ⊤
+    ∧ ∃?int.
+      ⊤
+      ∧ ∃?warr.
+        ∃?wt/1.
+          ∃?x.
+            ∃?wt.
+              ∃?wu.
+                let ?scheme_final_scheme : ?final_term =
+                  hole
+                  {
+                    Env :
+                      final_term |--> int
+                      warr |--> wt
+                      wu |--> int
+                      x |--> int
+                      wt/1 |--> int
+                      int(0) = int
+                      wt(0) = int -> int
+                    Pool :
+                      0 |-->
+                         warr |--> wt
+                         wt/1 |--> int
+                         x |--> int
+                         wu |--> int
+                         final_term |--> int
+                         int(0) = int
+                         wt(0) = int -> int
+                  }
+                  (?int = ?x)
+                in decode_scheme ?scheme_final_scheme
+            ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+              ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
+      ∧ decode ?x
+  -> ⊤
+    ∧ ∃?wt.
+      ∃?wu.
+        let ?scheme_final_scheme : ?final_term =
+          hole
+          {
+            Env :
+              final_term |--> int
+              warr |--> wt
+              wu |--> int
+              x |--> int
+              wt/1 |--> int
+              int(0) = int
+              wt(0) = int -> int
+              y(0)
+            Pool :
+              0 |-->
+                 warr |--> wt
+                 wt/1 |--> int
+                 x |--> int
+                 wu |--> int
+                 final_term |--> int
+                 y(0)
+                 int(0) = int
+                 wt(0) = int -> int
+          }
+          (∃?wt/2 (?warr/1 = ?y -> ?wt/2). ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
+        in decode_scheme ?scheme_final_scheme
+  -> ∃?y.
+      ⊤
+      ∧ ∃?wt.
+        ∃?wu.
+          let ?scheme_final_scheme : ?final_term =
+            hole
+            {
+              Env :
+                final_term |--> int
+                warr |--> wt
+                wu |--> int
+                x |--> int
+                wt/1 |--> int
+                int(0) = int
+                wt(0) = int -> int
+                y(0)
+                wt/2(0)
+              Pool :
+                0 |-->
+                   warr |--> wt
+                   wt/1 |--> int
+                   x |--> int
+                   wu |--> int
+                   final_term |--> int
+                   wt/2(0)
+                   y(0)
+                   int(0) = int
+                   wt(0) = int -> int
+            }
+            (∃(?warr/1 = ?y -> ?wt/2). ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
+          in decode_scheme ?scheme_final_scheme
+  -> ∃?wt/2.
+      ∃?y.
+        ⊤
+        ∧ ∃?wt.
+          ∃?wu.
+            let ?scheme_final_scheme : ?final_term =
+              hole
+              {
+                Env :
+                  final_term |--> int
+                  warr |--> wt
+                  wu |--> int
+                  x |--> int
+                  wt/1 |--> int
+                  int(0) = int
+                  wt(0) = int -> int
+                  y(0)
+                  warr/1(0) = y -> wt/2
+                  wt/2(0)
+                Pool :
+                  0 |-->
+                     warr |--> wt
+                     wt/1 |--> int
+                     x |--> int
+                     wu |--> int
+                     final_term |--> int
+                     warr/1(0) = y -> wt/2
+                     wt/2(0)
+                     y(0)
+                     int(0) = int
+                     wt(0) = int -> int
+              }
+              (?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
+            in decode_scheme ?scheme_final_scheme
+  
+  File "error_clash_types.test", line 1, characters 23-34:
   Error:
       int
     incompatible with
       β -> α
   
 
-
-
-
-
-
-## Examples with products
-
-  $ minihell $FLAGS curry.test
-  Input term:
-    lambda f. lambda x. lambda y. f (x, y)
-  
-  Generated constraint:
-    let ?scheme_final_scheme : ?final_term =
-      ∃?f ?wt (?warr = ?f -> ?wt).
-        ?final_term = ?warr
-        ∧ (∃?x ?wt/1 (?warr/1 = ?x -> ?wt/1).
-          ?wt = ?warr/1
-          ∧ (∃?y ?wt/2 (?warr/2 = ?y -> ?wt/2).
-            ?wt/1 = ?warr/2
-            ∧ (∃?wu (?wt/3 = ?wu -> ?wt/2).
-              ?wt/3 = ?f
-              ∧ (∃?w1.
-                ?w1 = ?x
-                ∧ (∃?w2. ?w2 = ?y ∧ (∃(?wprod = {?w1 * ?w2}). ?wu = ?wprod))))
-            ∧ decode ?y)
-          ∧ decode ?x)
-        ∧ decode ?f
-    in decode_scheme ?scheme_final_scheme
-  
-  Inferred type:
-    ∀β. ∀γ. ∀α. ({γ * β} -> α) -> γ -> β -> α
-  
-  Elaborated term:
-    lambda (f : {γ * β} -> α). lambda (x : γ). lambda (y : β). f (x, y)
-  
-
-
-
-
-
-
-  $ minihell $FLAGS uncurry.test
-  Input term:
-    lambda f. lambda p. let (x, y) = p in f x y
-  
-  Generated constraint:
-    let ?scheme_final_scheme : ?final_term =
-      ∃?f ?wt (?warr = ?f -> ?wt).
-        ?final_term = ?warr
-        ∧ (∃?p ?wt/1 (?warr/1 = ?p -> ?wt/1).
-          ?wt = ?warr/1
-          ∧ (∃?x ?y (?wt/2 = {?x * ?y}).
-            decode ?y
-            ∧ decode ?x
-            ∧ ?wt/2 = ?p
-            ∧ (∃?wu (?wt/3 = ?wu -> ?wt/1).
-              (∃?wu/1 (?wt/4 = ?wu/1 -> ?wt/3). ?wt/4 = ?f ∧ ?wu/1 = ?x)
-              ∧ ?wu = ?y))
-          ∧ decode ?p)
-        ∧ decode ?f
-    in decode_scheme ?scheme_final_scheme
-  
-  Inferred type:
-    ∀β. ∀γ. ∀α. (β -> γ -> α) -> {β * γ} -> α
-  
-  Elaborated term:
-    lambda
-    (f : β -> γ -> α).
-      lambda (p : {β * γ}). let ((x : β), (y : γ)) = p in f x y
-  
 
 
 
@@ -688,12 +1286,14 @@ a lot of those.)
 
 
 
+
 ## Erroneous programs
 
   $ minihell $FLAGS --log-solver error_undefined_var.test
   File "error_undefined_var.test", line 1, characters 9-23:
   Fatal error: exception Invalid_argument("Constraint variable 'id' is unbound at this point")
   [2]
+
 
 
 
@@ -709,6 +1309,7 @@ There are not many programs with size 3, 4 and 5.
   
   Inferred type : ∀α/1. α/1 -> α/1
 
+
   $ minigen --search exhaustive --types --size 3 --count 100
   lambda (v/14 : α/7). lambda (u/19 : β/7). v/14
   
@@ -719,6 +1320,7 @@ There are not many programs with size 3, 4 and 5.
   lambda (v/14 : δ/7). lambda (u/19 : γ/7). u/19
   
   Inferred type : ∀γ/7. ∀δ/7. δ/7 -> γ/7 -> γ/7
+
 
   $ minigen --search exhaustive --types --size 4 --count 100
   lambda
@@ -796,6 +1398,7 @@ There are not many programs with size 3, 4 and 5.
     u/ef[β/53]
   
   Inferred type : ∀β/53. β/53 -> β/53
+
 
 An example of random sampling output at higher size.
 
@@ -903,3 +1506,21 @@ An example of random sampling output at higher size.
   (z/1 : δ/2bf). let (x/1a : {δ/2bf * δ/2bf}) = Λ . (z/1, z/1) in z/1
   
   Inferred type : ∀δ/2bf. δ/2bf -> δ/2bf
+
+  $ dune exec -- minigen --search exhaustive --types --size 10 --count 1
+  (lambda
+  (
+    x/19dab
+    :
+      (δ/beb5 -> β/beb6 -> α/beb6 -> δ/beb5)
+      ->
+      δ/beb5 -> β/beb6 -> α/beb6 -> δ/beb5
+  ). x/19dab)
+    (lambda (w/1a9ce : δ/beb5 -> β/beb6 -> α/beb6 -> δ/beb5). w/1a9ce)
+    (lambda
+    (v/1aa39 : δ/beb5).
+      lambda (w/1aa55 : β/beb6). lambda (z/1aa5b : α/beb6). v/1aa39)
+  
+  Inferred type : ∀δ/beb5. ∀α/beb6. ∀β/beb6. δ/beb5
+  ->
+  β/beb6 -> α/beb6 -> δ/beb5
