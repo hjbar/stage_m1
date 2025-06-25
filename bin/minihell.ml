@@ -18,14 +18,6 @@ type config = {
 
 module LexUtil = MenhirLib.LexerUtil
 
-let print_section header doc =
-  doc
-  |> Printer.with_header header
-  |> Utils.string_of_doc
-  |> print_endline
-  |> print_newline
-
-
 let call_parser ~config parser_fun input_path =
   let ch = open_in input_path in
 
@@ -38,7 +30,7 @@ let call_parser ~config parser_fun input_path =
     let term = Untyped.freshen term in
 
     if config.show_source then
-      print_section "Input term" (UntypedPrinter.print_term term);
+      Utils.print_section "Input term" (UntypedPrinter.print_term term);
 
     term
   | exception UntypedParser.Error ->
@@ -66,7 +58,7 @@ let call_typer ~config (term : Untyped.term) =
   let cst = Infer.let_wrapper term in
 
   if config.show_constraint then
-    print_section "Generated constraint"
+    Utils.print_section "Generated constraint"
       (ConstraintPrinter.print_constraint cst);
 
   let nf =
@@ -86,13 +78,13 @@ let print_result ~config result =
   match result with
   | Ok (term, scheme) ->
     if config.show_type then
-      print_section "Inferred type" (TypedPrinter.print_scheme scheme);
+      Utils.print_section "Inferred type" (TypedPrinter.print_scheme scheme);
 
     if config.show_typed_term then
-      print_section "Elaborated term" (TypedPrinter.print_term term)
+      Utils.print_section "Elaborated term" (TypedPrinter.print_term term)
   | Error (loco, err) -> begin
     Utils.print_loco loco;
-    print_section "Error"
+    Utils.print_section "Error"
     @@
     match err with
     | Infer.Clash (ty1, ty2) ->

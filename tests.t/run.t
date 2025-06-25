@@ -132,7 +132,7 @@ to the bin/dune content.)
   Elaborated term:
     lambda
     (y : α).
-      let (id : ∀β. β -> β) = Λ β. lambda (x : β). x in id[α] y
+      let (id : ∀β. β -> β) = Λβ. lambda (x : β). x in id[α] y
   
 
 
@@ -180,7 +180,7 @@ type, this is just an abstract/rigid type variable: `Constr
     ∀α. α -> α
   
   Elaborated term:
-    let (x : ∀β. β -> β) = Λ β. lambda (y : β). y in x[α]
+    let (x : ∀β. β -> β) = Λβ. lambda (y : β). y in x[α]
   
 
 
@@ -284,8 +284,8 @@ type, this is just an abstract/rigid type variable: `Constr
   Elaborated term:
     lambda
     (a : α).
-      let (id : ∀β. β -> β) = Λ β. lambda (x : β). x in
-        let (r : α) = Λ . id[α] a in r
+      let (id : ∀β. β -> β) = Λβ. lambda (x : β). x in
+        let (r : α) = id[α] a in r
   
 
 
@@ -327,12 +327,11 @@ type, this is just an abstract/rigid type variable: `Constr
     ∀β. ∀α. α -> β -> {α * β}
   
   Elaborated term:
-    let (id : ∀γ. γ -> γ) = Λ γ. lambda (x : γ). x in
+    let (id : ∀γ. γ -> γ) = Λγ. lambda (x : γ). x in
       lambda
       (a : α).
         lambda
-        (b : β).
-          let (l : α) = Λ . id[α] a in let (r : β) = Λ . id[β] b in (l, r)
+        (b : β). let (l : α) = id[α] a in let (r : β) = id[β] b in (l, r)
   
 
 
@@ -377,13 +376,13 @@ type, this is just an abstract/rigid type variable: `Constr
     int -> bool -> {int * bool}
   
   Elaborated term:
-    let (id : ∀α. α -> α) = Λ α. lambda (x : α). x in
+    let (id : ∀α. α -> α) = Λα. lambda (x : α). x in
       lambda
       (a : int).
         lambda
         (b : bool).
-          let (l : int) = Λ . id[int] a in
-            let (r : bool) = Λ . id[bool] b in ((l : int), (r : bool))
+          let (l : int) = id[int] a in
+            let (r : bool) = id[bool] b in ((l : int), (r : bool))
   
 
 
@@ -417,8 +416,8 @@ of a definition but not in the inferred type scheme.
   
   Elaborated term:
     let (test : ∀δ. ∀γ. γ -> γ) =
-      Λ δ γ.
-        lambda (x : γ). (lambda (z : δ -> δ). x) (lambda (y : δ). y)
+      Λδ. Λγ.
+      lambda (x : γ). (lambda (z : δ -> δ). x) (lambda (y : δ). y)
     in
       test[β, α]
   
@@ -1305,222 +1304,259 @@ fine if your own implementation produces different (sensible) results.
 There are not many programs with size 3, 4 and 5.
 
   $ minigen --search exhaustive --types --size 2 --count 100
-  lambda (x/5 : α/1). x/5
+  Generated term:
+    lambda (x/5 : α/1). x/5
   
-  Inferred type : ∀α/1. α/1 -> α/1
+  Inferred type:
+    ∀α/1. α/1 -> α/1
+  
+  
 
 
   $ minigen --search exhaustive --types --size 3 --count 100
-  lambda (v/14 : α/7). lambda (u/19 : β/7). v/14
+  Generated term:
+    lambda (v/14 : α/7). lambda (u/19 : β/7). v/14
   
-  Inferred type : ∀α/7. ∀β/7. α/7 -> β/7 -> α/7
+  Inferred type:
+    ∀α/7. ∀β/7. α/7 -> β/7 -> α/7
   
   
   
-  lambda (v/14 : δ/7). lambda (u/19 : γ/7). u/19
+  Generated term:
+    lambda (v/14 : δ/7). lambda (u/19 : γ/7). u/19
   
-  Inferred type : ∀γ/7. ∀δ/7. δ/7 -> γ/7 -> γ/7
+  Inferred type:
+    ∀γ/7. ∀δ/7. δ/7 -> γ/7 -> γ/7
+  
+  
 
 
   $ minigen --search exhaustive --types --size 4 --count 100
-  lambda
-  (v/6a : δ/2a). lambda (w/86 : β/2b). lambda (z/8c : α/2b). v/6a
+  Generated term:
+    lambda
+    (v/6a : δ/2a). lambda (w/86 : β/2b). lambda (z/8c : α/2b). v/6a
   
-  Inferred type : ∀δ/2a. ∀α/2b. ∀β/2b. δ/2a
-  ->
-  β/2b -> α/2b -> δ/2a
-  
-  
-  
-  lambda
-  (v/6a : α/2c). lambda (w/86 : γ/2b). lambda (z/8c : δ/2b). w/86
-  
-  Inferred type : ∀γ/2b. ∀δ/2b. ∀α/2c. α/2c
-  ->
-  γ/2b -> δ/2b -> γ/2b
+  Inferred type:
+    ∀δ/2a. ∀α/2b. ∀β/2b. δ/2a -> β/2b -> α/2b -> δ/2a
   
   
   
-  lambda
-  (v/6a : δ/2c). lambda (w/86 : γ/2c). lambda (z/8c : β/2c). z/8c
+  Generated term:
+    lambda
+    (v/6a : α/2c). lambda (w/86 : γ/2b). lambda (z/8c : δ/2b). w/86
   
-  Inferred type : ∀β/2c. ∀γ/2c. ∀δ/2c. δ/2c
-  ->
-  γ/2c -> β/2c -> β/2c
-  
-  
-  
-  lambda (v/6a : α/32). let (z/a0 : α/32) = Λ . v/6a in v/6a
-  
-  Inferred type : ∀α/32. α/32 -> α/32
+  Inferred type:
+    ∀γ/2b. ∀δ/2b. ∀α/2c. α/2c -> γ/2b -> δ/2b -> γ/2b
   
   
   
-  lambda (v/6a : β/32). let (z/a0 : β/32) = Λ . v/6a in z/a0
+  Generated term:
+    lambda
+    (v/6a : δ/2c). lambda (w/86 : γ/2c). lambda (z/8c : β/2c). z/8c
   
-  Inferred type : ∀β/32. β/32 -> β/32
-  
-  
-  
-  lambda (v/6a : γ/39). (v/6a, v/6a)
-  
-  Inferred type : ∀γ/39. γ/39 -> {γ/39 * γ/39}
+  Inferred type:
+    ∀β/2c. ∀γ/2c. ∀δ/2c. δ/2c -> γ/2c -> β/2c -> β/2c
   
   
   
-  lambda
-  (v/6a : {δ/40 * α/41}).
-    let ((u/d8 : δ/40), (v/d8 : α/41)) = v/6a in v/6a
+  Generated term:
+    lambda (v/6a : α/32). let (z/a0 : α/32) = v/6a in v/6a
   
-  Inferred type : ∀α/41. ∀δ/40. {δ/40 * α/41} -> {δ/40 * α/41}
-  
-  
-  
-  lambda
-  (v/6a : {β/41 * γ/41}).
-    let ((u/d8 : β/41), (v/d8 : γ/41)) = v/6a in u/d8
-  
-  Inferred type : ∀γ/41. ∀β/41. {β/41 * γ/41} -> β/41
+  Inferred type:
+    ∀α/32. α/32 -> α/32
   
   
   
-  lambda
-  (v/6a : {α/42 * δ/41}).
-    let ((u/d8 : α/42), (v/d8 : δ/41)) = v/6a in v/d8
+  Generated term:
+    lambda (v/6a : β/32). let (z/a0 : β/32) = v/6a in z/a0
   
-  Inferred type : ∀α/42. ∀δ/41. {α/42 * δ/41} -> δ/41
+  Inferred type:
+    ∀β/32. β/32 -> β/32
   
   
   
-  let (u/ef : ∀γ/53. γ/53 -> γ/53) =
-    Λ γ/53. lambda (z/104 : γ/53). z/104
-  in
-    u/ef[β/53]
+  Generated term:
+    lambda (v/6a : γ/39). (v/6a, v/6a)
   
-  Inferred type : ∀β/53. β/53 -> β/53
+  Inferred type:
+    ∀γ/39. γ/39 -> {γ/39 * γ/39}
+  
+  
+  
+  Generated term:
+    lambda
+    (v/6a : {δ/40 * α/41}).
+      let ((u/d8 : δ/40), (v/d8 : α/41)) = v/6a in v/6a
+  
+  Inferred type:
+    ∀α/41. ∀δ/40. {δ/40 * α/41} -> {δ/40 * α/41}
+  
+  
+  
+  Generated term:
+    lambda
+    (v/6a : {β/41 * γ/41}).
+      let ((u/d8 : β/41), (v/d8 : γ/41)) = v/6a in u/d8
+  
+  Inferred type:
+    ∀γ/41. ∀β/41. {β/41 * γ/41} -> β/41
+  
+  
+  
+  Generated term:
+    lambda
+    (v/6a : {α/42 * δ/41}).
+      let ((u/d8 : α/42), (v/d8 : δ/41)) = v/6a in v/d8
+  
+  Inferred type:
+    ∀α/42. ∀δ/41. {α/42 * δ/41} -> δ/41
+  
+  
+  
+  Generated term:
+    let (u/ef : ∀γ/53. γ/53 -> γ/53) =
+      Λγ/53. lambda (z/104 : γ/53). z/104
+    in
+      u/ef[β/53]
+  
+  Inferred type:
+    ∀β/53. β/53 -> β/53
+  
+  
 
 
 An example of random sampling output at higher size.
 
   $ minigen --seed 42 --types --size 6 --count 10
-  lambda
-  (z/1 : δ/bd).
+  Generated term:
     lambda
-    (x/2a : {β/bd * γ/bd}).
+    (z/1 : δ/bd).
       lambda
-      (u/7a : α/bd). let ((x/290 : β/bd), (y/290 : γ/bd)) = x/2a in u/7a
+      (x/2a : {β/bd * γ/bd}).
+        lambda
+        (u/7a : α/bd). let ((x/290 : β/bd), (y/290 : γ/bd)) = x/2a in u/7a
   
-  Inferred type : ∀γ/bd. ∀β/bd. ∀α/bd. ∀δ/bd. δ/bd
-  ->
-  {β/bd * γ/bd} -> α/bd -> α/bd
-  
-  
-  
-  lambda
-  (z/1 : β/f9).
-    (lambda (x/345 : α/f9). lambda (y/345 : δ/f8). y/345, z/1)
-  
-  Inferred type : ∀β/f9. ∀δ/f8. ∀α/f9. β/f9
-  ->
-  {α/f9 -> δ/f8 -> δ/f8 * β/f9}
+  Inferred type:
+    ∀γ/bd. ∀β/bd. ∀α/bd. ∀δ/bd.
+      δ/bd -> {β/bd * γ/bd} -> α/bd -> α/bd
   
   
   
-  lambda
-  (z/1 : {γ/fa * β/fb}).
-    let ((u/34f : γ/fa), (v/34f : β/fb)) = z/1 in
-      lambda (w/34f : α/fb). lambda (x/351 : δ/fa). u/34f
+  Generated term:
+    lambda
+    (z/1 : β/f9).
+      (lambda (x/345 : α/f9). lambda (y/345 : δ/f8). y/345, z/1)
   
-  Inferred type : ∀γ/fa. ∀δ/fa. ∀α/fb. ∀β/fb. {γ/fa * β/fb}
-  ->
-  α/fb -> δ/fa -> γ/fa
-  
-  
-  
-  (
-    lambda (u/3e2 : β/128). lambda (v/3e2 : γ/128). u/3e2,
-    lambda (w/3e2 : δ/128). w/3e2
-  )
-  
-  Inferred type : ∀δ/128. ∀β/128. ∀γ/128. {β/128
-  ->
-  γ/128 -> β/128
-  * δ/128 -> δ/128}
+  Inferred type:
+    ∀β/f9. ∀δ/f8. ∀α/f9. β/f9 -> {α/f9 -> δ/f8 -> δ/f8 * β/f9}
   
   
   
-  lambda
-  (z/1 : α/14a). let (x/1a : {α/14a * α/14a}) = Λ . (z/1, z/1) in x/1a
+  Generated term:
+    lambda
+    (z/1 : {γ/fa * β/fb}).
+      let ((u/34f : γ/fa), (v/34f : β/fb)) = z/1 in
+        lambda (w/34f : α/fb). lambda (x/351 : δ/fa). u/34f
   
-  Inferred type : ∀α/14a. α/14a -> {α/14a * α/14a}
-  
-  
-  
-  lambda
-  (z/1 : {{β/14f * γ/14f} * δ/14f}).
-    let ((u/456 : {β/14f * γ/14f}), (v/456 : δ/14f)) = z/1 in
-      let ((w/456 : β/14f), (x/458 : γ/14f)) = u/456 in w/456
-  
-  Inferred type : ∀γ/14f. ∀δ/14f. ∀β/14f. {{β/14f * γ/14f}
-  * δ/14f}
-  ->
-  β/14f
+  Inferred type:
+    ∀γ/fa. ∀δ/fa. ∀α/fb. ∀β/fb.
+      {γ/fa * β/fb} -> α/fb -> δ/fa -> γ/fa
   
   
   
-  lambda (z/1 : β/169). ((z/1, z/1), z/1)
+  Generated term:
+    (
+      lambda (u/3e2 : β/128). lambda (v/3e2 : γ/128). u/3e2,
+      lambda (w/3e2 : δ/128). w/3e2
+    )
   
-  Inferred type : ∀β/169. β/169 -> {{β/169 * β/169} * β/169}
-  
-  
-  
-  lambda
-  (z/1 : {γ/16e * δ/16e}).
-    let ((x/4b3 : γ/16e), (y/4b3 : δ/16e)) = z/1 in
-      let (z/4b2 : γ/16e) = Λ . x/4b3 in z/1
-  
-  Inferred type : ∀γ/16e. ∀δ/16e. {γ/16e * δ/16e}
-  ->
-  {γ/16e * δ/16e}
+  Inferred type:
+    ∀δ/128. ∀β/128. ∀γ/128.
+      {β/128 -> γ/128 -> β/128 * δ/128 -> δ/128}
   
   
   
-  let
-  (w/4 : ∀δ/171. ∀α/172. ∀β/172. δ/171
-  ->
-  β/172 -> α/172 -> δ/171)
-  =
-    Λ δ/171 α/172 β/172.
+  Generated term:
+    lambda
+    (z/1 : α/14a). let (x/1a : {α/14a * α/14a}) = (z/1, z/1) in x/1a
+  
+  Inferred type:
+    ∀α/14a. α/14a -> {α/14a * α/14a}
+  
+  
+  
+  Generated term:
+    lambda
+    (z/1 : {{β/14f * γ/14f} * δ/14f}).
+      let ((u/456 : {β/14f * γ/14f}), (v/456 : δ/14f)) = z/1 in
+        let ((w/456 : β/14f), (x/458 : γ/14f)) = u/456 in w/456
+  
+  Inferred type:
+    ∀γ/14f. ∀δ/14f. ∀β/14f. {{β/14f * γ/14f} * δ/14f} -> β/14f
+  
+  
+  
+  Generated term:
+    lambda (z/1 : β/169). ((z/1, z/1), z/1)
+  
+  Inferred type:
+    ∀β/169. β/169 -> {{β/169 * β/169} * β/169}
+  
+  
+  
+  Generated term:
+    lambda
+    (z/1 : {γ/16e * δ/16e}).
+      let ((x/4b3 : γ/16e), (y/4b3 : δ/16e)) = z/1 in
+        let (z/4b2 : γ/16e) = x/4b3 in z/1
+  
+  Inferred type:
+    ∀γ/16e. ∀δ/16e. {γ/16e * δ/16e} -> {γ/16e * δ/16e}
+  
+  
+  
+  Generated term:
+    let
+    (w/4 : ∀δ/171. ∀α/172. ∀β/172.
+      δ/171 -> β/172 -> α/172 -> δ/171)
+    =
+      Λδ/171. Λα/172. Λβ/172.
       lambda
       (y/31 : δ/171). lambda (z/30 : β/172). lambda (x/81 : α/172). y/31
-  in
-    w/4[α/171, β/171, γ/171]
+    in
+      w/4[α/171, β/171, γ/171]
   
-  Inferred type : ∀γ/171. ∀β/171. ∀α/171. α/171
-  ->
-  γ/171 -> β/171 -> α/171
-  
+  Inferred type:
+    ∀γ/171. ∀β/171. ∀α/171. α/171 -> γ/171 -> β/171 -> α/171
   
   
-  lambda
-  (z/1 : δ/2bf). let (x/1a : {δ/2bf * δ/2bf}) = Λ . (z/1, z/1) in z/1
   
-  Inferred type : ∀δ/2bf. δ/2bf -> δ/2bf
+  Generated term:
+    lambda
+    (z/1 : δ/2bf). let (x/1a : {δ/2bf * δ/2bf}) = (z/1, z/1) in z/1
+  
+  Inferred type:
+    ∀δ/2bf. δ/2bf -> δ/2bf
+  
+  
 
   $ dune exec -- minigen --search exhaustive --types --size 10 --count 1
-  (lambda
-  (
-    x/19dab
-    :
-      (δ/beb5 -> β/beb6 -> α/beb6 -> δ/beb5)
-      ->
-      δ/beb5 -> β/beb6 -> α/beb6 -> δ/beb5
-  ). x/19dab)
-    (lambda (w/1a9ce : δ/beb5 -> β/beb6 -> α/beb6 -> δ/beb5). w/1a9ce)
+  Generated term:
     (lambda
-    (v/1aa39 : δ/beb5).
-      lambda (w/1aa55 : β/beb6). lambda (z/1aa5b : α/beb6). v/1aa39)
+    (
+      x/19dab
+      :
+        (δ/beb5 -> β/beb6 -> α/beb6 -> δ/beb5)
+        ->
+        δ/beb5 -> β/beb6 -> α/beb6 -> δ/beb5
+    ). x/19dab)
+      (lambda (w/1a9ce : δ/beb5 -> β/beb6 -> α/beb6 -> δ/beb5). w/1a9ce)
+      (lambda
+      (v/1aa39 : δ/beb5).
+        lambda (w/1aa55 : β/beb6). lambda (z/1aa5b : α/beb6). v/1aa39)
   
-  Inferred type : ∀δ/beb5. ∀α/beb6. ∀β/beb6. δ/beb5
-  ->
-  β/beb6 -> α/beb6 -> δ/beb5
+  Inferred type:
+    ∀δ/beb5. ∀α/beb6. ∀β/beb6.
+      δ/beb5 -> β/beb6 -> α/beb6 -> δ/beb5
+  
+  

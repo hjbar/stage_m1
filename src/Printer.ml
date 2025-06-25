@@ -25,11 +25,13 @@ let annot term ty = group @@
 
 (** ∀$ty1. ∀$ty2. ... *)
 let print_quantifier quantifiers =
-  group (concat_map (fun var -> string "∀" ^^ var ^^ string ". ") quantifiers)
+  group (concat_map (fun var -> string "∀" ^^ var ^^ dot ^^ space) quantifiers)
 
 
 (** ∀$ty1. ∀$ty2. ... $ty *)
-let scheme quantifiers ty = group (quantifiers ^^ ty)
+let scheme quantifiers ty =
+  group (quantifiers ^^ ifflat empty (nest 2 (break 1)) ^^ ty)
+
 
 (** x[$ty1, $ty2, ...] *)
 let ty_app t tys =
@@ -53,7 +55,12 @@ let lambda ~input ~body = group @@
 
 (** Λ $input. $body *)
 let big_lambda ~input ~body =
-  group (group (string "Λ" ^/^ separate space input ^^ string ".") ^//^ body)
+  group
+    begin
+      concat_map (fun var -> string "Λ" ^^ var ^^ dot ^^ space) input
+      ^^ ifflat empty (break 1)
+      ^^ body
+    end
 
 
 (** let $var = $def in $body *)
@@ -175,8 +182,6 @@ let incompatible ty1 ty2 =
   ^^ hardline ^^ string "incompatible with" ^^ hardline ^^
   group (blank 2 ^^ nest 2 ty2)
 
+
 let cycle v = group @@
   string "cycle on constraint variable" ^/^ v
-
-let with_header header doc =
-  string header ^^ colon ^^ nest 2 (group (hardline ^^ doc))

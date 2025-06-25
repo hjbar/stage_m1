@@ -203,17 +203,16 @@ let generate config (module M : SearchImpl) =
 
 
 let produce_doc_of_term config (term, scheme) =
-  let term_doc = TypedPrinter.print_term term in
+  let term_doc =
+    Utils.get_section "Generated term" (TypedPrinter.print_term term)
+  in
 
   match config.types with
   | false -> term_doc
   | true ->
     let open PPrint in
     term_doc
-    ^^ hardline
-    ^^ hardline
-    ^^ string "Inferred type : "
-    ^^ TypedPrinter.print_scheme scheme
+    ^^ Utils.get_section "Inferred type" (TypedPrinter.print_scheme scheme)
 
 
 let produce_terms config =
@@ -226,7 +225,7 @@ let produce_terms config =
 
 let run_display config =
   produce_terms config
-  |> PPrint.(separate (hardline ^^ hardline ^^ hardline ^^ hardline))
+  |> PPrint.(separate (hardline ^^ hardline))
   |> Utils.string_of_doc
   |> print_endline
 

@@ -10,6 +10,8 @@ let print_ty (ty : ty) : PPrint.document =
     let print_self = print
     and print_next = print_atom in
 
+    PPrint.group
+    @@
     match t with
     | Constr (Arrow (t1, t2)) -> Printer.arrow (print_next t1) (print_self t2)
     | other -> print_next other
@@ -19,7 +21,7 @@ let print_ty (ty : ty) : PPrint.document =
     | Constr (Arrow _) as other -> PPrint.parens (print other)
   in
 
-  PPrint.group (print ty)
+  print ty
 
 
 let print_scheme ((quantifiers, ty) : scheme) : PPrint.document =

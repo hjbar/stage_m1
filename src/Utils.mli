@@ -14,6 +14,10 @@ val print_loco : loc option -> unit
 
 val string_of_doc : PPrint.document -> string
 
+val get_section : string -> PPrint.document -> PPrint.document
+
+val print_section : string -> PPrint.document -> unit
+
 module Variables () : sig
   type t = private {
     name : string;
