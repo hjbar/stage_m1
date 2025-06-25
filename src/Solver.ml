@@ -12,10 +12,24 @@ module Make (T : Utils.Functor) = struct
 
     type t = {
       unif : Unif.Env.t;
+      gen : Generalization.Env.t;
       schemes : Generalization.scheme SMap.t;
     }
 
-    let empty () = { unif = Unif.Env.empty (); schemes = SMap.empty }
+    let empty () =
+      {
+        unif = Unif.Env.empty ();
+        gen = Generalization.Env.empty;
+        schemes = SMap.empty;
+      }
+
+
+    let add_flexible var structure env =
+      let unif, gen =
+        Generalization.add_flexible env.unif env.gen var structure
+      in
+      { env with unif; gen }
+
 
     let debug_schemes schemes =
       let open PPrint in
@@ -32,7 +46,7 @@ module Make (T : Utils.Functor) = struct
       |> separate hardline
 
 
-    let debug { unif; schemes } =
+    let debug { unif; gen; schemes } =
       let open PPrint in
       let has_no_schemes = SMap.is_empty schemes in
       let schemes_doc =
@@ -41,26 +55,26 @@ module Make (T : Utils.Functor) = struct
           group
             (string "Schemes :" ^^ nest 2 (hardline ^^ debug_schemes schemes))
       in
-
-      let has_no_env = Unif.Env.map_is_empty unif in
+      let has_no_unif_env = Unif.Env.is_empty unif in
       let env_doc =
-        if has_no_env then empty
-        else
-          group (string "Env :" ^^ nest 2 (hardline ^^ Unif.Env.debug_env unif))
+        if has_no_unif_env then empty
+        else group (string "Env :" ^^ nest 2 (hardline ^^ Unif.Env.debug unif))
       in
 
-      let pool_doc =
-        if Unif.Env.pool_is_empty unif then empty
+      let has_no_gen_env = Generalization.Env.is_empty gen in
+      let gen_doc =
+        if has_no_gen_env then empty
         else
           group
-            (string "Pool :" ^^ nest 2 (hardline ^^ Unif.Env.debug_pool unif))
+            ( string "Pool :"
+            ^^ nest 2 (hardline ^^ Generalization.Env.debug unif gen) )
       in
 
       schemes_doc
       ^^ (if has_no_schemes then empty else hardline)
       ^^ env_doc
-      ^^ (if has_no_env then empty else hardline)
-      ^^ pool_doc
+      ^^ (if has_no_unif_env then empty else hardline)
+      ^^ gen_doc
   end
 
   type env = Env.t
@@ -148,7 +162,7 @@ module Make (T : Utils.Functor) = struct
           continue env (Ok (fun _sol -> ())) k
       end
       | Exist (x, s, c) ->
-        let env = { env with unif = Unif.Env.add_flexible x s env.unif } in
+        let env = Env.add_flexible x s env in
         add_to_log ~dir env c k;
         eval env (loco, c) (Next ((loco, KExist x), k))
       | Decode v ->
@@ -177,27 +191,28 @@ module Make (T : Utils.Functor) = struct
       | Instance (sch_var, w) -> begin
         let sch = Env.SMap.find sch_var env.schemes in
 
-        let unif, result = Generalization.instantiate sch w env.unif in
-
-        let env = { env with unif } in
-        add_to_log ~dir env c k;
-
-        let res =
-          match result with
-          | Error err -> Error (decode_error env loco err)
-          | Ok witnesses -> Ok (fun sol -> List.map sol witnesses)
+        let unif, gen, root, instances =
+          Generalization.instantiate env.unif env.gen sch
         in
+
+        let env = { env with unif; gen } in
+
+        let env, res =
+          match Unif.unify env.unif w root with
+          | Error err -> (env, Error (decode_error env loco err))
+          | Ok unif ->
+            ({ env with unif }, Ok (fun sol -> List.map sol instances))
+        in
+        add_to_log ~dir env c k;
 
         continue env res k
       end
       | Let (bindings, c1, c2) ->
+        let env = { env with gen = Generalization.enter env.gen } in
         let env =
           List.fold_left
             begin
-              fun (env : env) (_, var) ->
-                let unif = Generalization.enter env.unif in
-                let unif = Unif.Env.add_flexible var None unif in
-                { env with unif }
+              fun (env : env) (_, var) -> Env.add_flexible var None env
             end
             env bindings
         in
@@ -247,8 +262,9 @@ module Make (T : Utils.Functor) = struct
         | Next ((loco, KLet1 (bindings, c)), k) as k0 ->
           let sch_vars, vars = List.split bindings in
 
-          let unif, schemes = Generalization.exit vars env.unif in
-          let env = { env with unif } in
+          let unif, gen = (env.unif, env.gen) in
+          let unif, gen, schemes = Generalization.exit unif gen vars in
+          let env = { env with unif; gen } in
 
           let schemes =
             List.fold_right2 Env.SMap.add sch_vars schemes env.schemes

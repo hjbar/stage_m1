@@ -20,16 +20,6 @@ type status =
 
 type rank = int
 
-let base_rank = 0
-
-(* Pool type *)
-
-type pool = var list
-
-module RankMap = Map.Make (Int)
-
-type pools = pool RankMap.t
-
 (* Internal representation using union-find nodes. *)
 type uvar = unode UF.rref
 
@@ -59,8 +49,6 @@ module Env = struct
   type t = {
     store : unode UF.store;
     map : uvar Constraint.Var.Map.t;
-    pools : pools;
-    young : rank;
   }
 
   (* Empty environment *)
@@ -68,22 +56,12 @@ module Env = struct
   let empty () =
     let store = UF.new_store () in
     let map = Constraint.Var.Map.empty in
-    let pools = RankMap.empty in
-    let young = base_rank - 1 in
-    { store; map; pools; young }
+    { store; map }
 
 
   (* Functions to check whether parts of the environment are empty *)
 
-  let map_is_empty env = Constraint.Var.Map.is_empty env.map
-
-  let pool_is_empty env = RankMap.is_empty env.pools
-
-  let pool_k_is_empty rank env =
-    match RankMap.find_opt rank env.pools with
-    | None | Some [] -> true
-    | Some _ -> false
-
+  let is_empty env = Constraint.Var.Map.is_empty env.map
 
   (* Membership test functions *)
 
@@ -99,12 +77,6 @@ module Env = struct
     let structure = Option.map (Structure.map var_of_uvar) data in
 
     { var; structure; status; rank }
-
-
-  let get_young env = env.young
-
-  let get_pool rank env =
-    Option.value ~default:[] @@ RankMap.find_opt rank env.pools
 
 
   (* Conversion functions *)
@@ -134,29 +106,6 @@ module Env = struct
     { env with map }
 
 
-  let register var ~rank env =
-    let pools =
-      RankMap.update rank
-        (fun pool -> Some (var :: Option.value ~default:[] pool))
-        env.pools
-    in
-    { env with pools }
-
-
-  let add_flexible var structure env =
-    let status = Flexible in
-    let rank = env.young in
-
-    env |> add { var; structure; status; rank } |> register var ~rank
-
-
-  (* Functions to remove variables from the environment *)
-
-  let unbind var env =
-    let map = Constraint.Var.Map.remove var env.map in
-    { env with map }
-
-
   (* Setter functions *)
 
   let set repr env =
@@ -171,25 +120,6 @@ module Env = struct
 
     UF.set env.store node unode;
     env
-
-
-  (* Functions to manipulate the environment's young rank *)
-
-  let incr_young env =
-    let young = env.young + 1 in
-    { env with young }
-
-
-  let decr_young env =
-    let young = env.young - 1 in
-    { env with young }
-
-
-  (* Functions to manipulate the pools *)
-
-  let clean_pool rank env =
-    let pools = RankMap.remove rank env.pools in
-    { env with pools }
 
 
   (* Functions on representatives *)
@@ -261,32 +191,13 @@ module Env = struct
     |> List.map fst
 
 
-  let debug_env env =
+  let debug env =
     let open PPrint in
     env.map
     |> Constraint.Var.Map.bindings
     |> List.map fst
     |> List.map (fun v -> debug_uvar v (repr v env))
     |> sort_debug_vars
-    |> separate hardline
-
-
-  let debug_pool env =
-    let open PPrint in
-    env.pools
-    |> RankMap.bindings
-    |> List.map
-         begin
-           fun (rank, variables) ->
-             let alinea = hardline ^^ space ^^ space ^^ space in
-             let variables_doc =
-               variables
-               |> List.map (fun v -> debug_uvar v (repr v env))
-               |> sort_debug_vars
-               |> separate alinea
-             in
-             string (Format.sprintf "%d |-->" rank) ^^ alinea ^^ variables_doc
-         end
     |> separate hardline
 end
 

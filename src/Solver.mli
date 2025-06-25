@@ -6,6 +6,7 @@ module Make (T : Utils.Functor) : sig
 
     type t = {
       unif : Unif.Env.t;
+      gen : Generalization.Env.t;
       schemes : Generalization.scheme SMap.t;
     }
 

@@ -1,16 +1,15 @@
 (* Import some modules *)
 
-module Env = Unif.Env
-module RankMap = Unif.RankMap
+module UEnv = Unif.Env
 module Var = Constraint.Var
 
 (* Import some types *)
 
-type variable = Unif.var
-
-type structure = Unif.structure
+type variable = Constraint.variable
 
 type rank = Unif.rank
+
+module RankMap = Map.Make (Int)
 
 type status = Unif.status =
   | Flexible
@@ -18,33 +17,143 @@ type status = Unif.status =
 
 type repr = Unif.repr
 
-type env = Unif.Env.t
-
-type err = Unif.err
-
 (* Import some values *)
 
-let base_rank = Unif.base_rank
+let base_rank = 0
+
+module Env : sig
+  type t
+
+  val empty : t
+
+  val is_empty : t -> bool
+
+  (* Young generation *)
+
+  val get_young : t -> rank
+
+  val incr_young : t -> t
+
+  val decr_young : t -> t
+
+  (* Pool functions *)
+
+  val pool_is_empty : rank:rank -> t -> bool
+
+  val get_pool : rank:rank -> t -> variable list
+
+  val add_to_pool : variable -> rank:rank -> t -> t
+
+  val clean_pool : rank:rank -> t -> t
+
+  (* Debugging functions *)
+
+  val debug : Unif.Env.t -> t -> PPrint.document
+end = struct
+  type pool = variable list
+
+  type pools = pool RankMap.t
+
+  type t = {
+    pools : pools;
+    young : rank;
+  }
+
+  (* Empty environment *)
+
+  let empty =
+    let pools = RankMap.empty in
+    let young = base_rank - 1 in
+    { pools; young }
+
+
+  (* Functions to check whether parts of the environment are empty *)
+
+  let is_empty env = RankMap.is_empty env.pools
+
+  (* Current young generation *)
+
+  let get_young env = env.young
+
+  let incr_young env =
+    let young = env.young + 1 in
+    { env with young }
+
+
+  let decr_young env =
+    let young = env.young - 1 in
+    { env with young }
+
+
+  (* Pool manipulation *)
+
+  let pool_is_empty ~rank env =
+    match RankMap.find_opt rank env.pools with
+    | None | Some [] -> true
+    | Some _ -> false
+
+
+  let get_pool ~rank env =
+    Option.value ~default:[] @@ RankMap.find_opt rank env.pools
+
+
+  let add_to_pool var ~rank env =
+    let pools =
+      RankMap.update rank
+        (fun pool -> Some (var :: Option.value ~default:[] pool))
+        env.pools
+    in
+    { env with pools }
+
+
+  let clean_pool ~rank env =
+    let pools = RankMap.remove rank env.pools in
+    { env with pools }
+
+
+  (* Debugging functions *)
+
+  let debug uenv env =
+    let open PPrint in
+    env.pools
+    |> RankMap.bindings
+    |> List.map
+         begin
+           fun (rank, variables) ->
+             let alinea = hardline ^^ space ^^ space ^^ space in
+             let variables_doc =
+               variables
+               |> List.map (fun v -> UEnv.debug_var v uenv)
+               |> separate alinea
+             in
+             string (Format.sprintf "%d |-->" rank) ^^ alinea ^^ variables_doc
+         end
+    |> separate hardline
+end
+
+type uenv = UEnv.t
+
+type env = Env.t
+
+let add_flexible uenv env var structure =
+  let young = Env.get_young env in
+  let uenv =
+    UEnv.add { var; structure; rank = young; status = Flexible } uenv
+  in
+  let env = Env.add_to_pool var ~rank:young env in
+  (uenv, env)
+
 
 (* Adjust the rank of the variable's representative
    when it is flexible, i.e., not yet generalized *)
 
-let adjust_rank (repr : repr) (k : rank) (env : env) : env * repr =
+let adjust_rank (repr : repr) (k : rank) uenv : uenv * repr =
   assert (repr.status <> Generic);
 
   let repr = { repr with rank = min repr.rank k } in
-  let env = Env.set repr env in
+  let uenv = UEnv.set repr uenv in
 
-  (env, repr)
-
-
-(* Create a new flexible variable in the environment *)
-
-let fresh_flexible ?(name = "fresh") (structure : structure) (env : env) :
-  env * variable =
-  let var = Var.fresh name in
-  let env = Env.add_flexible var structure env in
-  (env, var)
+  (uenv, repr)
 
 
 (* Set up the environment before entering a new level *)
@@ -52,8 +161,7 @@ let fresh_flexible ?(name = "fresh") (structure : structure) (env : env) :
 let enter (env : env) : env =
   let env = Env.incr_young env in
   let young = Env.get_young env in
-
-  assert (Env.pool_k_is_empty young env);
+  assert (Env.pool_is_empty ~rank:young env);
   env
 
 
@@ -71,13 +179,13 @@ type generation = {
 
 (* Before exiting, create a generation describing the young generation *)
 
-let discover_young_generation (env : env) : generation =
+let discover_young_generation (uenv : uenv) (env : env) : generation =
   (* Young level of the env *)
-  let state_young = Env.get_young env in
+  let young = Env.get_young env in
 
   (* The most recent pool holds the list of
      all variables in the young generation *)
-  let inhabitants = Env.get_pool state_young env in
+  let inhabitants = Env.get_pool ~rank:young env in
 
   (* Cache to track which equivalence classes are considered young *)
   let cache = Hashtbl.create 16 in
@@ -89,11 +197,11 @@ let discover_young_generation (env : env) : generation =
         fun by_rank var ->
           Hashtbl.replace cache var ();
 
-          let repr = Env.repr var env in
+          let repr = UEnv.repr var uenv in
           let r = repr.rank in
 
           assert (repr.status <> Generic);
-          assert (base_rank <= r && r <= state_young);
+          assert (base_rank <= r && r <= young);
 
           let l = Option.value ~default:[] @@ RankMap.find_opt r by_rank in
           let by_rank = RankMap.add r (var :: l) by_rank in
@@ -112,19 +220,19 @@ let discover_young_generation (env : env) : generation =
 
 (* Update the rank of every variable in the young generation *)
 
-let update_ranks (generation : generation) (env : env) : env =
+let update_ranks (uenv : uenv) (env : env) (generation : generation) : uenv =
   (* Cache to mark visited variables *)
   let cache = Hashtbl.create 16 in
 
   (* Accumulator for the final environment *)
-  let env = ref env in
+  let uenv = ref uenv in
 
   (* Update the environment for each rank from base to young *)
-  for k = base_rank to Env.get_young !env do
+  for k = base_rank to Env.get_young env do
     (* Recursively compute the updated rank for a variable *)
     let rec traverse (var : variable) : rank =
       (* Get the representative of the variable and check its status *)
-      let repr = Env.repr var !env in
+      let repr = UEnv.repr var !uenv in
       assert (repr.status <> Generic);
 
       (* If we've already visited this variable, return its current rank *)
@@ -137,8 +245,8 @@ let update_ranks (generation : generation) (env : env) : env =
         Hashtbl.replace cache repr.var ();
 
         (* Update the variable’s rank and record it in the environment *)
-        let new_env, repr = adjust_rank repr k !env in
-        env := new_env;
+        let new_uenv, repr = adjust_rank repr k !uenv in
+        uenv := new_uenv;
 
         (* If the variable is not young, stop traversal *)
         if not (generation.is_young var) then repr.rank
@@ -158,8 +266,8 @@ let update_ranks (generation : generation) (env : env) : env =
             in
 
             (* Adjust this variable's rank based on its children *)
-            let new_env, repr = adjust_rank repr max_rank !env in
-            env := new_env;
+            let new_uenv, repr = adjust_rank repr max_rank !uenv in
+            uenv := new_uenv;
 
             (* Return the new rank of the variable's rank *)
             repr.rank
@@ -175,14 +283,16 @@ let update_ranks (generation : generation) (env : env) : env =
   done;
 
   (* Return the updated environment *)
-  !env
+  !uenv
 
 
 (* Return a list of variables that have become generic *)
 
-let generalize (generation : generation) (env : env) : env * variable list =
+let generalize (uenv : uenv) (env : env) (generation : generation) :
+  uenv * env * variable list =
   (* Initialize *)
-  let state_young = Env.get_young env in
+  let young = Env.get_young env in
+  let uenv = ref uenv in
   let env = ref env in
 
   (* Compute the list of generic variables *)
@@ -191,24 +301,24 @@ let generalize (generation : generation) (env : env) : env * variable list =
       begin
         fun var ->
           (* Ignore variables that are not representatives of their equivalence class *)
-          Env.is_representative var !env
+          UEnv.is_representative var !uenv
           && begin
-               let repr = Env.repr var !env in
+               let repr = UEnv.repr var !uenv in
                let rank = repr.rank in
 
                (* If rank is less than state_young,
                re-register at the lower level and drop *)
-               if rank < state_young then begin
-                 env := Env.register var ~rank !env;
+               if rank < young then begin
+                 env := Env.add_to_pool var ~rank !env;
                  false
                end
                else begin
                  (* If rank equals state_young, make var generic
                  and drop it if it has structure *)
-                 assert (rank = state_young);
+                 assert (rank = young);
 
                  let repr = { repr with status = Generic } in
-                 env := Env.set repr !env;
+                 uenv := UEnv.set repr !uenv;
 
                  repr.structure = None
                end
@@ -218,7 +328,7 @@ let generalize (generation : generation) (env : env) : env * variable list =
   in
 
   (* Return the updated environment and the list of generic variables *)
-  (!env, l)
+  (!uenv, !env, l)
 
 
 (* Representation of a scheme *)
@@ -257,7 +367,7 @@ let debug_scheme { root; quantifiers; generics } =
 (* Transform root into a scheme.
    Assertion: should be called only after generalization *)
 
-let schemify (env : env) (quantifiers : variable list) (root : variable) :
+let schemify (uenv : uenv) (quantifiers : variable list) (root : variable) :
   scheme =
   (* Cache to avoid visiting a root's representative twice *)
   let cache = Hashtbl.create 16 in
@@ -265,7 +375,7 @@ let schemify (env : env) (quantifiers : variable list) (root : variable) :
   (* Compute generic variables reachable from [root] *)
   let traverse (root : variable) : variable list =
     let rec loop (acc : variable list) (root : variable) : variable list =
-      let repr = Env.repr root env in
+      let repr = UEnv.repr root uenv in
 
       if repr.status <> Generic || Hashtbl.mem cache repr.var then acc
       else begin
@@ -288,99 +398,75 @@ let schemify (env : env) (quantifiers : variable list) (root : variable) :
 
 (* Function to exit, to terminate the process of generalization *)
 
-let exit (roots : variable list) (env : env) : env * scheme list =
+let exit (uenv : uenv) (env : env) (roots : variable list) :
+  uenv * env * scheme list =
   (* Get the young level of the environment *)
-  let state_young = Env.get_young env in
+  let young = Env.get_young env in
 
   (* Ensure balanced calls to enter and exit *)
-  assert (state_young >= base_rank);
+  assert (young >= base_rank);
 
   (* Discover all young variables *)
-  let generation = discover_young_generation env in
+  let generation = discover_young_generation uenv env in
 
   (* Update the rank of every young variable.
      Variables that must become generic still have rank state_young *)
-  let env = update_ranks generation env in
+  let uenv = update_ranks uenv env generation in
 
   (* Generalize young variables that still have rank state_young *)
-  let env, quantifiers = generalize generation env in
+  let uenv, env, quantifiers = generalize uenv env generation in
 
   (* Build a scheme for each root variable *)
-  let schemes = List.map (schemify env quantifiers) roots in
+  let schemes = List.map (schemify uenv quantifiers) roots in
 
   (* Clean up the environment *)
-  let env = Env.clean_pool state_young env in
+  let env = Env.clean_pool ~rank:young env in
   let env = Env.decr_young env in
 
   (* Return the updated environment, list of quantifiers, and schemes *)
-  (env, schemes)
+  (uenv, env, schemes)
 
 
 (* Instantiate a scheme with a constraint variable *)
 
-let instantiate
-  ({ root; generics; quantifiers } : scheme) (var : variable) (env : env) :
-  env * (variable list, err) result =
+let instantiate uenv env ({ root; generics; quantifiers } : scheme) =
+  let mapping : (variable, variable) Hashtbl.t = Hashtbl.create 16 in
+
   (* Create a flexible copy without structure for each generic variable *)
-  let (env : env), (mapping : (variable, variable) Hashtbl.t) =
-    let ht = Hashtbl.create 16 in
-
-    let env =
-      List.fold_left
-        begin
-          fun env var ->
-            let repr = Env.repr var env in
-            assert (repr.status = Generic);
-
-            if Hashtbl.mem ht repr.var then env
-            else begin
-              let env, fresh_var =
-                fresh_flexible ~name:("fresh_" ^ repr.var.name) None env
-              in
-              Hashtbl.replace ht repr.var fresh_var;
-
-              env
-            end
-        end
-        env (quantifiers @ generics)
-    in
-
-    (env, ht)
+  let fresh (uenv, env) var =
+    if Hashtbl.mem mapping var then (uenv, env)
+    else begin
+      let repr = UEnv.repr var uenv in
+      assert (repr.status = Generic);
+      let fresh_var = Constraint.Var.fresh ("fresh_" ^ repr.var.name) in
+      Hashtbl.add mapping var fresh_var;
+      add_flexible uenv env fresh_var None
+    end
   in
+  let uenv, env = List.fold_left fresh (uenv, env) (quantifiers @ generics) in
 
-  (* Map every variable to its copy if existed *)
-  let copy (env : env) (var : variable) : variable =
-    let repr = Env.repr var env in
-    if repr.status <> Generic then var else Hashtbl.find mapping repr.var
+  (* Map every variable to its copy if it exists. *)
+  let copy (var : variable) : variable =
+    try Hashtbl.find mapping var with Not_found -> var
   in
 
   (* For each generic variable, equip its copy with a copy of its structure *)
-  let env =
+  let uenv =
     List.fold_left
       begin
-        fun env var ->
-          let repr = Env.repr var env in
-
-          let var_copy = Hashtbl.find mapping repr.var in
-
-          let structure_copy =
-            Option.map (Structure.map (copy env)) repr.structure
-          in
-
+        fun uenv var ->
+          let var_copy = copy var in
+          let repr = UEnv.repr var uenv in
+          let structure_copy = Option.map (Structure.map copy) repr.structure in
           let copy_repr =
-            { (Env.repr var_copy env) with structure = structure_copy }
+            { (UEnv.repr var_copy uenv) with structure = structure_copy }
           in
-
-          Env.set copy_repr env
+          UEnv.set copy_repr uenv
       end
-      env generics
+      uenv generics
   in
 
   (* Instantiate the scheme by unifying the root copy with [var] *)
-  let copy_root = copy env root in
-
-  match Unif.unify env copy_root var with
-  | Ok new_env ->
-    let copy_quantifiers = List.map (copy env) quantifiers in
-    (new_env, Ok copy_quantifiers)
-  | Error err -> (env, Error err)
+  let copy_root = copy root in
+  let copy_quantifiers = List.map copy quantifiers in
+  (uenv, env, copy_root, copy_quantifiers)

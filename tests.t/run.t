@@ -568,8 +568,8 @@ the inference variables.
                 x(0)
               Pool :
                 0 |-->
-                   warr |--> final_term
                    int(0) = int
+                   warr |--> final_term
                    wt(0)
                    x(0)
                    final_term(0) = x -> wt
@@ -593,9 +593,9 @@ the inference variables.
                   x(0)
                 Pool :
                   0 |-->
+                     int(0) = int
                      warr |--> final_term
                      wt |--> int
-                     int(0) = int
                      x(0)
                      final_term(0) = x -> int
               }
@@ -620,10 +620,10 @@ the inference variables.
                   int(0) = int
                 Pool :
                   0 |-->
+                     int(0) = int
                      warr |--> final_term
                      wt |--> int
                      x |--> int
-                     int(0) = int
                      final_term(0) = int -> int
               }
               (?int = ?x)
@@ -877,10 +877,10 @@ the inference variables.
                     wu(0)
                   Pool :
                     0 |-->
+                       int(0) = int
                        warr |--> wt
                        wt/1 |--> final_term
                        x |--> wu
-                       int(0) = int
                        wt(0) = wu -> final_term
                        wu(0)
                        final_term(0)
@@ -910,13 +910,13 @@ the inference variables.
                       wu(0)
                     Pool :
                       0 |-->
+                         int(0) = int
                          warr |--> wt
                          wt/1 |--> int
                          x |--> wu
-                         final_term |--> int
-                         int(0) = int
                          wt(0) = wu -> int
                          wu(0)
+                         final_term |--> int
                   }
                   (?int = ?wt/1)
                 in decode_scheme ?scheme_final_scheme
@@ -945,13 +945,13 @@ the inference variables.
                       wt(0) = int -> int
                     Pool :
                       0 |-->
+                         int(0) = int
                          warr |--> wt
                          wt/1 |--> int
                          x |--> int
+                         wt(0) = int -> int
                          wu |--> int
                          final_term |--> int
-                         int(0) = int
-                         wt(0) = int -> int
                   }
                   (?int = ?x)
                 in decode_scheme ?scheme_final_scheme
@@ -975,14 +975,14 @@ the inference variables.
               y(0)
             Pool :
               0 |-->
+                 y(0)
+                 int(0) = int
                  warr |--> wt
                  wt/1 |--> int
                  x |--> int
+                 wt(0) = int -> int
                  wu |--> int
                  final_term |--> int
-                 y(0)
-                 int(0) = int
-                 wt(0) = int -> int
           }
           (∃?wt/2 (?warr/1 = ?y -> ?wt/2). ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
         in decode_scheme ?scheme_final_scheme
@@ -1005,15 +1005,15 @@ the inference variables.
                 wt/2(0)
               Pool :
                 0 |-->
-                   warr |--> wt
-                   wt/1 |--> int
-                   x |--> int
-                   wu |--> int
-                   final_term |--> int
                    wt/2(0)
                    y(0)
                    int(0) = int
+                   warr |--> wt
+                   wt/1 |--> int
+                   x |--> int
                    wt(0) = int -> int
+                   wu |--> int
+                   final_term |--> int
             }
             (∃(?warr/1 = ?y -> ?wt/2). ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
           in decode_scheme ?scheme_final_scheme
@@ -1038,16 +1038,16 @@ the inference variables.
                   wt/2(0)
                 Pool :
                   0 |-->
-                     warr |--> wt
-                     wt/1 |--> int
-                     x |--> int
-                     wu |--> int
-                     final_term |--> int
                      warr/1(0) = y -> wt/2
                      wt/2(0)
                      y(0)
                      int(0) = int
+                     warr |--> wt
+                     wt/1 |--> int
+                     x |--> int
                      wt(0) = int -> int
+                     wu |--> int
+                     final_term |--> int
               }
               (?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
             in decode_scheme ?scheme_final_scheme
@@ -1210,8 +1210,8 @@ a lot of those.)
                 x(0)
               Pool :
                 0 |-->
-                   warr |--> final_term
                    wu(0)
+                   warr |--> final_term
                    wt(0)
                    x(0)
                    final_term(0) = x -> wt
@@ -1236,9 +1236,9 @@ a lot of those.)
                   wt/1(0) = wu -> wt
                 Pool :
                   0 |-->
-                     warr |--> final_term
                      wt/1(0) = wu -> wt
                      wu(0)
+                     warr |--> final_term
                      wt(0)
                      x(0)
                      final_term(0) = x -> wt
@@ -1264,11 +1264,11 @@ a lot of those.)
                     wt/1(0) = wu -> wt
                   Pool :
                     0 |-->
-                       warr |--> final_term
-                       x |--> wt/1
                        wt/1(0) = wu -> wt
                        wu(0)
+                       warr |--> final_term
                        wt(0)
+                       x |--> wt/1
                        final_term(0) = wt/1 -> wt
                 }
                 (?wt/1 = ?x)
@@ -1546,17 +1546,17 @@ An example of random sampling output at higher size.
     (
       x/19dab
       :
-        (δ/beb5 -> β/beb6 -> α/beb6 -> δ/beb5)
+        (δ/bea8 -> β/bea9 -> α/bea9 -> δ/bea8)
         ->
-        δ/beb5 -> β/beb6 -> α/beb6 -> δ/beb5
+        δ/bea8 -> β/bea9 -> α/bea9 -> δ/bea8
     ). x/19dab)
-      (lambda (w/1a9ce : δ/beb5 -> β/beb6 -> α/beb6 -> δ/beb5). w/1a9ce)
+      (lambda (w/1a9ce : δ/bea8 -> β/bea9 -> α/bea9 -> δ/bea8). w/1a9ce)
       (lambda
-      (v/1aa39 : δ/beb5).
-        lambda (w/1aa55 : β/beb6). lambda (z/1aa5b : α/beb6). v/1aa39)
+      (v/1aa39 : δ/bea8).
+        lambda (w/1aa55 : β/bea9). lambda (z/1aa5b : α/bea9). v/1aa39)
   
   Inferred type:
-    ∀δ/beb5. ∀α/beb6. ∀β/beb6.
-      δ/beb5 -> β/beb6 -> α/beb6 -> δ/beb5
+    ∀δ/bea8. ∀α/bea9. ∀β/bea9.
+      δ/bea8 -> β/bea9 -> α/bea9 -> δ/bea8
   
   
