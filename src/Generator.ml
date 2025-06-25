@@ -169,18 +169,26 @@ module Make (M : Choice.Intf) = struct
     Infer.let_wrapper untyped
 
 
+  let solve constraint_ =
+    let rec loop : type a e.
+      (a, e) Solver.normal_constraint -> (a, e) result M.t = function
+      | NRet (env, v) ->
+        let sol = Decode.decode env.unif () in
+        M.return (Ok (v sol))
+      | NErr (_loco, err) -> M.return (Error err)
+      | NDo m -> M.bind m loop
+    in
+    loop (Solver.eval ~log:false (Solver.Env.empty ()) constraint_)
+
+
   (* Generate a typed term of a given size from a monadic untyped term *)
 
   let typed_cut_early ~size untyped : (Typed.term * Typed.scheme) M.t =
-    let rec loop : type a e. (a, e) Solver.normal_constraint -> a M.t = function
-      | NRet (env, v) -> M.return @@ v (Decode.decode env.unif ())
-      | NErr _ -> M.fail
-      | NDo m -> M.bind m loop
-    in
-
-    let constraint_ = untyped |> cut_size ~size |> constraint_ in
-    let nf = Solver.eval ~log:false (Solver.Env.empty ()) constraint_ in
-    loop nf
+    M.bind
+      (untyped |> cut_size ~size |> constraint_ |> solve)
+      (function
+        | Ok v -> M.return v
+        | Error _ -> M.fail )
 
 
   let typed_cut_late ~size untyped : (Typed.term * Typed.scheme) M.t =
