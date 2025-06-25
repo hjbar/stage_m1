@@ -7,3 +7,8 @@
  (public_name minigen)
  (libraries unix constrained_generation)
  (modules minigen))
+
+(executable
+ (public_name minibench)
+ (libraries unix constrained_generation)
+ (modules minibench))
