@@ -10,17 +10,15 @@ type size_impl =
 
 let size_impl_dict = [ ("early", Early); ("late", Late) ]
 
-type search_impl =
-  | Exhaustive
+type rand_impl =
   | Naive
   | Full_removal
   | Local_retries
   | Reset
   | Vanille
 
-let search_impl_dict =
+let rand_impl_dict =
   [
-    ("exhaustive", Exhaustive);
     ("naive", Naive);
     ("full-removal", Full_removal);
     ("local-retries", Local_retries);
@@ -47,7 +45,8 @@ type config = {
   untyped_impl : untyped_impl;
   size : int;
   size_impl : size_impl;
-  search_impl : search_impl;
+  exhaustive : bool;
+  rand_impl : rand_impl;
   count : int;
   benchmark : int option;
   seed : int option;
@@ -68,7 +67,7 @@ let pp_config ppf config =
       \  untyped_impl = %a;\n\
       \  size = %a;\n\
       \  size_impl = %a;\n\
-      \  search_impl = %a;\n\
+      \  rand_impl = %a;\n\
       \  count = %a;\n\
       \  seed = %a;\n\
       \  benchmark = %a;\n\
@@ -77,7 +76,7 @@ let pp_config ppf config =
       (pp_dict_val untyped_impl_dict) config.untyped_impl
       pp_int config.size
       (pp_dict_val size_impl_dict) config.size_impl
-      (pp_dict_val search_impl_dict) config.search_impl
+      (pp_dict_val rand_impl_dict) config.rand_impl
       pp_int config.count
       (pp_opt pp_int) config.seed
       (pp_opt pp_int) config.benchmark
@@ -105,7 +104,8 @@ let config =
   let types = ref false in
   let untyped_impl = ref Gasche in
   let size = ref 10 in
-  let search_impl = ref Naive in
+  let exhaustive = ref false in
+  let rand_impl = ref Naive in
   let size_impl = ref Late in
   let count = ref 1 in
   let seed = ref None in
@@ -125,8 +125,12 @@ let config =
           fmt "<int> Size of generated terms (default %d)" !size );
         arg_from_dict ~option:"--size-cut" ~doc:"size-cut implementation"
           size_impl_dict size_impl;
-        arg_from_dict ~option:"--search" ~doc:"search implementation"
-          search_impl_dict search_impl;
+        ( "--exhaustive",
+          Arg.Set exhaustive,
+          fmt " Exhaustive rather than random generation (default %b)"
+            !exhaustive );
+        arg_from_dict ~option:"--rand" ~doc:"random search implementation"
+          rand_impl_dict rand_impl;
         ( "--count",
           Arg.Set_int count,
           fmt "<int> Number of terms to generate. (default '%d')" !count );
@@ -151,7 +155,8 @@ let config =
     untyped_impl = !untyped_impl;
     size = !size;
     size_impl = !size_impl;
-    search_impl = !search_impl;
+    exhaustive = !exhaustive;
+    rand_impl = !rand_impl;
     count = !count;
     seed = !seed;
     benchmark = !benchmark;
@@ -177,14 +182,17 @@ module ExhaustiveSearch = struct
   let tries = ref 1
 end
 
-let get_search_impl config : (module SearchImpl) =
-  match config.search_impl with
-  | Exhaustive -> (module ExhaustiveSearch)
+let get_rand_impl config : (module SearchImpl) =
+  match config.rand_impl with
   | Naive -> (module MRand)
   | Full_removal -> (module MRand_full_removal)
   | Local_retries -> (module MRand_local_retries)
   | Reset -> (module MRand_local_retries_with_reset)
   | Vanille -> (module VanilleRand)
+
+
+let get_search_impl config : (module SearchImpl) =
+  if config.exhaustive then (module ExhaustiveSearch) else get_rand_impl config
 
 
 let generate config (module M : SearchImpl) =

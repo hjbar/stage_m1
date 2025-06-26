@@ -1303,7 +1303,7 @@ fine if your own implementation produces different (sensible) results.
 
 There are not many programs with size 3, 4 and 5.
 
-  $ minigen --search exhaustive --types --size 2 --count 100
+  $ minigen --exhaustive --types --size 2 --count 100
   Generated term:
     lambda (x/5 : α/1). x/5
   
@@ -1313,7 +1313,7 @@ There are not many programs with size 3, 4 and 5.
   
 
 
-  $ minigen --search exhaustive --types --size 3 --count 100
+  $ minigen --exhaustive --types --size 3 --count 100
   Generated term:
     lambda (v/14 : α/7). lambda (u/19 : β/7). v/14
   
@@ -1331,7 +1331,7 @@ There are not many programs with size 3, 4 and 5.
   
 
 
-  $ minigen --search exhaustive --types --size 4 --count 100
+  $ minigen --exhaustive --types --size 4 --count 100
   Generated term:
     lambda
     (v/6a : δ/2a). lambda (w/86 : β/2b). lambda (z/8c : α/2b). v/6a
@@ -1540,7 +1540,7 @@ An example of random sampling output at higher size.
   
   
 
-  $ dune exec -- minigen --search exhaustive --types --size 10 --count 1
+  $ dune exec -- minigen --exhaustive --types --size 10 --count 1
   Generated term:
     (lambda
     (
