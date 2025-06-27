@@ -1218,7 +1218,9 @@ a lot of those.)
   File "selfapp.test", line 1, characters 0-13:
   Error: cycle on constraint variable ?wu
 
+## Regressions
 
+  $ minihell --show-source wu_bug.t
 
 
 
