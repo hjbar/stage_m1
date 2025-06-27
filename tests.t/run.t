@@ -1576,46 +1576,67 @@ Choice paths make it possible to restart the exhaustive enumeration of minigen i
 We can use the option `--log-choice-path` to print the "choice path" for each enumerated element:
 
   $ minigen --size 4 --exhaustive --count 1000 --log-choice-path
-  Choice path: (2 .) (2 .) (2 .) (0 0 .) .
+  Choice path:
+    (2 .) (2 .) (2 .) (0 0 .) .
+  
+  
   Generated term:
     lambda
     (v/6a : δ/2a). lambda (w/86 : β/2b). lambda (z/8c : α/2b). v/6a
   
   
   
-  Choice path: (2 .) (2 .) (2 .) (0 1 .) .
+  Choice path:
+    (2 .) (2 .) (2 .) (0 1 .) .
+  
+  
   Generated term:
     lambda
     (v/6a : α/2c). lambda (w/86 : γ/2b). lambda (z/8c : δ/2b). w/86
   
   
   
-  Choice path: (2 .) (2 .) (2 .) (0 2 .) .
+  Choice path:
+    (2 .) (2 .) (2 .) (0 2 .) .
+  
+  
   Generated term:
     lambda
     (v/6a : δ/2c). lambda (w/86 : γ/2c). lambda (z/8c : β/2c). z/8c
   
   
   
-  Choice path: (2 .) (3 .) (0 0 .) (0 0 .) .
+  Choice path:
+    (2 .) (3 .) (0 0 .) (0 0 .) .
+  
+  
   Generated term:
     lambda (v/6a : α/32). let (z/a0 : α/32) = v/6a in v/6a
   
   
   
-  Choice path: (2 .) (3 .) (0 0 .) (0 1 .) .
+  Choice path:
+    (2 .) (3 .) (0 0 .) (0 1 .) .
+  
+  
   Generated term:
     lambda (v/6a : β/32). let (z/a0 : β/32) = v/6a in z/a0
   
   
   
-  Choice path: (2 .) (4 (0 .) .) (0 0 .) (0 0 .) .
+  Choice path:
+    (2 .) (4 (0 .) .) (0 0 .) (0 0 .) .
+  
+  
   Generated term:
     lambda (v/6a : γ/39). (v/6a, v/6a)
   
   
   
-  Choice path: (2 .) (5 (0 .) .) (0 0 .) (0 0 .) .
+  Choice path:
+    (2 .) (5 (0 .) .) (0 0 .) (0 0 .) .
+  
+  
   Generated term:
     lambda
     (v/6a : {δ/40 * α/41}).
@@ -1623,7 +1644,10 @@ We can use the option `--log-choice-path` to print the "choice path" for each en
   
   
   
-  Choice path: (2 .) (5 (0 .) .) (0 0 .) (0 1 .) .
+  Choice path:
+    (2 .) (5 (0 .) .) (0 0 .) (0 1 .) .
+  
+  
   Generated term:
     lambda
     (v/6a : {β/41 * γ/41}).
@@ -1631,7 +1655,10 @@ We can use the option `--log-choice-path` to print the "choice path" for each en
   
   
   
-  Choice path: (2 .) (5 (0 .) .) (0 0 .) (0 2 .) .
+  Choice path:
+    (2 .) (5 (0 .) .) (0 0 .) (0 2 .) .
+  
+  
   Generated term:
     lambda
     (v/6a : {α/42 * δ/41}).
@@ -1639,7 +1666,10 @@ We can use the option `--log-choice-path` to print the "choice path" for each en
   
   
   
-  Choice path: (3 .) (2 .) (0 0 .) (0 0 .) .
+  Choice path:
+    (3 .) (2 .) (0 0 .) (0 0 .) .
+  
+  
   Generated term:
     let (u/ef : ∀γ/53. γ/53 -> γ/53) =
       Λγ/53. lambda (z/104 : γ/53). z/104
