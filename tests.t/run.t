@@ -1222,8 +1222,14 @@ a lot of those.)
 
   $ minihell --show-source wu_bug.t
   Input term: let x = (lambda y. (lambda z. y) y) (lambda u. u) in x
-  Fatal error: exception Invalid_argument("Constraint variable 'wu/1' is generic at this point")
-  [2]
+  Inferred type: ∀α. α -> α
+  Elaborated term:
+    let (x : ∀β. β -> β) =
+      Λβ.
+      (lambda (y : β -> β). (lambda (z : β -> β). y) y)
+        (lambda (u : β). u)
+    in
+      x[α]
 
 
 
