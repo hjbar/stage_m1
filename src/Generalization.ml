@@ -434,20 +434,30 @@ let instantiate uenv env ({ root; generics; quantifiers } : scheme) =
 
   (* Create a flexible copy without structure for each generic variable *)
   let fresh (uenv, env) var =
+    let repr = UEnv.repr var uenv in
+    let var = repr.var in
+
     if Hashtbl.mem mapping var then (uenv, env)
     else begin
-      let repr = UEnv.repr var uenv in
       assert (repr.status = Generic);
+
       let fresh_var = Constraint.Var.fresh ("fresh_" ^ repr.var.name) in
       Hashtbl.add mapping var fresh_var;
+
       add_flexible uenv env fresh_var None
     end
   in
+
   let uenv, env = List.fold_left fresh (uenv, env) (quantifiers @ generics) in
 
   (* Map every variable to its copy if it exists. *)
   let copy (var : variable) : variable =
-    try Hashtbl.find mapping var with Not_found -> var
+    let repr = UEnv.repr var uenv in
+    let var = repr.var in
+
+    match Hashtbl.find_opt mapping var with
+    | None -> var
+    | Some copy -> copy
   in
 
   (* For each generic variable, equip its copy with a copy of its structure *)
