@@ -67,27 +67,28 @@ module Make (T : Utils.Functor) = struct
   let print_sat_constraint_in_context
     ~(env : PPrint.document) (c : sat_constraint) (k : sat_cont) :
     PPrint.document =
-    let rec print_cont = function
+    let rec print_cont ctx = function
       | frame :: rest -> begin
-        let rest = print_cont rest in
-
-        match frame with
-        | KConj1 c2 -> Printer.conjunction [ rest; print_sat_constraint c2 ]
-        | KConj2 -> Printer.conjunction [ Printer.true_; rest ]
-        | KExist v -> Printer.exist [ (print_var v, None) ] rest
-        | KLet1 (bindings, c2) ->
-          let print_binding (sch_var, var) =
-            (print_sch_var sch_var, print_var var)
-          in
-          Printer.let_sch
-            (List.map print_binding bindings)
-            rest (print_sat_constraint c2)
-        | KLet2 sch_vars ->
-          Printer.let_sch_2 (List.map print_sch_var sch_vars) rest
+        let ctx =
+          match frame with
+          | KConj1 c2 -> Printer.conjunction [ ctx; print_sat_constraint c2 ]
+          | KConj2 -> Printer.conjunction [ Printer.true_; ctx ]
+          | KExist v -> Printer.exist [ (print_var v, None) ] ctx
+          | KLet1 (bindings, c2) ->
+            let print_binding (sch_var, var) =
+              (print_sch_var sch_var, print_var var)
+            in
+            Printer.let_sch
+              (List.map print_binding bindings)
+              ctx (print_sat_constraint c2)
+          | KLet2 sch_vars ->
+            Printer.let_sch_2 (List.map print_sch_var sch_vars) ctx
+        in
+        print_cont ctx rest
       end
-      | [] -> Printer.hole ~env (print_sat_constraint c)
+      | [] -> ctx
     in
-    print_cont k
+    print_cont (Printer.hole ~env (print_sat_constraint c)) k
 
 
   let print_constraint (type a e) (c : (a, e) Constraint.t) : PPrint.document =
