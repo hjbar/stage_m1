@@ -47,7 +47,9 @@ let one_of arr =
   let start =
     match p with
     | Nil -> 0
-    | Sum (i, Return) -> i
+    | Sum (i, Return) ->
+      if i >= Array.length arr then invalid_path "sum" p;
+      i
     | Return | Fail | Sum _ | Bind _ -> invalid_path "one_of" p
   in
   Seq.ints start
@@ -60,7 +62,9 @@ let sum ss =
   let start, start_p =
     match p with
     | Nil -> (0, Nil)
-    | Sum (i, i_p) -> (i, i_p)
+    | Sum (i, i_p) ->
+      if i >= List.length ss then invalid_path "sum" p;
+      (i, i_p)
     | Return | Fail | Bind _ -> invalid_path "sum" p
   in
   ss
