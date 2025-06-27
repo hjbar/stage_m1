@@ -112,8 +112,8 @@ to the bin/dune content.)
           ∃?x ?wt/2 (?warr/1 = ?x -> ?wt/2).
             ?id = ?warr/1 ∧ ?wt/2 = ?x ∧ decode ?x
         in
-          ((∃?wu (?wt/1 = ?wu -> ?wt). ?scheme_s ≤ ?wt/1 ∧ ?wu = ?y)
-          ∧ decode_scheme ?scheme_s))
+          (∃?wu (?wt/1 = ?wu -> ?wt). ?scheme_s ≤ ?wt/1 ∧ ?wu = ?y)
+          ∧ decode_scheme ?scheme_s)
         ∧ decode ?y
     in decode_scheme ?scheme_final_scheme
   Inferred type: ∀α. α -> α
@@ -151,7 +151,7 @@ type, this is just an abstract/rigid type variable: `Constr
     let ?scheme_final_scheme : ?final_term =
       let ?scheme_s : ?x =
         ∃?y ?wt (?warr = ?y -> ?wt). ?x = ?warr ∧ ?wt = ?y ∧ decode ?y
-      in (?scheme_s ≤ ?final_term ∧ decode_scheme ?scheme_s)
+      in ?scheme_s ≤ ?final_term ∧ decode_scheme ?scheme_s
     in decode_scheme ?scheme_final_scheme
   Inferred type: ∀α. α -> α
   Elaborated term:
@@ -231,10 +231,10 @@ type, this is just an abstract/rigid type variable: `Constr
           ∃?x ?wt/2 (?warr/1 = ?x -> ?wt/2).
             ?id = ?warr/1 ∧ ?wt/2 = ?x ∧ decode ?x
         in
-          ((let ?scheme_s/1 : ?r =
+          (let ?scheme_s/1 : ?r =
             ∃?wu (?wt/1 = ?wu -> ?r). ?scheme_s ≤ ?wt/1 ∧ ?wu = ?a
-          in (?scheme_s/1 ≤ ?wt ∧ decode_scheme ?scheme_s/1))
-          ∧ decode_scheme ?scheme_s))
+          in ?scheme_s/1 ≤ ?wt ∧ decode_scheme ?scheme_s/1)
+          ∧ decode_scheme ?scheme_s)
         ∧ decode ?a
     in decode_scheme ?scheme_final_scheme
   Inferred type: ∀α. α -> α
@@ -257,25 +257,25 @@ type, this is just an abstract/rigid type variable: `Constr
         ∃?x ?wt/4 (?warr/2 = ?x -> ?wt/4).
           ?id = ?warr/2 ∧ ?wt/4 = ?x ∧ decode ?x
       in
-        ((∃?a ?wt (?warr = ?a -> ?wt).
+        (∃?a ?wt (?warr = ?a -> ?wt).
           ?final_term = ?warr
           ∧ (∃?b ?wt/1 (?warr/1 = ?b -> ?wt/1).
             ?wt = ?warr/1
             ∧ (let ?scheme_s/1 : ?l =
               ∃?wu/1 (?wt/3 = ?wu/1 -> ?l). ?scheme_s ≤ ?wt/3 ∧ ?wu/1 = ?a
             in
-              ((let ?scheme_s/2 : ?r =
+              (let ?scheme_s/2 : ?r =
                 ∃?wu (?wt/2 = ?wu -> ?r). ?scheme_s ≤ ?wt/2 ∧ ?wu = ?b
               in
-                ((∃?w1.
+                (∃?w1.
                   ?scheme_s/1 ≤ ?w1
                   ∧ (∃?w2.
                     ?scheme_s/2 ≤ ?w2 ∧ (∃(?wprod = {?w1 * ?w2}). ?wt/1 = ?wprod)))
-                ∧ decode_scheme ?scheme_s/2))
-              ∧ decode_scheme ?scheme_s/1))
+                ∧ decode_scheme ?scheme_s/2)
+              ∧ decode_scheme ?scheme_s/1)
             ∧ decode ?b)
           ∧ decode ?a)
-        ∧ decode_scheme ?scheme_s)
+        ∧ decode_scheme ?scheme_s
     in decode_scheme ?scheme_final_scheme
   Inferred type: ∀β. ∀α. α -> β -> {α * β}
   Elaborated term:
@@ -300,26 +300,26 @@ type, this is just an abstract/rigid type variable: `Constr
         ∃?x ?wt/4 (?warr/2 = ?x -> ?wt/4).
           ?id = ?warr/2 ∧ ?wt/4 = ?x ∧ decode ?x
       in
-        ((∃?a ?wt (?warr = ?a -> ?wt).
+        (∃?a ?wt (?warr = ?a -> ?wt).
           ?final_term = ?warr
           ∧ (∃?b ?wt/1 (?warr/1 = ?b -> ?wt/1).
             ?wt = ?warr/1
             ∧ (let ?scheme_s/1 : ?l =
               ∃?wu/1 (?wt/3 = ?wu/1 -> ?l). ?scheme_s ≤ ?wt/3 ∧ ?wu/1 = ?a
             in
-              ((let ?scheme_s/2 : ?r =
+              (let ?scheme_s/2 : ?r =
                 ∃?wu (?wt/2 = ?wu -> ?r). ?scheme_s ≤ ?wt/2 ∧ ?wu = ?b
               in
-                ((∃?w1.
+                (∃?w1.
                   (∃(?int = int). ?int = ?w1 ∧ ?scheme_s/1 ≤ ?int)
                   ∧ (∃?w2.
                     (∃(?bool = bool). ?bool = ?w2 ∧ ?scheme_s/2 ≤ ?bool)
                     ∧ (∃(?wprod = {?w1 * ?w2}). ?wt/1 = ?wprod)))
-                ∧ decode_scheme ?scheme_s/2))
-              ∧ decode_scheme ?scheme_s/1))
+                ∧ decode_scheme ?scheme_s/2)
+              ∧ decode_scheme ?scheme_s/1)
             ∧ decode ?b)
           ∧ decode ?a)
-        ∧ decode_scheme ?scheme_s)
+        ∧ decode_scheme ?scheme_s
     in decode_scheme ?scheme_final_scheme
   Inferred type: int -> bool -> {int * bool}
   Elaborated term:
@@ -352,7 +352,7 @@ of a definition but not in the inferred type scheme.
             ∧ (∃?y ?wt/3 (?warr/2 = ?y -> ?wt/3).
               ?wu = ?warr/2 ∧ ?wt/3 = ?y ∧ decode ?y))
           ∧ decode ?x
-      in (?scheme_s ≤ ?final_term ∧ decode_scheme ?scheme_s)
+      in ?scheme_s ≤ ?final_term ∧ decode_scheme ?scheme_s
     in decode_scheme ?scheme_final_scheme
   Inferred type: ∀α. ∀β. α -> α
   Elaborated term:

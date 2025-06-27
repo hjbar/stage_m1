@@ -14,9 +14,11 @@ module Make (T : Utils.Functor) = struct
   let print_sat_constraint (c : sat_constraint) : PPrint.document =
     let rec print_top = fun c -> print_left_open c
     and print_left_open =
+      let print_self = print_left_open in
       let print_next = print_conj in
-
-      fun ac ->
+      function
+      | Loc (_, c) -> print_self c
+      | Exist _ as ac ->
         let rec peel = function
           | Loc (_, c) -> peel c
           | Exist (v, s, c) ->
@@ -26,11 +28,18 @@ module Make (T : Utils.Functor) = struct
             let bindings, body = peel c in
 
             (binding :: bindings, body)
-          | other -> ([], print_next other)
+          | other -> ([], print_self other)
         in
-
         let bindings, body = peel ac in
-        if List.is_empty bindings then body else Printer.exist bindings body
+        Printer.exist bindings body
+      | Let (bindings, c1, c2) ->
+        let print_binding (sch_var, var) =
+          (print_sch_var sch_var, print_var var)
+        in
+        Printer.let_sch
+          (List.map print_binding bindings)
+          (print_top c1) (print_self c2)
+      | other -> print_next other
     and print_conj =
       let print_self = print_conj in
       let print_next = print_atom in
@@ -38,13 +47,6 @@ module Make (T : Utils.Functor) = struct
       function
       | Loc (_loc, c) -> print_self c
       | Conj cs -> Printer.conjunction (List.map print_next cs)
-      | Let (bindings, c1, c2) ->
-        let print_binding (sch_var, var) =
-          (print_sch_var sch_var, print_var var)
-        in
-        Printer.let_sch
-          (List.map print_binding bindings)
-          (print_next c1) (print_next c2)
       | other -> print_next other
     and print_atom =
       let print_self = print_atom in
