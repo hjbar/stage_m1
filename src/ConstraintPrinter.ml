@@ -18,6 +18,7 @@ module Make (T : Utils.Functor) = struct
 
       fun ac ->
         let rec peel = function
+          | Loc (_, c) -> peel c
           | Exist (v, s, c) ->
             let binding =
               (print_var v, Option.map (Structure.print print_var) s)
@@ -31,9 +32,11 @@ module Make (T : Utils.Functor) = struct
         let bindings, body = peel ac in
         if List.is_empty bindings then body else Printer.exist bindings body
     and print_conj =
+      let print_self = print_conj in
       let print_next = print_atom in
 
       function
+      | Loc (_loc, c) -> print_self c
       | Conj cs -> Printer.conjunction (List.map print_next cs)
       | Let (bindings, c1, c2) ->
         let print_binding (sch_var, var) =
@@ -43,8 +46,10 @@ module Make (T : Utils.Functor) = struct
           (List.map print_binding bindings)
           (print_next c1) (print_next c2)
       | other -> print_next other
-    and print_atom = function
-      | Loc (_loc, c) -> print_top c
+    and print_atom =
+      let print_self = print_atom in
+      function
+      | Loc (_loc, c) -> print_self c
       | Decode v -> Printer.decode (print_var v)
       | False -> Printer.false_
       | Eq (v1, v2) -> Printer.eq (print_var v1) (print_var v2)
