@@ -237,8 +237,9 @@ let get_seq_impl config : (module SearchImpl) =
            if log_path then begin
              path
              |> ChoicePathPrinter.print
+             |> Utils.get_section "Choice path"
              |> Utils.string_of_doc
-             |> Printf.printf "Choice path: %s\n%!"
+             |> print_endline
            end;
            v )
   end in

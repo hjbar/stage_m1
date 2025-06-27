@@ -160,7 +160,8 @@ module Env = struct
       let structure_doc =
         match uvar.structure with
         | None -> PP.empty
-        | Some s -> PP.string "= " ^^ Structure.print Constraint.Var.print s
+        | Some s ->
+          PP.equals ^^ PP.space ^^ Structure.print Constraint.Var.print s
       in
 
       let doc =
@@ -248,7 +249,7 @@ let rec unify orig_env v1 v2 : (Env.t, err) result =
     with Not_found ->
       Printf.ksprintf invalid_arg
         "Constraint variable '%s' is unbound at this point"
-        (Constraint.Var.name v)
+        (v |> Constraint.Var.print |> Utils.string_of_doc)
   in
 
   let queue = Queue.create () in
@@ -276,7 +277,7 @@ and merge queue (n1 : unode) (n2 : unode) : unode =
   let generic (n : unode) () =
     Printf.ksprintf invalid_arg
       "Constraint variable '%s' is generic at this point"
-      (Constraint.Var.name n.var)
+      (n.var |> Constraint.Var.print |> Utils.string_of_doc)
   in
 
   let var = n1.var in
