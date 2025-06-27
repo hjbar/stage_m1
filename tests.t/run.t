@@ -644,6 +644,19 @@ the inference variables.
       }
       (⊤)
     in decode_scheme ?scheme_final_scheme
+  <- let ?scheme_final_scheme = ⊤
+    in
+    hole
+    {
+      Env :
+        warr |--> final_term
+        wt |--> int
+        x |--> int
+        final_term(G) = int -> int
+        int(G) = int
+  
+    }
+    (⊤)
   
   Inferred type:
     int -> int

@@ -160,8 +160,19 @@ let let_sch bindings c1 c2 =
     end
 
 (** let true in $c2 *)
-let let_sch_2 c2 =
-  group (string "let " ^^ true_ ^^ break 1 ^^ string "in" ^^ break 1 ^^ c2)
+let let_sch_2 sch_vars c2 =
+  group
+    begin
+      group
+        begin
+          string "let"
+          ^/^ separate (comma ^^ break 1) sch_vars
+          ^/^ equals
+          ^/^ true_
+        end
+      ^/^ string "in"
+      ^/^ c2
+    end
 
 (** hole {$env} $c *)
 let hole ~env c =

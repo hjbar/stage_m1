@@ -21,7 +21,7 @@ module Make (T : Utils.Functor) = struct
     | KConj2
     | KExist of variable
     | KLet1 of (scheme_variable * variable) list * sat_constraint
-    | KLet2
+    | KLet2 of scheme_variable list
 
   type sat_cont = sat_cont_frame list
 
@@ -69,7 +69,7 @@ module Make (T : Utils.Functor) = struct
     | KConj2 _v -> Some KConj2
     | KExist v -> Some (KExist v)
     | KLet1 (bindings, c2) -> Some (KLet1 (bindings, erase c2))
-    | KLet2 _v -> Some KLet2
+    | KLet2 (sch_vars, _v) -> Some (KLet2 sch_vars)
 
 
   let rec erase_cont : type a1 e1 a e.
