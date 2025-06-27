@@ -340,7 +340,7 @@ We test an example where a type variable occurs in the body
 of a definition but not in the inferred type scheme.
 
   $ minihell $FLAGS poly_silent_var.test
-  Input term: let test = lambda x. lambda z. x lambda y. y in test
+  Input term: let test = lambda x. (lambda z. x) (lambda y. y) in test
   Generated constraint:
     let ?scheme_final_scheme : ?final_term =
       let ?scheme_s : ?test =
@@ -610,7 +610,7 @@ the inference variables.
 ## Clash types
 
   $ minihell $FLAGS --log-solver error_clash_types.test
-  Input term: lambda x. (x : int) lambda y. y
+  Input term: (lambda x. (x : int)) (lambda y. y)
   Generated constraint:
     let ?scheme_final_scheme : ?final_term =
       ∃?wu (?wt = ?wu -> ?final_term).
@@ -1221,6 +1221,9 @@ a lot of those.)
 ## Regressions
 
   $ minihell --show-source wu_bug.t
+  Input term: let x = (lambda y. (lambda z. y) y) (lambda u. u) in x
+  Fatal error: exception Invalid_argument("Constraint variable 'wu/1' is generic at this point")
+  [2]
 
 
 
