@@ -424,8 +424,8 @@ the inference variables.
           ∧ decode ?x
       )
     in decode_scheme ?scheme_final_scheme
-  -> ∃?x.
-      let ?scheme_final_scheme : ?final_term =
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?x.
         hole
         {
           Env :
@@ -444,10 +444,10 @@ the inference variables.
             ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
             ∧ decode ?x
         )
-      in decode_scheme ?scheme_final_scheme
-  -> ∃?wt.
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
       ∃?x.
-        let ?scheme_final_scheme : ?final_term =
+        ∃?wt.
           hole
           {
             Env :
@@ -467,11 +467,11 @@ the inference variables.
             ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
             ∧ decode ?x
           )
-        in decode_scheme ?scheme_final_scheme
-  -> ∃?warr.
-      ∃?wt.
-        ∃?x.
-          let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?x.
+        ∃?wt.
+          ∃?warr.
             hole
             {
               Env :
@@ -487,15 +487,15 @@ the inference variables.
                    final_term(0) = x -> wt
             }
             (?final_term = ?warr)
-          in decode_scheme ?scheme_final_scheme
-    ∧ decode ?x
-    ∧ ∃(?int = int). ?int = ?wt ∧ ?int = ?x
-  -> ⊤
-    ∧ ∃?warr.
-      ∃?wt.
-        ∃?x.
-          let ?scheme_final_scheme : ?final_term =
-            hole
+            ∧ ∃(?int = int). ?int = ?wt ∧ ?int = ?x
+            ∧ decode ?x
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?x.
+        ∃?wt.
+          ∃?warr.
+            ⊤
+            ∧ hole
             {
               Env :
                 warr |--> final_term
@@ -512,14 +512,14 @@ the inference variables.
                    final_term(0) = x -> wt
             }
             (?int = ?wt ∧ ?int = ?x)
-          in decode_scheme ?scheme_final_scheme
-    ∧ decode ?x
-  -> ∃?int.
-      ⊤
-      ∧ ∃?warr.
+            ∧ decode ?x
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?x.
         ∃?wt.
-          ∃?x.
-            let ?scheme_final_scheme : ?final_term =
+          ∃?warr.
+            ⊤
+            ∧ ∃?int.
               hole
               {
                 Env :
@@ -537,17 +537,17 @@ the inference variables.
                      final_term(0) = x -> int
               }
               (?int = ?wt)
-            in decode_scheme ?scheme_final_scheme
-      ∧ decode ?x
-    ∧ ?int = ?x
-  -> ⊤
-    ∧ ∃?int.
-      ⊤
-      ∧ ∃?warr.
+              ∧ ?int = ?x
+            ∧ decode ?x
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?x.
         ∃?wt.
-          ∃?x.
-            let ?scheme_final_scheme : ?final_term =
-              hole
+          ∃?warr.
+            ⊤
+            ∧ ∃?int.
+              ⊤
+              ∧ hole
               {
                 Env :
                   warr |--> final_term
@@ -564,8 +564,8 @@ the inference variables.
                      final_term(0) = int -> int
               }
               (?int = ?x)
-            in decode_scheme ?scheme_final_scheme
-      ∧ decode ?x
+            ∧ decode ?x
+    in decode_scheme ?scheme_final_scheme
   <- let ?scheme_final_scheme : ?final_term =
       hole
       {
@@ -666,8 +666,8 @@ the inference variables.
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
       )
     in decode_scheme ?scheme_final_scheme
-  -> ∃?wu.
-      let ?scheme_final_scheme : ?final_term =
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?wu.
         hole
         {
           Env :
@@ -686,10 +686,10 @@ the inference variables.
           ∧ (∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
         )
-      in decode_scheme ?scheme_final_scheme
-  -> ∃?wt.
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
       ∃?wu.
-        let ?scheme_final_scheme : ?final_term =
+        ∃?wt.
           hole
           {
             Env :
@@ -708,13 +708,13 @@ the inference variables.
             ∃?wt/1 (?warr = ?x -> ?wt/1).
               ?wt = ?warr ∧ (∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x) ∧ decode ?x
           )
-        in decode_scheme ?scheme_final_scheme
-    ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
-      ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-  -> ∃?x.
-      ∃?wt.
-        ∃?wu.
-          let ?scheme_final_scheme : ?final_term =
+          ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+            ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?wu.
+        ∃?wt.
+          ∃?x.
             hole
             {
               Env :
@@ -737,14 +737,14 @@ the inference variables.
                 ∧ (∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x)
                 ∧ decode ?x
             )
-          in decode_scheme ?scheme_final_scheme
-      ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
-        ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-  -> ∃?wt/1.
-      ∃?x.
+          ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+            ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?wu.
         ∃?wt.
-          ∃?wu.
-            let ?scheme_final_scheme : ?final_term =
+          ∃?x.
+            ∃?wt/1.
               hole
               {
                 Env :
@@ -768,15 +768,15 @@ the inference variables.
                 ∧ (∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x)
                 ∧ decode ?x
               )
-            in decode_scheme ?scheme_final_scheme
-        ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
-          ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-  -> ∃?warr.
-      ∃?wt/1.
-        ∃?x.
-          ∃?wt.
-            ∃?wu.
-              let ?scheme_final_scheme : ?final_term =
+          ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+            ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?wu.
+        ∃?wt.
+          ∃?x.
+            ∃?wt/1.
+              ∃?warr.
                 hole
                 {
                   Env :
@@ -796,19 +796,19 @@ the inference variables.
                        final_term(0)
                 }
                 (?wt = ?warr)
-              in decode_scheme ?scheme_final_scheme
+                ∧ ∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x
+                ∧ decode ?x
           ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-    ∧ decode ?x
-    ∧ ∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x
-  -> ⊤
-    ∧ ∃?warr.
-      ∃?wt/1.
-        ∃?x.
-          ∃?wt.
-            ∃?wu.
-              let ?scheme_final_scheme : ?final_term =
-                hole
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?wu.
+        ∃?wt.
+          ∃?x.
+            ∃?wt/1.
+              ∃?warr.
+                ⊤
+                ∧ hole
                 {
                   Env :
                     warr |--> wt
@@ -829,18 +829,18 @@ the inference variables.
                        final_term(0)
                 }
                 (?int = ?wt/1 ∧ ?int = ?x)
-              in decode_scheme ?scheme_final_scheme
+                ∧ decode ?x
           ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-    ∧ decode ?x
-  -> ∃?int.
-      ⊤
-      ∧ ∃?warr.
-        ∃?wt/1.
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?wu.
+        ∃?wt.
           ∃?x.
-            ∃?wt.
-              ∃?wu.
-                let ?scheme_final_scheme : ?final_term =
+            ∃?wt/1.
+              ∃?warr.
+                ⊤
+                ∧ ∃?int.
                   hole
                   {
                     Env :
@@ -862,21 +862,21 @@ the inference variables.
                          final_term |--> int
                   }
                   (?int = ?wt/1)
-                in decode_scheme ?scheme_final_scheme
-            ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
-              ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-      ∧ decode ?x
-    ∧ ?int = ?x
-  -> ⊤
-    ∧ ∃?int.
-      ⊤
-      ∧ ∃?warr.
-        ∃?wt/1.
+                  ∧ ?int = ?x
+                ∧ decode ?x
+          ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+            ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?wu.
+        ∃?wt.
           ∃?x.
-            ∃?wt.
-              ∃?wu.
-                let ?scheme_final_scheme : ?final_term =
-                  hole
+            ∃?wt/1.
+              ∃?warr.
+                ⊤
+                ∧ ∃?int.
+                  ⊤
+                  ∧ hole
                   {
                     Env :
                       final_term |--> int
@@ -897,15 +897,15 @@ the inference variables.
                          final_term |--> int
                   }
                   (?int = ?x)
-                in decode_scheme ?scheme_final_scheme
-            ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
-              ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-      ∧ decode ?x
-  -> ⊤
-    ∧ ∃?wt.
+                ∧ decode ?x
+          ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
+            ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
       ∃?wu.
-        let ?scheme_final_scheme : ?final_term =
-          hole
+        ∃?wt.
+          ⊤
+          ∧ hole
           {
             Env :
               final_term |--> int
@@ -928,12 +928,12 @@ the inference variables.
                  final_term |--> int
           }
           (∃?wt/2 (?warr/1 = ?y -> ?wt/2). ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
-        in decode_scheme ?scheme_final_scheme
-  -> ∃?y.
-      ⊤
-      ∧ ∃?wt.
-        ∃?wu.
-          let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?wu.
+        ∃?wt.
+          ⊤
+          ∧ ∃?y.
             hole
             {
               Env :
@@ -959,13 +959,13 @@ the inference variables.
                    final_term |--> int
             }
             (∃(?warr/1 = ?y -> ?wt/2). ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
-          in decode_scheme ?scheme_final_scheme
-  -> ∃?wt/2.
-      ∃?y.
-        ⊤
-        ∧ ∃?wt.
-          ∃?wu.
-            let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?wu.
+        ∃?wt.
+          ⊤
+          ∧ ∃?y.
+            ∃?wt/2.
               hole
               {
                 Env :
@@ -993,7 +993,7 @@ the inference variables.
                      final_term |--> int
               }
               (?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
-            in decode_scheme ?scheme_final_scheme
+    in decode_scheme ?scheme_final_scheme
   
   File "error_clash_types.test", line 1, characters 23-34:
   Error:
@@ -1068,8 +1068,8 @@ a lot of those.)
           ∧ decode ?x
       )
     in decode_scheme ?scheme_final_scheme
-  -> ∃?x.
-      let ?scheme_final_scheme : ?final_term =
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?x.
         hole
         {
           Env :
@@ -1088,10 +1088,10 @@ a lot of those.)
             ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
             ∧ decode ?x
         )
-      in decode_scheme ?scheme_final_scheme
-  -> ∃?wt.
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
       ∃?x.
-        let ?scheme_final_scheme : ?final_term =
+        ∃?wt.
           hole
           {
             Env :
@@ -1111,11 +1111,11 @@ a lot of those.)
             ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
             ∧ decode ?x
           )
-        in decode_scheme ?scheme_final_scheme
-  -> ∃?warr.
-      ∃?wt.
-        ∃?x.
-          let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?x.
+        ∃?wt.
+          ∃?warr.
             hole
             {
               Env :
@@ -1131,15 +1131,15 @@ a lot of those.)
                    final_term(0) = x -> wt
             }
             (?final_term = ?warr)
-          in decode_scheme ?scheme_final_scheme
-    ∧ decode ?x
-    ∧ ∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x
-  -> ⊤
-    ∧ ∃?warr.
-      ∃?wt.
-        ∃?x.
-          let ?scheme_final_scheme : ?final_term =
-            hole
+            ∧ ∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x
+            ∧ decode ?x
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?x.
+        ∃?wt.
+          ∃?warr.
+            ⊤
+            ∧ hole
             {
               Env :
                 warr |--> final_term
@@ -1156,14 +1156,14 @@ a lot of those.)
                    final_term(0) = x -> wt
             }
             (∃(?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
-          in decode_scheme ?scheme_final_scheme
-    ∧ decode ?x
-  -> ∃?wu.
-      ⊤
-      ∧ ∃?warr.
+            ∧ decode ?x
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?x.
         ∃?wt.
-          ∃?x.
-            let ?scheme_final_scheme : ?final_term =
+          ∃?warr.
+            ⊤
+            ∧ ∃?wu.
               hole
               {
                 Env :
@@ -1183,15 +1183,15 @@ a lot of those.)
                      final_term(0) = x -> wt
               }
               (?wt/1 = ?x ∧ ?wu = ?x)
-            in decode_scheme ?scheme_final_scheme
-      ∧ decode ?x
-  -> ∃?wt/1.
-      ∃?wu.
-        ⊤
-        ∧ ∃?warr.
-          ∃?wt.
-            ∃?x.
-              let ?scheme_final_scheme : ?final_term =
+            ∧ decode ?x
+    in decode_scheme ?scheme_final_scheme
+  -> let ?scheme_final_scheme : ?final_term =
+      ∃?x.
+        ∃?wt.
+          ∃?warr.
+            ⊤
+            ∧ ∃?wu.
+              ∃?wt/1.
                 hole
                 {
                   Env :
@@ -1211,9 +1211,9 @@ a lot of those.)
                        final_term(0) = wt/1 -> wt
                 }
                 (?wt/1 = ?x)
-              in decode_scheme ?scheme_final_scheme
-        ∧ decode ?x
-    ∧ ?wu = ?x
+                ∧ ?wu = ?x
+            ∧ decode ?x
+    in decode_scheme ?scheme_final_scheme
   
   File "selfapp.test", line 1, characters 0-13:
   Error: cycle on constraint variable ?wu
