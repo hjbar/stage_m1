@@ -2,11 +2,11 @@ open ChoicePath
 open PPrint
 
 let rec print p =
-  group
-  @@
-  match p with
-  | Nil -> string "_"
-  | Return -> string "."
-  | Fail -> string "fail"
-  | Sum (i, p) -> string (string_of_int i) ^/^ print p
-  | Bind (p1, p2) -> parens (print p1) ^/^ print p2
+  let rec elements = function
+    | Nil -> string "_" :: []
+    | Return -> string "." :: []
+    | Fail -> string "fail" :: []
+    | Sum (i, p) -> string (string_of_int i) :: elements p
+    | Bind (p1, p2) -> parens (print p1) :: elements p2
+  in
+  group (flow (break 1) (elements p))
