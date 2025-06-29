@@ -174,10 +174,10 @@ type generation = {
   by_rank : variable list RankMap.t (* All young variables indexed by rank *);
   is_young : variable -> bool;
     (* True if the given variable belongs to the same
-     equivalence class as some young variable v' *)
+     equivalence class as some young variable v'. *)
 }
 
-(* Before exiting, create a generation describing the young generation *)
+(* Before exiting, create a generation describing the young generation. *)
 
 let discover_young_generation (uenv : uenv) (env : env) : generation =
   (* Young level of the env *)
@@ -187,7 +187,7 @@ let discover_young_generation (uenv : uenv) (env : env) : generation =
      all variables in the young generation *)
   let inhabitants = Env.get_pool ~rank:young env in
 
-  (* Cache to track which equivalence classes are considered young *)
+  (* Cache to track which equivalence classes have a young inhabitant. *)
   let cache = Hashtbl.create 16 in
 
   (* Compute the young generation, grouping variables by rank *)
@@ -195,10 +195,10 @@ let discover_young_generation (uenv : uenv) (env : env) : generation =
     List.fold_left
       begin
         fun by_rank var ->
-          Hashtbl.replace cache var ();
-
           let repr = UEnv.repr var uenv in
           let r = repr.rank in
+
+          Hashtbl.replace cache repr.var ();
 
           assert (repr.status <> Generic);
           assert (base_rank <= r && r <= young);
@@ -211,8 +211,8 @@ let discover_young_generation (uenv : uenv) (env : env) : generation =
       RankMap.empty inhabitants
   in
 
-  (* Returns true if [var] is part of the young generation *)
-  let is_young var = Hashtbl.mem cache var in
+  (* Returns true if [var] has a young variable in its equivalence class. *)
+  let is_young var = Hashtbl.mem cache (UEnv.repr var uenv).var in
 
   (* Final result *)
   { inhabitants; by_rank; is_young }
@@ -248,7 +248,8 @@ let update_ranks (uenv : uenv) (env : env) (generation : generation) : uenv =
         let new_uenv, repr = adjust_rank repr k !uenv in
         uenv := new_uenv;
 
-        (* If the variable is not young, stop traversal *)
+        (* If the equivalence class of the variable has only old variables,
+           we can stop traversal at this point. *)
         if not (generation.is_young var) then repr.rank
         else begin
           (* The variable must have rank [k] at this point *)
