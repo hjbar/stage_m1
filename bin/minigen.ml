@@ -13,8 +13,9 @@ let size_impl_dict = [ ("early", Early); ("late", Late) ]
 type rand_impl =
   | Naive
   | Full_removal
+  | Full_removal_with_reset
   | Local_retries
-  | Reset
+  | Local_retries_with_reset
   | Vanille
 
 let rand_impl_dict =
@@ -22,7 +23,8 @@ let rand_impl_dict =
     ("naive", Naive);
     ("full-removal", Full_removal);
     ("local-retries", Local_retries);
-    ("reset", Reset);
+    ("full-removal+reset", Full_removal_with_reset);
+    ("local-retries+reset", Local_retries_with_reset);
     ("vanille", Vanille);
   ]
 
@@ -214,8 +216,9 @@ let get_rand_impl config : (module SearchImpl) =
   match config.rand_impl with
   | Naive -> (module MRand)
   | Full_removal -> (module MRand_full_removal)
+  | Full_removal_with_reset -> (module MRand_full_removal_with_reset)
   | Local_retries -> (module MRand_local_retries)
-  | Reset -> (module MRand_local_retries_with_reset)
+  | Local_retries_with_reset -> (module MRand_local_retries_with_reset)
   | Vanille -> (module VanilleRand)
 
 
