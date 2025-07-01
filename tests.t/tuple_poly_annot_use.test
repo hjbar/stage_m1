@@ -1,0 +1,7 @@
+let (id1, id2) = (lambda x. x, lambda x. x) in
+  lambda a. lambda b. lambda c. lambda d.
+    let l1 = (id1 a) in
+    let r1 = (id1 b) in
+    let l2 = (id2 c) in
+    let r2 = (id2 d) in
+    (((l1 : int), (r1 : bool)), ((l2 : char), (r2 : string)))

@@ -93,9 +93,9 @@ to the bin/dune content.)
   $ minihell $FLAGS id_poly.test
   Input term: lambda x. x
   Generated constraint:
-    let ?scheme_final_scheme : ?final_term =
+    let ?final_scheme : ?final_term =
       ∃?x ?wt (?warr = ?x -> ?wt). ?final_term = ?warr ∧ ?wt = ?x ∧ decode ?x
-    in decode_scheme ?scheme_final_scheme
+    in decode_scheme ?final_scheme
   Inferred type: ∀α. α -> α
   Elaborated term: lambda (x : α). x
 
@@ -105,17 +105,17 @@ to the bin/dune content.)
   $ minihell $FLAGS id_poly_with_let.test
   Input term: lambda y. let id = lambda x. x in id y
   Generated constraint:
-    let ?scheme_final_scheme : ?final_term =
+    let ?final_scheme : ?final_term =
       ∃?y ?wt (?warr = ?y -> ?wt).
         ?final_term = ?warr
-        ∧ (let ?scheme_s : ?id =
+        ∧ (let ?scheme_id : ?id =
           ∃?x ?wt/2 (?warr/1 = ?x -> ?wt/2).
             ?id = ?warr/1 ∧ ?wt/2 = ?x ∧ decode ?x
         in
-          (∃?wu (?wt/1 = ?wu -> ?wt). ?scheme_s ≤ ?wt/1 ∧ ?wu = ?y)
-          ∧ decode_scheme ?scheme_s)
+          (∃?wu (?wt/1 = ?wu -> ?wt). ?scheme_id ≤ ?wt/1 ∧ ?wu = ?y)
+          ∧ decode_scheme ?scheme_id)
         ∧ decode ?y
-    in decode_scheme ?scheme_final_scheme
+    in decode_scheme ?final_scheme
   Inferred type: ∀α. α -> α
   Elaborated term:
     lambda
@@ -133,12 +133,12 @@ type, this is just an abstract/rigid type variable: `Constr
   $ minihell $FLAGS id_int.test
   Input term: lambda x. (x : int)
   Generated constraint:
-    let ?scheme_final_scheme : ?final_term =
+    let ?final_scheme : ?final_term =
       ∃?x ?wt (?warr = ?x -> ?wt).
         ?final_term = ?warr
         ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
         ∧ decode ?x
-    in decode_scheme ?scheme_final_scheme
+    in decode_scheme ?final_scheme
   Inferred type: int -> int
   Elaborated term: lambda (x : int). (x : int)
 
@@ -148,11 +148,11 @@ type, this is just an abstract/rigid type variable: `Constr
   $ minihell $FLAGS let_poly.test
   Input term: let x = lambda y. y in x
   Generated constraint:
-    let ?scheme_final_scheme : ?final_term =
-      let ?scheme_s : ?x =
+    let ?final_scheme : ?final_term =
+      let ?scheme_x : ?x =
         ∃?y ?wt (?warr = ?y -> ?wt). ?x = ?warr ∧ ?wt = ?y ∧ decode ?y
-      in ?scheme_s ≤ ?final_term ∧ decode_scheme ?scheme_s
-    in decode_scheme ?scheme_final_scheme
+      in ?scheme_x ≤ ?final_term ∧ decode_scheme ?scheme_x
+    in decode_scheme ?final_scheme
   Inferred type: ∀α. α -> α
   Elaborated term:
     let (x : ∀β. β -> β) = Λβ. lambda (y : β). y in x[α]
@@ -167,7 +167,7 @@ type, this is just an abstract/rigid type variable: `Constr
   $ minihell $FLAGS curry.test
   Input term: lambda f. lambda x. lambda y. f (x, y)
   Generated constraint:
-    let ?scheme_final_scheme : ?final_term =
+    let ?final_scheme : ?final_term =
       ∃?f ?wt (?warr = ?f -> ?wt).
         ?final_term = ?warr
         ∧ (∃?x ?wt/1 (?warr/1 = ?x -> ?wt/1).
@@ -182,7 +182,7 @@ type, this is just an abstract/rigid type variable: `Constr
             ∧ decode ?y)
           ∧ decode ?x)
         ∧ decode ?f
-    in decode_scheme ?scheme_final_scheme
+    in decode_scheme ?final_scheme
   Inferred type: ∀β. ∀γ. ∀α. ({γ * β} -> α) -> γ -> β -> α
   Elaborated term:
     lambda (f : {γ * β} -> α). lambda (x : γ). lambda (y : β). f (x, y)
@@ -193,21 +193,22 @@ type, this is just an abstract/rigid type variable: `Constr
   $ minihell $FLAGS uncurry.test
   Input term: lambda f. lambda p. let (x, y) = p in f x y
   Generated constraint:
-    let ?scheme_final_scheme : ?final_term =
+    let ?final_scheme : ?final_term =
       ∃?f ?wt (?warr = ?f -> ?wt).
         ?final_term = ?warr
         ∧ (∃?p ?wt/1 (?warr/1 = ?p -> ?wt/1).
           ?wt = ?warr/1
-          ∧ (∃?x ?y (?wt/2 = {?x * ?y}).
-            decode ?y
-            ∧ decode ?x
-            ∧ ?wt/2 = ?p
-            ∧ (∃?wu (?wt/3 = ?wu -> ?wt/1).
-              (∃?wu/1 (?wt/4 = ?wu/1 -> ?wt/3). ?wt/4 = ?f ∧ ?wu/1 = ?x)
-              ∧ ?wu = ?y))
+          ∧ (let (?scheme_x : ?x, ?scheme_y : ?y) =
+            ∃(?wt/2 = {?x * ?y}). ?wt/2 = ?p
+          in
+            (∃?wu (?wt/3 = ?wu -> ?wt/1).
+              (∃?wu/1 (?wt/4 = ?wu/1 -> ?wt/3). ?wt/4 = ?f ∧ ?scheme_x ≤ ?wu/1)
+              ∧ ?scheme_y ≤ ?wu)
+            ∧ decode_scheme ?scheme_y
+            ∧ decode_scheme ?scheme_x)
           ∧ decode ?p)
         ∧ decode ?f
-    in decode_scheme ?scheme_final_scheme
+    in decode_scheme ?final_scheme
   Inferred type: ∀β. ∀γ. ∀α. (β -> γ -> α) -> {β * γ} -> α
   Elaborated term:
     lambda
@@ -224,19 +225,19 @@ type, this is just an abstract/rigid type variable: `Constr
   $ minihell $FLAGS poly_easy_use.test
   Input term: lambda a. let id = lambda x. x in let r = id a in r
   Generated constraint:
-    let ?scheme_final_scheme : ?final_term =
+    let ?final_scheme : ?final_term =
       ∃?a ?wt (?warr = ?a -> ?wt).
         ?final_term = ?warr
-        ∧ (let ?scheme_s : ?id =
+        ∧ (let ?scheme_id : ?id =
           ∃?x ?wt/2 (?warr/1 = ?x -> ?wt/2).
             ?id = ?warr/1 ∧ ?wt/2 = ?x ∧ decode ?x
         in
-          (let ?scheme_s/1 : ?r =
-            ∃?wu (?wt/1 = ?wu -> ?r). ?scheme_s ≤ ?wt/1 ∧ ?wu = ?a
-          in ?scheme_s/1 ≤ ?wt ∧ decode_scheme ?scheme_s/1)
-          ∧ decode_scheme ?scheme_s)
+          (let ?scheme_r : ?r =
+            ∃?wu (?wt/1 = ?wu -> ?r). ?scheme_id ≤ ?wt/1 ∧ ?wu = ?a
+          in ?scheme_r ≤ ?wt ∧ decode_scheme ?scheme_r)
+          ∧ decode_scheme ?scheme_id)
         ∧ decode ?a
-    in decode_scheme ?scheme_final_scheme
+    in decode_scheme ?final_scheme
   Inferred type: ∀α. α -> α
   Elaborated term:
     lambda
@@ -252,8 +253,8 @@ type, this is just an abstract/rigid type variable: `Constr
     let id = lambda x. x in
       lambda a. lambda b. let l = id a in let r = id b in (l, r)
   Generated constraint:
-    let ?scheme_final_scheme : ?final_term =
-      let ?scheme_s : ?id =
+    let ?final_scheme : ?final_term =
+      let ?scheme_id : ?id =
         ∃?x ?wt/4 (?warr/2 = ?x -> ?wt/4).
           ?id = ?warr/2 ∧ ?wt/4 = ?x ∧ decode ?x
       in
@@ -261,22 +262,22 @@ type, this is just an abstract/rigid type variable: `Constr
           ?final_term = ?warr
           ∧ (∃?b ?wt/1 (?warr/1 = ?b -> ?wt/1).
             ?wt = ?warr/1
-            ∧ (let ?scheme_s/1 : ?l =
-              ∃?wu/1 (?wt/3 = ?wu/1 -> ?l). ?scheme_s ≤ ?wt/3 ∧ ?wu/1 = ?a
+            ∧ (let ?scheme_l : ?l =
+              ∃?wu/1 (?wt/3 = ?wu/1 -> ?l). ?scheme_id ≤ ?wt/3 ∧ ?wu/1 = ?a
             in
-              (let ?scheme_s/2 : ?r =
-                ∃?wu (?wt/2 = ?wu -> ?r). ?scheme_s ≤ ?wt/2 ∧ ?wu = ?b
+              (let ?scheme_r : ?r =
+                ∃?wu (?wt/2 = ?wu -> ?r). ?scheme_id ≤ ?wt/2 ∧ ?wu = ?b
               in
                 (∃?w1.
-                  ?scheme_s/1 ≤ ?w1
+                  ?scheme_l ≤ ?w1
                   ∧ (∃?w2.
-                    ?scheme_s/2 ≤ ?w2 ∧ (∃(?wprod = {?w1 * ?w2}). ?wt/1 = ?wprod)))
-                ∧ decode_scheme ?scheme_s/2)
-              ∧ decode_scheme ?scheme_s/1)
+                    ?scheme_r ≤ ?w2 ∧ (∃(?wprod = {?w1 * ?w2}). ?wt/1 = ?wprod)))
+                ∧ decode_scheme ?scheme_r)
+              ∧ decode_scheme ?scheme_l)
             ∧ decode ?b)
           ∧ decode ?a)
-        ∧ decode_scheme ?scheme_s
-    in decode_scheme ?scheme_final_scheme
+        ∧ decode_scheme ?scheme_id
+    in decode_scheme ?final_scheme
   Inferred type: ∀β. ∀α. α -> β -> {α * β}
   Elaborated term:
     let (id : ∀γ. γ -> γ) = Λγ. lambda (x : γ). x in
@@ -288,15 +289,14 @@ type, this is just an abstract/rigid type variable: `Constr
 
 
 
-
   $ minihell $FLAGS poly_annot_use.test
   Input term:
     let id = lambda x. x in
       lambda
       a. lambda b. let l = id a in let r = id b in ((l : int), (r : bool))
   Generated constraint:
-    let ?scheme_final_scheme : ?final_term =
-      let ?scheme_s : ?id =
+    let ?final_scheme : ?final_term =
+      let ?scheme_id : ?id =
         ∃?x ?wt/4 (?warr/2 = ?x -> ?wt/4).
           ?id = ?warr/2 ∧ ?wt/4 = ?x ∧ decode ?x
       in
@@ -304,23 +304,23 @@ type, this is just an abstract/rigid type variable: `Constr
           ?final_term = ?warr
           ∧ (∃?b ?wt/1 (?warr/1 = ?b -> ?wt/1).
             ?wt = ?warr/1
-            ∧ (let ?scheme_s/1 : ?l =
-              ∃?wu/1 (?wt/3 = ?wu/1 -> ?l). ?scheme_s ≤ ?wt/3 ∧ ?wu/1 = ?a
+            ∧ (let ?scheme_l : ?l =
+              ∃?wu/1 (?wt/3 = ?wu/1 -> ?l). ?scheme_id ≤ ?wt/3 ∧ ?wu/1 = ?a
             in
-              (let ?scheme_s/2 : ?r =
-                ∃?wu (?wt/2 = ?wu -> ?r). ?scheme_s ≤ ?wt/2 ∧ ?wu = ?b
+              (let ?scheme_r : ?r =
+                ∃?wu (?wt/2 = ?wu -> ?r). ?scheme_id ≤ ?wt/2 ∧ ?wu = ?b
               in
                 (∃?w1.
-                  (∃(?int = int). ?int = ?w1 ∧ ?scheme_s/1 ≤ ?int)
+                  (∃(?int = int). ?int = ?w1 ∧ ?scheme_l ≤ ?int)
                   ∧ (∃?w2.
-                    (∃(?bool = bool). ?bool = ?w2 ∧ ?scheme_s/2 ≤ ?bool)
+                    (∃(?bool = bool). ?bool = ?w2 ∧ ?scheme_r ≤ ?bool)
                     ∧ (∃(?wprod = {?w1 * ?w2}). ?wt/1 = ?wprod)))
-                ∧ decode_scheme ?scheme_s/2)
-              ∧ decode_scheme ?scheme_s/1)
+                ∧ decode_scheme ?scheme_r)
+              ∧ decode_scheme ?scheme_l)
             ∧ decode ?b)
           ∧ decode ?a)
-        ∧ decode_scheme ?scheme_s
-    in decode_scheme ?scheme_final_scheme
+        ∧ decode_scheme ?scheme_id
+    in decode_scheme ?final_scheme
   Inferred type: int -> bool -> {int * bool}
   Elaborated term:
     let (id : ∀α. α -> α) = Λα. lambda (x : α). x in
@@ -334,6 +334,212 @@ type, this is just an abstract/rigid type variable: `Constr
 
 
 
+  $ minihell $FLAGS tuple_poly_use.test
+  Input term:
+    let (id1, id2) = (lambda x. x, lambda x/1. x/1) in
+      lambda
+      a.
+        lambda
+        b.
+          lambda
+          c.
+            lambda
+            d.
+              let l1 = id1 a in
+                let r1 = id1 b in
+                  let l2 = id2 c in let r2 = id2 d in ((l1, r1), (l2, r2))
+  Generated constraint:
+    let ?final_scheme : ?final_term =
+      let (?scheme_id1 : ?id1, ?scheme_id2 : ?id2) =
+        ∃(?wt = {?id1 * ?id2}) ?w1/3.
+          (∃?x ?wt/9 (?warr/4 = ?x -> ?wt/9).
+            ?w1/3 = ?warr/4 ∧ ?wt/9 = ?x ∧ decode ?x)
+          ∧ (∃?w2/3.
+            (∃?x/1 ?wt/a (?warr/5 = ?x/1 -> ?wt/a).
+              ?w2/3 = ?warr/5 ∧ ?wt/a = ?x/1 ∧ decode ?x/1)
+            ∧ (∃(?wprod/3 = {?w1/3 * ?w2/3}). ?wt = ?wprod/3))
+      in
+        (∃?a ?wt/1 (?warr = ?a -> ?wt/1).
+          ?final_term = ?warr
+          ∧ (∃?b ?wt/2 (?warr/1 = ?b -> ?wt/2).
+            ?wt/1 = ?warr/1
+            ∧ (∃?c ?wt/3 (?warr/2 = ?c -> ?wt/3).
+              ?wt/2 = ?warr/2
+              ∧ (∃?d ?wt/4 (?warr/3 = ?d -> ?wt/4).
+                ?wt/3 = ?warr/3
+                ∧ (let ?scheme_l1 : ?l1 =
+                  ∃?wu/3 (?wt/8 = ?wu/3 -> ?l1). ?scheme_id1 ≤ ?wt/8 ∧ ?wu/3 = ?a
+                in
+                  (let ?scheme_r1 : ?r1 =
+                    ∃?wu/2 (?wt/7 = ?wu/2 -> ?r1).
+                      ?scheme_id1 ≤ ?wt/7 ∧ ?wu/2 = ?b
+                  in
+                    (let ?scheme_l2 : ?l2 =
+                      ∃?wu/1 (?wt/6 = ?wu/1 -> ?l2).
+                        ?scheme_id2 ≤ ?wt/6 ∧ ?wu/1 = ?c
+                    in
+                      (let ?scheme_r2 : ?r2 =
+                        ∃?wu (?wt/5 = ?wu -> ?r2). ?scheme_id2 ≤ ?wt/5 ∧ ?wu = ?d
+                      in
+                        (∃?w1.
+                          (∃?w1/1.
+                            ?scheme_l1 ≤ ?w1/1
+                            ∧ (∃?w2.
+                              ?scheme_r1 ≤ ?w2
+                              ∧ (∃(?wprod = {?w1/1 * ?w2}). ?w1 = ?wprod)))
+                          ∧ (∃?w2/1.
+                            (∃?w1/2.
+                              ?scheme_l2 ≤ ?w1/2
+                              ∧ (∃?w2/2.
+                                ?scheme_r2 ≤ ?w2/2
+                                ∧ (∃(?wprod/1 = {?w1/2 * ?w2/2}). ?w2/1 = ?wprod/1)))
+                            ∧ (∃(?wprod/2 = {?w1 * ?w2/1}). ?wt/4 = ?wprod/2)))
+                        ∧ decode_scheme ?scheme_r2)
+                      ∧ decode_scheme ?scheme_l2)
+                    ∧ decode_scheme ?scheme_r1)
+                  ∧ decode_scheme ?scheme_l1)
+                ∧ decode ?d)
+              ∧ decode ?c)
+            ∧ decode ?b)
+          ∧ decode ?a)
+        ∧ decode_scheme ?scheme_id2
+        ∧ decode_scheme ?scheme_id1
+    in decode_scheme ?final_scheme
+  Inferred type:
+    ∀α/1. ∀δ. ∀β/1. ∀γ. ∀γ/1. ∀β. ∀δ/1. ∀α.
+      α -> β -> γ -> δ -> {{α * β} * {γ * δ}}
+  Elaborated term:
+    let
+    (
+      (id1 : ∀β/2. ∀α/2. α/2 -> α/2),
+      (id2 : ∀β/2. ∀α/2. β/2 -> β/2)
+    )
+    =
+      (lambda (x : α/2). x, lambda (x/1 : β/2). x/1)
+    in
+      lambda
+      (a : α).
+        lambda
+        (b : β).
+          lambda
+          (c : γ).
+            lambda
+            (d : δ).
+              let (l1 : ∀γ/2. α) = Λγ/2. id1[γ/2, α] a in
+                let (r1 : ∀δ/2. β) = Λδ/2. id1[δ/2, β] b in
+                  let (l2 : ∀α/3. γ) = Λα/3. id2[γ, α/3] c in
+                    let (r2 : ∀β/3. δ) = Λβ/3. id2[δ, β/3] d in
+                      ((l1[δ/1], r1[γ/1]), (l2[β/1], r2[α/1]))
+
+
+
+
+  $ minihell $FLAGS tuple_poly_annot_use.test
+  Input term:
+    let (id1, id2) = (lambda x. x, lambda x/1. x/1) in
+      lambda
+      a.
+        lambda
+        b.
+          lambda
+          c.
+            lambda
+            d.
+              let l1 = id1 a in
+                let r1 = id1 b in
+                  let l2 = id2 c in
+                    let r2 = id2 d in
+                      (((l1 : int), (r1 : bool)), ((l2 : char), (r2 : string)))
+  Generated constraint:
+    let ?final_scheme : ?final_term =
+      let (?scheme_id1 : ?id1, ?scheme_id2 : ?id2) =
+        ∃(?wt = {?id1 * ?id2}) ?w1/3.
+          (∃?x ?wt/9 (?warr/4 = ?x -> ?wt/9).
+            ?w1/3 = ?warr/4 ∧ ?wt/9 = ?x ∧ decode ?x)
+          ∧ (∃?w2/3.
+            (∃?x/1 ?wt/a (?warr/5 = ?x/1 -> ?wt/a).
+              ?w2/3 = ?warr/5 ∧ ?wt/a = ?x/1 ∧ decode ?x/1)
+            ∧ (∃(?wprod/3 = {?w1/3 * ?w2/3}). ?wt = ?wprod/3))
+      in
+        (∃?a ?wt/1 (?warr = ?a -> ?wt/1).
+          ?final_term = ?warr
+          ∧ (∃?b ?wt/2 (?warr/1 = ?b -> ?wt/2).
+            ?wt/1 = ?warr/1
+            ∧ (∃?c ?wt/3 (?warr/2 = ?c -> ?wt/3).
+              ?wt/2 = ?warr/2
+              ∧ (∃?d ?wt/4 (?warr/3 = ?d -> ?wt/4).
+                ?wt/3 = ?warr/3
+                ∧ (let ?scheme_l1 : ?l1 =
+                  ∃?wu/3 (?wt/8 = ?wu/3 -> ?l1). ?scheme_id1 ≤ ?wt/8 ∧ ?wu/3 = ?a
+                in
+                  (let ?scheme_r1 : ?r1 =
+                    ∃?wu/2 (?wt/7 = ?wu/2 -> ?r1).
+                      ?scheme_id1 ≤ ?wt/7 ∧ ?wu/2 = ?b
+                  in
+                    (let ?scheme_l2 : ?l2 =
+                      ∃?wu/1 (?wt/6 = ?wu/1 -> ?l2).
+                        ?scheme_id2 ≤ ?wt/6 ∧ ?wu/1 = ?c
+                    in
+                      (let ?scheme_r2 : ?r2 =
+                        ∃?wu (?wt/5 = ?wu -> ?r2). ?scheme_id2 ≤ ?wt/5 ∧ ?wu = ?d
+                      in
+                        (∃?w1.
+                          (∃?w1/1.
+                            (∃(?int = int). ?int = ?w1/1 ∧ ?scheme_l1 ≤ ?int)
+                            ∧ (∃?w2.
+                              (∃(?bool = bool). ?bool = ?w2 ∧ ?scheme_r1 ≤ ?bool)
+                              ∧ (∃(?wprod = {?w1/1 * ?w2}). ?w1 = ?wprod)))
+                          ∧ (∃?w2/1.
+                            (∃?w1/2.
+                              (∃(?char = char). ?char = ?w1/2 ∧ ?scheme_l2 ≤ ?char)
+                              ∧ (∃?w2/2.
+                                (∃(?string = string).
+                                  ?string = ?w2/2 ∧ ?scheme_r2 ≤ ?string)
+                                ∧ (∃(?wprod/1 = {?w1/2 * ?w2/2}). ?w2/1 = ?wprod/1)))
+                            ∧ (∃(?wprod/2 = {?w1 * ?w2/1}). ?wt/4 = ?wprod/2)))
+                        ∧ decode_scheme ?scheme_r2)
+                      ∧ decode_scheme ?scheme_l2)
+                    ∧ decode_scheme ?scheme_r1)
+                  ∧ decode_scheme ?scheme_l1)
+                ∧ decode ?d)
+              ∧ decode ?c)
+            ∧ decode ?b)
+          ∧ decode ?a)
+        ∧ decode_scheme ?scheme_id2
+        ∧ decode_scheme ?scheme_id1
+    in decode_scheme ?final_scheme
+  Inferred type:
+    ∀α. ∀β. ∀γ. ∀δ.
+      int -> bool -> char -> string -> {{int * bool} * {char * string}}
+  Elaborated term:
+    let
+    (
+      (id1 : ∀β/1. ∀α/1. α/1 -> α/1),
+      (id2 : ∀β/1. ∀α/1. β/1 -> β/1)
+    )
+    =
+      (lambda (x : α/1). x, lambda (x/1 : β/1). x/1)
+    in
+      lambda
+      (a : int).
+        lambda
+        (b : bool).
+          lambda
+          (c : char).
+            lambda
+            (d : string).
+              let (l1 : ∀γ/1. int) = Λγ/1. id1[γ/1, int] a in
+                let (r1 : ∀δ/1. bool) = Λδ/1. id1[δ/1, bool] b in
+                  let (l2 : ∀α/2. char) = Λα/2. id2[char, α/2] c in
+                    let (r2 : ∀β/2. string) = Λβ/2. id2[string, β/2] d in
+                      (
+                        ((l1[δ] : int), (r1[γ] : bool)),
+                        ((l2[β] : char), (r2[α] : string))
+                      )
+
+
+
+
 ## System F
 
 We test an example where a type variable occurs in the body
@@ -342,8 +548,8 @@ of a definition but not in the inferred type scheme.
   $ minihell $FLAGS poly_silent_var.test
   Input term: let test = lambda x. (lambda z. x) (lambda y. y) in test
   Generated constraint:
-    let ?scheme_final_scheme : ?final_term =
-      let ?scheme_s : ?test =
+    let ?final_scheme : ?final_term =
+      let ?scheme_test : ?test =
         ∃?x ?wt (?warr = ?x -> ?wt).
           ?test = ?warr
           ∧ (∃?wu (?wt/1 = ?wu -> ?wt).
@@ -352,8 +558,8 @@ of a definition but not in the inferred type scheme.
             ∧ (∃?y ?wt/3 (?warr/2 = ?y -> ?wt/3).
               ?wu = ?warr/2 ∧ ?wt/3 = ?y ∧ decode ?y))
           ∧ decode ?x
-      in ?scheme_s ≤ ?final_term ∧ decode_scheme ?scheme_s
-    in decode_scheme ?scheme_final_scheme
+      in ?scheme_test ≤ ?final_term ∧ decode_scheme ?scheme_test
+    in decode_scheme ?final_scheme
   Inferred type: ∀α. ∀β. α -> α
   Elaborated term:
     let (test : ∀δ. ∀γ. γ -> γ) =
@@ -374,21 +580,21 @@ the inference variables.
   $ minihell $FLAGS --log-solver id_int.test
   Input term: lambda x. (x : int)
   Generated constraint:
-    let ?scheme_final_scheme : ?final_term =
+    let ?final_scheme : ?final_term =
       ∃?x ?wt (?warr = ?x -> ?wt).
         ?final_term = ?warr
         ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
         ∧ decode ?x
-    in decode_scheme ?scheme_final_scheme
+    in decode_scheme ?final_scheme
   Constraint solving log:
   -- hole {}
     (
-      let ?scheme_final_scheme : ?final_term =
+      let ?final_scheme : ?final_term =
         ∃?x ?wt (?warr = ?x -> ?wt).
           ?final_term = ?warr
           ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
           ∧ decode ?x
-      in decode_scheme ?scheme_final_scheme
+      in decode_scheme ?final_scheme
     )
   -> hole
     {
@@ -399,14 +605,14 @@ the inference variables.
            final_term(0)
     }
     (
-      let ?scheme_final_scheme : ?final_term =
+      let ?final_scheme : ?final_term =
         ∃?x ?wt (?warr = ?x -> ?wt).
           ?final_term = ?warr
           ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
           ∧ decode ?x
-      in decode_scheme ?scheme_final_scheme
+      in decode_scheme ?final_scheme
     )
-  -> let ?scheme_final_scheme : ?final_term =
+  -> let ?final_scheme : ?final_term =
       hole
       {
         Env :
@@ -423,8 +629,8 @@ the inference variables.
           ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
           ∧ decode ?x
       )
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?x.
         hole
         {
@@ -444,8 +650,8 @@ the inference variables.
             ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
             ∧ decode ?x
         )
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?x.
         ∃?wt.
           hole
@@ -467,8 +673,8 @@ the inference variables.
             ∧ (∃(?int = int). ?int = ?wt ∧ ?int = ?x)
             ∧ decode ?x
           )
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?x.
         ∃?wt.
           ∃?warr.
@@ -489,8 +695,8 @@ the inference variables.
             (?final_term = ?warr)
             ∧ ∃(?int = int). ?int = ?wt ∧ ?int = ?x
             ∧ decode ?x
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?x.
         ∃?wt.
           ∃?warr.
@@ -513,8 +719,8 @@ the inference variables.
             }
             (?int = ?wt ∧ ?int = ?x)
             ∧ decode ?x
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?x.
         ∃?wt.
           ∃?warr.
@@ -539,8 +745,8 @@ the inference variables.
               (?int = ?wt)
               ∧ ?int = ?x
             ∧ decode ?x
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?x.
         ∃?wt.
           ∃?warr.
@@ -565,8 +771,8 @@ the inference variables.
               }
               (?int = ?x)
             ∧ decode ?x
-    in decode_scheme ?scheme_final_scheme
-  <- let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  <- let ?final_scheme : ?final_term =
       hole
       {
         Schemes :
@@ -580,8 +786,8 @@ the inference variables.
   
       }
       (⊤)
-    in decode_scheme ?scheme_final_scheme
-  <- let ?scheme_final_scheme = ⊤
+    in decode_scheme ?final_scheme
+  <- let ?final_scheme = ⊤
     in
     hole
     {
@@ -612,23 +818,23 @@ the inference variables.
   $ minihell $FLAGS --log-solver error_clash_types.test
   Input term: (lambda x. (x : int)) (lambda y. y)
   Generated constraint:
-    let ?scheme_final_scheme : ?final_term =
+    let ?final_scheme : ?final_term =
       ∃?wu (?wt = ?wu -> ?final_term).
         (∃?x ?wt/1 (?warr = ?x -> ?wt/1).
           ?wt = ?warr ∧ (∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x) ∧ decode ?x)
         ∧ (∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
           ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
-    in decode_scheme ?scheme_final_scheme
+    in decode_scheme ?final_scheme
   Constraint solving log:
   -- hole {}
     (
-      let ?scheme_final_scheme : ?final_term =
+      let ?final_scheme : ?final_term =
         ∃?wu (?wt = ?wu -> ?final_term).
           (∃?x ?wt/1 (?warr = ?x -> ?wt/1).
             ?wt = ?warr ∧ (∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x) ∧ decode ?x)
           ∧ (∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
-      in decode_scheme ?scheme_final_scheme
+      in decode_scheme ?final_scheme
     )
   -> hole
     {
@@ -639,15 +845,15 @@ the inference variables.
            final_term(0)
     }
     (
-      let ?scheme_final_scheme : ?final_term =
+      let ?final_scheme : ?final_term =
         ∃?wu (?wt = ?wu -> ?final_term).
           (∃?x ?wt/1 (?warr = ?x -> ?wt/1).
             ?wt = ?warr ∧ (∃(?int = int). ?int = ?wt/1 ∧ ?int = ?x) ∧ decode ?x)
           ∧ (∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
-      in decode_scheme ?scheme_final_scheme
+      in decode_scheme ?final_scheme
     )
-  -> let ?scheme_final_scheme : ?final_term =
+  -> let ?final_scheme : ?final_term =
       hole
       {
         Env :
@@ -665,8 +871,8 @@ the inference variables.
           ∧ (∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
       )
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?wu.
         hole
         {
@@ -686,8 +892,8 @@ the inference variables.
           ∧ (∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
         )
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?wu.
         ∃?wt.
           hole
@@ -710,8 +916,8 @@ the inference variables.
           )
           ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?wu.
         ∃?wt.
           ∃?x.
@@ -739,8 +945,8 @@ the inference variables.
             )
           ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?wu.
         ∃?wt.
           ∃?x.
@@ -770,8 +976,8 @@ the inference variables.
               )
           ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?wu.
         ∃?wt.
           ∃?x.
@@ -800,8 +1006,8 @@ the inference variables.
                 ∧ decode ?x
           ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?wu.
         ∃?wt.
           ∃?x.
@@ -832,8 +1038,8 @@ the inference variables.
                 ∧ decode ?x
           ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?wu.
         ∃?wt.
           ∃?x.
@@ -866,8 +1072,8 @@ the inference variables.
                 ∧ decode ?x
           ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?wu.
         ∃?wt.
           ∃?x.
@@ -900,8 +1106,8 @@ the inference variables.
                 ∧ decode ?x
           ∧ ∃?y ?wt/2 (?warr/1 = ?y -> ?wt/2).
             ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?wu.
         ∃?wt.
           ⊤
@@ -928,8 +1134,8 @@ the inference variables.
                  final_term |--> int
           }
           (∃?wt/2 (?warr/1 = ?y -> ?wt/2). ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?wu.
         ∃?wt.
           ⊤
@@ -959,8 +1165,8 @@ the inference variables.
                    final_term |--> int
             }
             (∃(?warr/1 = ?y -> ?wt/2). ?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?wu.
         ∃?wt.
           ⊤
@@ -993,7 +1199,7 @@ the inference variables.
                      final_term |--> int
               }
               (?wu = ?warr/1 ∧ ?wt/2 = ?y ∧ decode ?y)
-    in decode_scheme ?scheme_final_scheme
+    in decode_scheme ?final_scheme
   
   File "error_clash_types.test", line 1, characters 23-34:
   Error:
@@ -1018,21 +1224,21 @@ a lot of those.)
   $ minihell $FLAGS --log-solver selfapp.test
   Input term: lambda x. x x
   Generated constraint:
-    let ?scheme_final_scheme : ?final_term =
+    let ?final_scheme : ?final_term =
       ∃?x ?wt (?warr = ?x -> ?wt).
         ?final_term = ?warr
         ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
         ∧ decode ?x
-    in decode_scheme ?scheme_final_scheme
+    in decode_scheme ?final_scheme
   Constraint solving log:
   -- hole {}
     (
-      let ?scheme_final_scheme : ?final_term =
+      let ?final_scheme : ?final_term =
         ∃?x ?wt (?warr = ?x -> ?wt).
           ?final_term = ?warr
           ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
           ∧ decode ?x
-      in decode_scheme ?scheme_final_scheme
+      in decode_scheme ?final_scheme
     )
   -> hole
     {
@@ -1043,14 +1249,14 @@ a lot of those.)
            final_term(0)
     }
     (
-      let ?scheme_final_scheme : ?final_term =
+      let ?final_scheme : ?final_term =
         ∃?x ?wt (?warr = ?x -> ?wt).
           ?final_term = ?warr
           ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
           ∧ decode ?x
-      in decode_scheme ?scheme_final_scheme
+      in decode_scheme ?final_scheme
     )
-  -> let ?scheme_final_scheme : ?final_term =
+  -> let ?final_scheme : ?final_term =
       hole
       {
         Env :
@@ -1067,8 +1273,8 @@ a lot of those.)
           ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
           ∧ decode ?x
       )
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?x.
         hole
         {
@@ -1088,8 +1294,8 @@ a lot of those.)
             ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
             ∧ decode ?x
         )
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?x.
         ∃?wt.
           hole
@@ -1111,8 +1317,8 @@ a lot of those.)
             ∧ (∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
             ∧ decode ?x
           )
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?x.
         ∃?wt.
           ∃?warr.
@@ -1133,8 +1339,8 @@ a lot of those.)
             (?final_term = ?warr)
             ∧ ∃?wu (?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x
             ∧ decode ?x
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?x.
         ∃?wt.
           ∃?warr.
@@ -1157,8 +1363,8 @@ a lot of those.)
             }
             (∃(?wt/1 = ?wu -> ?wt). ?wt/1 = ?x ∧ ?wu = ?x)
             ∧ decode ?x
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?x.
         ∃?wt.
           ∃?warr.
@@ -1184,8 +1390,8 @@ a lot of those.)
               }
               (?wt/1 = ?x ∧ ?wu = ?x)
             ∧ decode ?x
-    in decode_scheme ?scheme_final_scheme
-  -> let ?scheme_final_scheme : ?final_term =
+    in decode_scheme ?final_scheme
+  -> let ?final_scheme : ?final_term =
       ∃?x.
         ∃?wt.
           ∃?warr.
@@ -1213,7 +1419,7 @@ a lot of those.)
                 (?wt/1 = ?x)
                 ∧ ?wu = ?x
             ∧ decode ?x
-    in decode_scheme ?scheme_final_scheme
+    in decode_scheme ?final_scheme
   
   File "selfapp.test", line 1, characters 0-13:
   Error: cycle on constraint variable ?wu
@@ -1298,7 +1504,7 @@ There are not many programs with size 3, 4 and 5.
     lambda
     (v/6a : {δ/40 * α/41}).
       let ((u/d8 : δ/40), (v/d8 : α/41)) = v/6a in v/6a
-  Inferred type: ∀α/41. ∀δ/40. {δ/40 * α/41} -> {δ/40 * α/41}
+  Inferred type: ∀δ/40. ∀α/41. {δ/40 * α/41} -> {δ/40 * α/41}
   
   Generated term:
     lambda
@@ -1332,7 +1538,7 @@ An example of random sampling output at higher size.
         lambda
         (u/7a : α/bd). let ((x/290 : β/bd), (y/290 : γ/bd)) = x/2a in u/7a
   Inferred type:
-    ∀γ/bd. ∀β/bd. ∀α/bd. ∀δ/bd.
+    ∀β/bd. ∀γ/bd. ∀α/bd. ∀δ/bd.
       δ/bd -> {β/bd * γ/bd} -> α/bd -> α/bd
   
   Generated term:

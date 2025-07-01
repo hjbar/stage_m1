@@ -58,7 +58,7 @@ let print_term : term -> PPrint.document =
         ~def:(print_top t) ~body:(print_self u)
     | LetTuple (xtaus, t, u) ->
       Printer.let_
-        ~var:(Printer.tuple (fun (x, tau) -> print_binding x tau) xtaus)
+        ~var:(Printer.tuple (fun (x, tau) -> print_let_binding x tau) xtaus)
         ~def:(print_top t) ~body:(print_self u)
     | other -> print_next other
   and print_app t =
@@ -76,6 +76,7 @@ let print_term : term -> PPrint.document =
     @@
     match t with
     | Var x -> TeVar.print x
+    | TyApp (t, []) -> print_top t
     | Annot (t, ty) -> Printer.annot (print_top t) (print_ty ty)
     | Tuple ts -> Printer.tuple print_top ts
     | (App _ | Abs _ | Let _ | LetTuple _ | TyApp _ | TyAbs _) as other ->

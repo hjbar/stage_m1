@@ -58,7 +58,7 @@ module Make (T : Utils.Functor) = struct
 
   let exist v s c = Exist (v, s, c)
 
-  let let_ s v c1 c2 = Let ([ (s, v) ], c1, c2)
+  let let_ bindings c1 c2 = Let (bindings, c1, c2)
 
   let decode v = MapErr (Decode v, fun e -> Cycle e)
 
@@ -70,7 +70,9 @@ module Make (T : Utils.Functor) = struct
 
   let fresh_var_name x = Constraint.Var.fresh (Untyped.Var.name x)
 
-  let fresh_scheme = Constraint.SVar.fresh
+  let fresh_scheme_name x =
+    Constraint.SVar.fresh ("scheme_" ^ Untyped.Var.name x)
+
 
   (** This is a helper function to implement constraint generation for the
       [Annot] construct.
@@ -176,19 +178,20 @@ module Make (T : Utils.Functor) = struct
          and+ tyx = decode wx in
          Typed.Abs (x, tyx, t')
     | Untyped.Let (x, t, u) ->
-      (* [[let x = t in u : w]] := Let (x, s, [[t : wt]], [[u : w]](E,x ↦ s))
+      (* [[let x = t in u : w]] := Let ([(x, s)], [[t : wt]], [[u : w]](E,x ↦ s))
          where wt is a fresh variable and s is a fresh scheme variable *)
       let wt = fresh_var_name x in
-      let s = fresh_scheme "s" in
+      let s = fresh_scheme_name x in
 
       let inner_env = Env.add_scheme x s env in
 
       let+ t', (u', scheme) =
-        let_ s wt (has_type env t wt)
+        let_ [ (s, wt) ] (has_type env t wt)
         @@ let+ u' = has_type inner_env u w
            and+ scheme = decode_scheme s in
            (u', scheme)
       in
+
       Typed.Let (x, scheme, TyAbs (fst scheme, t'), u')
     | Untyped.Annot (t, ty) ->
       (* [[(t : ty) : w]] := ∃(wt = ty). [[t : wt]] /\ [[wt = w]] *)
@@ -229,38 +232,34 @@ module Make (T : Utils.Functor) = struct
 
       Typed.Tuple ts
     | Untyped.LetTuple (xs, t, u) ->
-      (* [[let (x₁, x₂ ... xₙ) = t in u : w]] :=
-         ∃w₁, w₂... wₙ.
-         ∃(wt = (w₁ * w₂ ... wₙ)).
-         [[t : wt]](E)
-         [[u : w]](E, x₁↦x₁, x₂↦w₂... xₙ↦wₙ) *)
-      let rec loop xs k =
-        match xs with
-        | [] -> k []
-        | x :: xs ->
-          let wx = fresh_var_name x in
-          exist wx None @@ loop xs @@ fun ws -> k (wx :: ws)
-      in
-
-      loop xs @@ fun ws ->
+      (* [[let (x₁, ..., xₙ) = t in u : w]] :=
+          Let ( [(s₁, w₁); ...; (sₙ, wₙ)],
+          ( [[t : wt]] ∧ wt = (w₁ * ... * wₙ) ),
+          [[u : w]](E[x₁ ↦ s₁; ...; xₙ ↦ sₙ]) ) *)
+      let wts = List.map fresh_var_name xs in
+      let sch_vars = List.map fresh_scheme_name xs in
       let wt = fresh_var "wt" in
 
-      exist wt (Some (Prod ws))
-      @@
-      let+ bindings =
-        let rec loop = function
-          | [] -> Ret (fun _sol -> [])
-          | (x, w) :: ws ->
-            let+ bindings = loop ws
-            and+ ty = decode w in
-            (x, ty) :: bindings
-        in
+      let inner_env = List.fold_right2 Env.add_scheme xs sch_vars env in
 
-        loop (List.combine xs ws)
-      and+ t' = has_type env t wt
-      and+ u' =
-        let env = List.fold_right2 Env.add_variable xs ws env in
-        has_type env u w
+      let+ t', (u', bindings) =
+        let_
+          (List.combine sch_vars wts)
+          (exist wt (Some (Prod wts)) @@ has_type env t wt)
+        @@
+        let+ u' = has_type inner_env u w
+        and+ bindings =
+          List.fold_left2
+            begin
+              fun acc x s ->
+                let+ s = decode_scheme s
+                and+ acc = acc in
+                (x, s) :: acc
+            end
+            (Ret (fun _sol -> []))
+            xs sch_vars
+        in
+        (u', List.rev bindings)
       in
 
       Typed.LetTuple (bindings, t', u')
