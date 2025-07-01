@@ -23,4 +23,4 @@ type term =
   | Let of TeVar.t * scheme * term * term
   | Annot of term * ty
   | Tuple of term list
-  | LetTuple of (TeVar.t * ty) list * term * term
+  | LetTuple of (TeVar.t * scheme) list * term * term

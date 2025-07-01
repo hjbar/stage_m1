@@ -7,7 +7,8 @@ let inference_variable w =
   group (string "?" ^^ w)
 
 (** ?s *)
-let scheme_variable s = group (string "?scheme_" ^^ s)
+let scheme_variable s =
+  group (string "?" ^^ s)
 
 (** $t -> $u *)
 let arrow t u = group @@
@@ -144,14 +145,19 @@ let instance sch_var var =
 
 (** let x1:w1, x2:w2... = $c1 in $c2 *)
 let let_sch bindings c1 c2 =
-  let binding (sch_var, var) = sch_var ^/^ colon ^/^ var in
+  let binding_ (sch_var, var) = sch_var ^/^ colon ^/^ var in
+  let bindings_ = function
+    | [] -> empty
+    | [ binding ] -> binding_ binding
+    | bindings -> surround 2 0 lparen (separate_map (comma ^^ break 1) binding_ bindings) rparen
+  in
 
   group
     begin
       group
         begin
           string "let"
-          ^/^ separate_map (comma ^^ break 1) binding bindings
+          ^/^ bindings_ bindings
           ^/^ string "="
         end
       ^^ nest 2 (break 1 ^^ c1)
