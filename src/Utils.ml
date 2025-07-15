@@ -32,16 +32,16 @@ let string_of_doc doc =
   Buffer.contents buf
 
 
-let get_section header doc =
+let with_section header doc =
   let open PPrint in
   let with_header header doc =
-    string header ^^ colon ^^ nest 2 (group (hardline ^^ doc))
+    string header ^^ colon ^^ nest 2 (group (break 1 ^^ doc))
   in
-  with_header header doc ^^ hardline ^^ hardline
+  with_header header doc ^^ hardline
 
 
 let print_section header doc =
-  doc |> get_section header |> string_of_doc |> prerr_string
+  doc |> with_section header |> string_of_doc |> prerr_string
 
 
 module Variables () = struct

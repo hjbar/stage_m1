@@ -237,8 +237,9 @@ let get_seq_impl config : (module SearchImpl) =
            if log_path then begin
              path
              |> ChoicePathPrinter.print
+             |> Utils.with_section "Choice path"
              |> Utils.string_of_doc
-             |> Printf.printf "Choice path: %s\n%!"
+             |> print_string
            end;
            v )
   end in
@@ -266,7 +267,7 @@ let generate config (module M : SearchImpl) =
 
 let produce_doc_of_term config (term, scheme) =
   let term_doc =
-    Utils.get_section "Generated term" (TypedPrinter.print_term term)
+    Utils.with_section "Generated term" (TypedPrinter.print_term term)
   in
 
   match config.types with
@@ -274,7 +275,7 @@ let produce_doc_of_term config (term, scheme) =
   | true ->
     let open PPrint in
     term_doc
-    ^^ Utils.get_section "Inferred type" (TypedPrinter.print_scheme scheme)
+    ^^ Utils.with_section "Inferred type" (TypedPrinter.print_scheme scheme)
 
 
 let produce_terms config =
@@ -287,8 +288,7 @@ let run_display config =
        term
        |> produce_doc_of_term config
        |> Utils.string_of_doc
-       |> print_endline
-       |> print_newline )
+       |> print_endline )
 
 
 let pp_s ppf s = Printf.fprintf ppf "%.2fs" s

@@ -9,6 +9,7 @@ module Make (T : Utils.Functor) = struct
       PPrint.group
       @@
       match t with
+      | Loc (_loc, t) -> print_self t
       | Abs (x, t) -> Printer.lambda ~input:(Var.print x) ~body:(print_self t)
       | Let (x, t, u) ->
         Printer.let_ ~var:(Var.print x) ~def:(print_top t) ~body:(print_self u)
@@ -23,13 +24,15 @@ module Make (T : Utils.Functor) = struct
       PPrint.group
       @@
       match t with
+      | Loc (_loc, t) -> print_self t
       | App (t, u) -> Printer.app (print_self t) (print_next u)
       | other -> print_next other
     and print_atom t =
+      let print_self = print_atom in
       PPrint.group
       @@
       match t with
-      | Loc (_loc, t) -> print_top t
+      | Loc (_loc, t) -> print_self t
       | Var x -> Var.print x
       | Annot (t, ty) -> Printer.annot (print_top t) (TypedPrinter.print_ty ty)
       | Tuple ts -> Printer.tuple print_top ts

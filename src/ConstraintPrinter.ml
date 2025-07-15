@@ -4,20 +4,23 @@ module Make (T : Utils.Functor) = struct
   open SatConstraint.Make (T)
 
   let print_var (v : Constraint.variable) : PPrint.document =
-    Printer.inference_variable (Constraint.Var.print v)
+    v |> Constraint.Var.print |> Printer.inference_variable
 
 
   let print_sch_var (sch_var : Constraint.scheme_variable) : PPrint.document =
-    Printer.scheme_variable (Constraint.SVar.print sch_var)
+    sch_var |> Constraint.SVar.print |> Printer.scheme_variable
 
 
   let print_sat_constraint (c : sat_constraint) : PPrint.document =
     let rec print_top = fun c -> print_left_open c
     and print_left_open =
+      let print_self = print_left_open in
       let print_next = print_conj in
-
-      fun ac ->
+      function
+      | Loc (_, c) -> print_self c
+      | Exist _ as ac ->
         let rec peel = function
+          | Loc (_, c) -> peel c
           | Exist (v, s, c) ->
             let binding =
               (print_var v, Option.map (Structure.print print_var) s)
@@ -25,26 +28,30 @@ module Make (T : Utils.Functor) = struct
             let bindings, body = peel c in
 
             (binding :: bindings, body)
-          | other -> ([], print_next other)
+          | other -> ([], print_self other)
         in
-
         let bindings, body = peel ac in
-        if List.is_empty bindings then body else Printer.exist bindings body
-    and print_conj =
-      let print_next = print_atom in
-
-      function
-      | Conj cs -> Printer.conjunction (List.map print_next cs)
+        Printer.exist bindings body
       | Let (bindings, c1, c2) ->
         let print_binding (sch_var, var) =
           (print_sch_var sch_var, print_var var)
         in
         Printer.let_sch
           (List.map print_binding bindings)
-          (print_next c1) (print_next c2)
+          (print_top c1) (print_self c2)
       | other -> print_next other
-    and print_atom = function
-      | Loc (_loc, c) -> print_top c
+    and print_conj =
+      let print_self = print_conj in
+      let print_next = print_atom in
+
+      function
+      | Loc (_loc, c) -> print_self c
+      | Conj cs -> Printer.conjunction (List.map print_next cs)
+      | other -> print_next other
+    and print_atom =
+      let print_self = print_atom in
+      function
+      | Loc (_loc, c) -> print_self c
       | Decode v -> Printer.decode (print_var v)
       | False -> Printer.false_
       | Eq (v1, v2) -> Printer.eq (print_var v1) (print_var v2)
@@ -60,26 +67,28 @@ module Make (T : Utils.Functor) = struct
   let print_sat_constraint_in_context
     ~(env : PPrint.document) (c : sat_constraint) (k : sat_cont) :
     PPrint.document =
-    let rec print_cont = function
+    let rec print_cont ctx = function
       | frame :: rest -> begin
-        let rest = print_cont rest in
-
-        match frame with
-        | KConj1 c2 -> Printer.conjunction [ rest; print_sat_constraint c2 ]
-        | KConj2 -> Printer.conjunction [ Printer.true_; rest ]
-        | KExist v -> Printer.exist [ (print_var v, None) ] rest
-        | KLet1 (bindings, c2) ->
-          let print_binding (sch_var, var) =
-            (print_sch_var sch_var, print_var var)
-          in
-          Printer.let_sch
-            (List.map print_binding bindings)
-            rest (print_sat_constraint c2)
-        | KLet2 -> Printer.let_sch_2 rest
+        let ctx =
+          match frame with
+          | KConj1 c2 -> Printer.conjunction [ ctx; print_sat_constraint c2 ]
+          | KConj2 -> Printer.conjunction [ Printer.true_; ctx ]
+          | KExist v -> Printer.exist [ (print_var v, None) ] ctx
+          | KLet1 (bindings, c2) ->
+            let print_binding (sch_var, var) =
+              (print_sch_var sch_var, print_var var)
+            in
+            Printer.let_sch
+              (List.map print_binding bindings)
+              ctx (print_sat_constraint c2)
+          | KLet2 sch_vars ->
+            Printer.let_sch_2 (List.map print_sch_var sch_vars) ctx
+        in
+        print_cont ctx rest
       end
-      | [] -> Printer.hole ~env (print_sat_constraint c)
+      | [] -> ctx
     in
-    print_cont k
+    print_cont (Printer.hole ~env (print_sat_constraint c)) k
 
 
   let print_constraint (type a e) (c : (a, e) Constraint.t) : PPrint.document =
