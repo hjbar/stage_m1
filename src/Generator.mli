@@ -1,4 +1,4 @@
-module Make (M : Utils.MonadPlus) : sig
+module Make (M : Choice.Intf) : sig
   module Untyped := Untyped.Make(M)
   module Constraint := Constraint.Make(M)
   module Infer := Infer.Make(M)

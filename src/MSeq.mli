@@ -1,4 +1,4 @@
-include Utils.MonadPlus
+include Choice.Intf
 
 (** We demand that [MSeq.run e] returns the finite list of solutions for [e],
     for example
@@ -10,3 +10,5 @@ include Utils.MonadPlus
     ]}
     should be the list [[1; 2; 3]] -- or maybe the same elements in some other
     order. *)
+
+val run' : 'a t -> ChoicePath.t -> (ChoicePath.t * 'a) Seq.t

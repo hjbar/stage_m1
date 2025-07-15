@@ -1303,7 +1303,7 @@ fine if your own implementation produces different (sensible) results.
 
 There are not many programs with size 3, 4 and 5.
 
-  $ minigen --search exhaustive --types --size 2 --count 100
+  $ minigen --exhaustive --types --size 2 --count 100
   Generated term:
     lambda (x/5 : α/1). x/5
   
@@ -1311,9 +1311,10 @@ There are not many programs with size 3, 4 and 5.
     ∀α/1. α/1 -> α/1
   
   
+  
 
 
-  $ minigen --search exhaustive --types --size 3 --count 100
+  $ minigen --exhaustive --types --size 3 --count 100
   Generated term:
     lambda (v/14 : α/7). lambda (u/19 : β/7). v/14
   
@@ -1329,9 +1330,10 @@ There are not many programs with size 3, 4 and 5.
     ∀γ/7. ∀δ/7. δ/7 -> γ/7 -> γ/7
   
   
+  
 
 
-  $ minigen --search exhaustive --types --size 4 --count 100
+  $ minigen --exhaustive --types --size 4 --count 100
   Generated term:
     lambda
     (v/6a : δ/2a). lambda (w/86 : β/2b). lambda (z/8c : α/2b). v/6a
@@ -1421,6 +1423,7 @@ There are not many programs with size 3, 4 and 5.
   
   Inferred type:
     ∀β/53. β/53 -> β/53
+  
   
   
 
@@ -1539,8 +1542,9 @@ An example of random sampling output at higher size.
     ∀δ/2bf. δ/2bf -> δ/2bf
   
   
+  
 
-  $ dune exec -- minigen --search exhaustive --types --size 10 --count 1
+  $ dune exec -- minigen --exhaustive --types --size 10 --count 1
   Generated term:
     (lambda
     (
@@ -1558,5 +1562,105 @@ An example of random sampling output at higher size.
   Inferred type:
     ∀δ/bea8. ∀α/bea9. ∀β/bea9.
       δ/bea8 -> β/bea9 -> α/bea9 -> δ/bea8
+  
+  
+  
+
+
+## Choice paths
+
+Choice paths make it possible to restart the exhaustive enumeration of minigen in an arbitrary position, instead of restarting from the first term of the given size. This is useful for bug reproducibility purposes.
+
+(We could support the same option for random rather than exhaustive enumeration, but this requires more work on MRand which we have not done for now.)
+
+We can use the option `--log-choice-path` to print the "choice path" for each enumerated element:
+
+  $ minigen --size 4 --exhaustive --count 1000 --log-choice-path
+  Choice path: (2 .) (2 .) (2 .) (0 0 .) .
+  Generated term:
+    lambda
+    (v/6a : δ/2a). lambda (w/86 : β/2b). lambda (z/8c : α/2b). v/6a
+  
+  
+  
+  Choice path: (2 .) (2 .) (2 .) (0 1 .) .
+  Generated term:
+    lambda
+    (v/6a : α/2c). lambda (w/86 : γ/2b). lambda (z/8c : δ/2b). w/86
+  
+  
+  
+  Choice path: (2 .) (2 .) (2 .) (0 2 .) .
+  Generated term:
+    lambda
+    (v/6a : δ/2c). lambda (w/86 : γ/2c). lambda (z/8c : β/2c). z/8c
+  
+  
+  
+  Choice path: (2 .) (3 .) (0 0 .) (0 0 .) .
+  Generated term:
+    lambda (v/6a : α/32). let (z/a0 : α/32) = v/6a in v/6a
+  
+  
+  
+  Choice path: (2 .) (3 .) (0 0 .) (0 1 .) .
+  Generated term:
+    lambda (v/6a : β/32). let (z/a0 : β/32) = v/6a in z/a0
+  
+  
+  
+  Choice path: (2 .) (4 (0 .) .) (0 0 .) (0 0 .) .
+  Generated term:
+    lambda (v/6a : γ/39). (v/6a, v/6a)
+  
+  
+  
+  Choice path: (2 .) (5 (0 .) .) (0 0 .) (0 0 .) .
+  Generated term:
+    lambda
+    (v/6a : {δ/40 * α/41}).
+      let ((u/d8 : δ/40), (v/d8 : α/41)) = v/6a in v/6a
+  
+  
+  
+  Choice path: (2 .) (5 (0 .) .) (0 0 .) (0 1 .) .
+  Generated term:
+    lambda
+    (v/6a : {β/41 * γ/41}).
+      let ((u/d8 : β/41), (v/d8 : γ/41)) = v/6a in u/d8
+  
+  
+  
+  Choice path: (2 .) (5 (0 .) .) (0 0 .) (0 2 .) .
+  Generated term:
+    lambda
+    (v/6a : {α/42 * δ/41}).
+      let ((u/d8 : α/42), (v/d8 : δ/41)) = v/6a in v/d8
+  
+  
+  
+  Choice path: (3 .) (2 .) (0 0 .) (0 0 .) .
+  Generated term:
+    let (u/ef : ∀γ/53. γ/53 -> γ/53) =
+      Λγ/53. lambda (z/104 : γ/53). z/104
+    in
+      u/ef[β/53]
+  
+  
+  
+We can then restart from an arbitrary point in the enumeration using the `--start-choice-path <string>` option:
+
+  $ minigen --size 4 --exhaustive --count 1000 --start-choice-path "(2 .) (5 (0 .) .) (0 0 .) (0 2 .) ."
+  Generated term:
+    lambda (x/1 : {α * β}). let ((y/1 : α), (z : β)) = x/1 in y/1
+  
+  
+  
+  Generated term:
+    let (y/18 : ∀δ/11. δ/11 -> δ/11) =
+      Λδ/11. lambda (x/2d : δ/11). x/2d
+    in
+      y/18[γ/11]
+  
   
   

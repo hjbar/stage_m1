@@ -10,17 +10,15 @@ type size_impl =
 
 let size_impl_dict = [ ("early", Early); ("late", Late) ]
 
-type search_impl =
-  | Exhaustive
+type rand_impl =
   | Naive
   | Full_removal
   | Local_retries
   | Reset
   | Vanille
 
-let search_impl_dict =
+let rand_impl_dict =
   [
-    ("exhaustive", Exhaustive);
     ("naive", Naive);
     ("full-removal", Full_removal);
     ("local-retries", Local_retries);
@@ -47,7 +45,10 @@ type config = {
   untyped_impl : untyped_impl;
   size : int;
   size_impl : size_impl;
-  search_impl : search_impl;
+  exhaustive : bool;
+  exhaustive_path : ChoicePath.t option;
+  log_choice_path : bool;
+  rand_impl : rand_impl;
   count : int;
   benchmark : int option;
   seed : int option;
@@ -68,7 +69,7 @@ let pp_config ppf config =
       \  untyped_impl = %a;\n\
       \  size = %a;\n\
       \  size_impl = %a;\n\
-      \  search_impl = %a;\n\
+      \  rand_impl = %a;\n\
       \  count = %a;\n\
       \  seed = %a;\n\
       \  benchmark = %a;\n\
@@ -77,7 +78,7 @@ let pp_config ppf config =
       (pp_dict_val untyped_impl_dict) config.untyped_impl
       pp_int config.size
       (pp_dict_val size_impl_dict) config.size_impl
-      (pp_dict_val search_impl_dict) config.search_impl
+      (pp_dict_val rand_impl_dict) config.rand_impl
       pp_int config.count
       (pp_opt pp_int) config.seed
       (pp_opt pp_int) config.benchmark
@@ -105,7 +106,10 @@ let config =
   let types = ref false in
   let untyped_impl = ref Gasche in
   let size = ref 10 in
-  let search_impl = ref Naive in
+  let exhaustive = ref false in
+  let exhaustive_path = ref None in
+  let log_choice_path = ref false in
+  let rand_impl = ref Naive in
   let size_impl = ref Late in
   let count = ref 1 in
   let seed = ref None in
@@ -113,6 +117,20 @@ let config =
   let msg = ref None in
   let fmt fmt_str = Printf.sprintf fmt_str in
   let usage = fmt "Usage: %s [options]" Sys.argv.(0) in
+
+  let choice_path str =
+    let path =
+      try
+        str
+        |> Lexing.from_string
+        |> ChoicePathParser.path_eof ChoicePathLexer.read
+      with _ ->
+        Printf.ksprintf
+          (fun s -> raise (Arg.Bad s))
+          "--start-choice-path: invalid choice path string %S" str
+    in
+    exhaustive_path := Some path
+  in
 
   let spec =
     Arg.align
@@ -125,8 +143,20 @@ let config =
           fmt "<int> Size of generated terms (default %d)" !size );
         arg_from_dict ~option:"--size-cut" ~doc:"size-cut implementation"
           size_impl_dict size_impl;
-        arg_from_dict ~option:"--search" ~doc:"search implementation"
-          search_impl_dict search_impl;
+        ( "--exhaustive",
+          Arg.Set exhaustive,
+          fmt " Exhaustive rather than random generation (default %b)"
+            !exhaustive );
+        ( "--start-choice-path",
+          Arg.String choice_path,
+          "<string> Starting choice path for enumeration (only supported in \
+           --exhaustive mode)" );
+        ( "--log-choice-path",
+          Arg.Set log_choice_path,
+          " Log the choice path of each enumerated element (only supported in \
+           --exhaustive mode)" );
+        arg_from_dict ~option:"--rand" ~doc:"random search implementation"
+          rand_impl_dict rand_impl;
         ( "--count",
           Arg.Set_int count,
           fmt "<int> Number of terms to generate. (default '%d')" !count );
@@ -151,7 +181,10 @@ let config =
     untyped_impl = !untyped_impl;
     size = !size;
     size_impl = !size_impl;
-    search_impl = !search_impl;
+    exhaustive = !exhaustive;
+    exhaustive_path = !exhaustive_path;
+    log_choice_path = !log_choice_path;
+    rand_impl = !rand_impl;
     count = !count;
     seed = !seed;
     benchmark = !benchmark;
@@ -166,7 +199,7 @@ let () =
 
 
 module type SearchImpl = sig
-  include Utils.MonadPlus
+  include Choice.Intf
 
   val tries : int ref
 end
@@ -177,14 +210,43 @@ module ExhaustiveSearch = struct
   let tries = ref 1
 end
 
-let get_search_impl config : (module SearchImpl) =
-  match config.search_impl with
-  | Exhaustive -> (module ExhaustiveSearch)
+let get_rand_impl config : (module SearchImpl) =
+  match config.rand_impl with
   | Naive -> (module MRand)
   | Full_removal -> (module MRand_full_removal)
   | Local_retries -> (module MRand_local_retries)
   | Reset -> (module MRand_local_retries_with_reset)
   | Vanille -> (module VanilleRand)
+
+
+let get_seq_impl config : (module SearchImpl) =
+  let module MSeq' = struct
+    include MSeq
+
+    let tries = ref 1
+
+    let run s =
+      let start_path =
+        match config.exhaustive_path with
+        | None -> ChoicePath.Nil
+        | Some p -> p
+      in
+      let log_path = config.log_choice_path in
+      run' s start_path
+      |> Seq.map (fun (path, v) ->
+           if log_path then begin
+             path
+             |> ChoicePathPrinter.print
+             |> Utils.string_of_doc
+             |> Printf.printf "Choice path: %s\n%!"
+           end;
+           v )
+  end in
+  (module MSeq')
+
+
+let get_search_impl config : (module SearchImpl) =
+  if config.exhaustive then get_seq_impl config else get_rand_impl config
 
 
 let generate config (module M : SearchImpl) =
@@ -216,18 +278,17 @@ let produce_doc_of_term config (term, scheme) =
 
 
 let produce_terms config =
-  get_search_impl config
-  |> generate config
-  |> Seq.take config.count
-  |> Seq.map (produce_doc_of_term config)
-  |> List.of_seq
+  get_search_impl config |> generate config |> Seq.take config.count
 
 
 let run_display config =
   produce_terms config
-  |> PPrint.(separate (hardline ^^ hardline))
-  |> Utils.string_of_doc
-  |> print_endline
+  |> Seq.iter (fun term ->
+       term
+       |> produce_doc_of_term config
+       |> Utils.string_of_doc
+       |> print_endline
+       |> print_newline )
 
 
 let pp_s ppf s = Printf.fprintf ppf "%.2fs" s
@@ -268,7 +329,7 @@ let run_benchmark config ~nb_iters =
     Printf.eprintf "Iteration % 3d/%-3d: %!" i nb_iters;
     let time_before = Unix.gettimeofday () in
     let tries_before = get_tries config in
-    ignore (produce_terms config);
+    ignore (produce_terms config |> List.of_seq);
     let time_after = Unix.gettimeofday () in
     let tries_after = get_tries config in
     let time = time_after -. time_before in

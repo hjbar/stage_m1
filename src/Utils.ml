@@ -104,24 +104,6 @@ module type Functor = sig
   val map : ('a -> 'b) -> 'a t -> 'b t
 end
 
-module type MonadPlus = sig
-  include Functor
-
-  val return : 'a -> 'a t
-
-  val bind : 'a t -> ('a -> 'b t) -> 'b t
-
-  val sum : 'a t list -> 'a t
-
-  val fail : 'a t
-
-  val one_of : 'a array -> 'a t
-
-  val delay : (unit -> 'a t) -> 'a t
-
-  val run : 'a t -> 'a Seq.t
-end
-
 module Empty = struct
   type 'a t = |
 
