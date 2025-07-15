@@ -1,5 +1,0 @@
-(ocamllex UntypedLexer)
-
-(menhir
-  (modules UntypedParser)
-  (flags --explain))

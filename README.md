@@ -48,11 +48,12 @@ generation of well-typed programs?
 In this project, we implement a *simple* constraint-based type
 inference engine, basically a miniature version of Inferno
 ( https://inria.hal.science/hal-01081233 ,
-https://gitlab.inria.fr/fpottier/inferno ) for a small simply-typed
-lambda-calculus (no ML-style polymorphism), and then turn it into
-a random generator of well-typed programs.
+https://gitlab.inria.fr/fpottier/inferno ) for a small
+system-F (with ML-style polymorphism), and then turn it
+into a random generator of well-typed programs.
 
-See the corresponding technical report at:
+See the corresponding technical report
+(for simply-typed lambda-calculus) at :
 <https://inria.hal.science/hal-04607309>
 
 
@@ -60,14 +61,14 @@ See the corresponding technical report at:
 
 This project contains a simple type inference engine in the spirit of
 Inferno, with a type `Untyped.term` of untyped terms, a type
-`STLC.term` of explicitly-typed terms, a type `('a, 'e) Constraint.t`
+`Typed.term` of explicitly-typed terms, a type `('a, 'e) Constraint.t`
 of constraints that produce elaboration witnesses of type `'a`.
 
 #### Type inference a la inferno
 
 The general idea is to implement a constraint generator of type
 
-    Untyped.term -> (STLC.term, type_error) Constraint.t
+    Untyped.term -> (Typed.term * Typed.scheme, type_error) Constraint.t
 
 and a constraint solving function of type
 
@@ -81,11 +82,6 @@ the untyped language, that produces a "witness of well-typedness" in
 the form of an explicitly-typed term -- presumably an annotation of
 the original program.
 
-(To keep the project difficulty manageable, our "simple type inference
-engine" does not handle ML-style polymorphism, or in fact any sort of
-polymorphism. We are implementing type inference for the simply-typed
-lambda-calculus.)
-
 #### Abstracting over an effect
 
 But then there is a twist: we add to the language of untyped terms
@@ -97,7 +93,7 @@ in OCaml modules `Make(T : Utils.Functor)` parametrized over `T`.
 
 The constraint-generation function is unchanged.
 
-    Untyped.term -> (STLC.term, type_error) Constraint.t
+    Untyped.term -> (Typed.term, type_error) Constraint.t
 
 For constraint solving, however, new terms of the form
   `Do (p : (a, e) Constraint.t T.t)`
@@ -162,9 +158,8 @@ wrote naive implementations of two natural variants:
 
    + `minigen`: a toy generator of well-typed terms
 
-- `src/`: the bulk of the code.  `src/*.{ml,mli}` are the more
-   important/interesting modules. `src/support/*.{ml,mli}` has the
-   less interesting support code.
+- `src/`: the bulk of the code. The more important/interesting
+  modules are the following:
 
    + `Generator.ml,mli`: the random term generator
 
@@ -177,10 +172,10 @@ wrote naive implementations of two natural variants:
 
    + `Solver.ml,mli`: the constraint solver
 
-   + `STLC.ml`: the syntax of types and well-typed terms
+   + `Typed.ml`: the syntax of types and well-typed terms
 
    + `Structure.ml`: the definition of type-formers
-     in the type system. This is used in `STLC.ml`,
+     in the type system. This is used in `Typed.ml`,
      but also in constraints that manipulate types
      containing inference variables.
 
@@ -190,8 +185,7 @@ wrote naive implementations of two natural variants:
 
    + `Utils.ml`: useful bits and pieces.
 
-   + `support/`: the boring modules that help for debugging and
-      testing.
+   + the following modules help for debugging and testing.
      
      * `ConstraintPrinter.ml,mli`: a pretty-printer for constraints
 
@@ -209,7 +203,7 @@ wrote naive implementations of two natural variants:
        well-typed terms). This simpler type (no GADTs in sight) is
        used under the hood for simplification and pretty-printing.
 
-    * `STLCPrinter.ml,mli`: a pretty-printer for explicitly-typed
+    * `TypedPrinter.ml,mli`: a pretty-printer for explicitly-typed
       terms.
 
     * `UntypedLexer.mll`: an `ocamllex` lexer for the untyped

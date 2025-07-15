@@ -1,0 +1,1 @@
+let test = lambda x. (lambda z. x) (lambda y. y) in test

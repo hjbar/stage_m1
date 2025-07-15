@@ -1,4 +1,4 @@
-module TyVar : module type of Utils.Variables()
+module TyVar : module type of Utils.Variables ()
 
 type ('v, 'a) t_ =
   | Var of 'v
@@ -6,11 +6,14 @@ type ('v, 'a) t_ =
   | Prod of 'a list
 
 type 'a raw = (string, 'a) t_
+
 type 'a t = (TyVar.t, 'a) t_
 
 val iter : ('a -> unit) -> ('v, 'a) t_ -> unit
 
 val map : ('a -> 'b) -> ('v, 'a) t_ -> ('v, 'b) t_
+
+val fold : ('acc -> 'a -> 'acc) -> 'acc -> ('v, 'a) t_ -> 'acc
 
 val merge : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t option
 

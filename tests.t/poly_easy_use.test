@@ -1,0 +1,4 @@
+lambda a.
+  let id = lambda x. x in
+  let r = id a in
+  r

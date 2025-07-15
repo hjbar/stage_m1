@@ -13,53 +13,59 @@ let is_empty = function
   | Fail -> true
   | _ -> false
 
+
 let return v = Return v
+
 let fail = Fail
+
 let delay f = Delay (Lazy.from_fun f)
-let map f t =
-  if is_empty t then Fail
-  else Map (t, f)
-let bind t f =
-  if is_empty t then Fail
-  else Bind (t, f)
+
+let map f t = if is_empty t then Fail else Map (t, f)
+
+let bind t f = if is_empty t then Fail else Bind (t, f)
 
 let sum ts =
   match List.filter (fun t -> not (is_empty t)) ts with
   | [] -> Fail
   | ts -> Sum ts
 
+
 let one_of arr = One_of arr
 
-let rec next : type a . a t -> a option * a t = fun t -> match t with
-  | Return x -> Some x, t
-  | Fail -> None, t
+let rec next : type a. a t -> a option * a t =
+ fun t ->
+  match t with
+  | Return x -> (Some x, t)
+  | Fail -> (None, t)
   | Delay f -> next (Lazy.force f)
   | Map (t, f) ->
-    let o, t = next t in Option.map f o, map f t
+    let o, t = next t in
+    (Option.map f o, map f t)
   | One_of arr ->
-    if arr = [| |] then None, Fail
-    else Some arr.(Random.int (Array.length arr)), t
+    if arr = [||] then (None, Fail)
+    else (Some arr.(Random.int (Array.length arr)), t)
   | Sum ts ->
-    if ts = [] then None, Fail
+    if ts = [] then (None, Fail)
     else begin
       let arr = Array.of_list ts in
       let i = Random.int (Array.length arr) in
-      let (o, t) = next arr.(i) in
+      let o, t = next arr.(i) in
       arr.(i) <- t;
-      o, sum (Array.to_list arr)
+      (o, sum (Array.to_list arr))
     end
-  | Bind (tt, f) ->
-    let (o, tt) = next tt in
+  | Bind (tt, f) -> (
+    let o, tt = next tt in
     match o with
-    | None -> None, Bind (tt, f)
-    | Some t -> fst (next (f t)), Bind (tt, f)
+    | None -> (None, Bind (tt, f))
+    | Some t -> (fst (next (f t)), Bind (tt, f)) )
+
 
 let tries = ref 1
 
-let rec run (gen : 'a t) : 'a Seq.t = fun () ->
+let rec run (gen : 'a t) : 'a Seq.t =
+ fun () ->
   incr tries;
   let o, gen = next gen in
   match o with
   | None -> run gen ()
   | Some v -> Seq.Cons (v, run gen)
-
