@@ -30,6 +30,7 @@ type config = {
   filter_impl : filter_impl;
   size : int;
   count : int;
+  untyped_count : int;
 }
 
 let pp_config ppf config =
@@ -68,6 +69,7 @@ let config =
   let search_impl = ref (Exhaustive : search_impl) in
   let size = ref 4 in
   let count = ref 1000 in
+  let untyped_count = ref 1000 in
   let benchmark = ref None in
   let msg = ref None in
   let fmt fmt_str = Printf.sprintf fmt_str in
@@ -86,6 +88,10 @@ let config =
         ( "--count",
           Arg.Set_int count,
           fmt "<int> Number of terms to generate. (default '%d')" !count );
+        ( "--untyped-count",
+          Arg.Set_int untyped_count,
+          fmt "<int> Number of untyped terms to generate (for [--filter late]).\
+               (default '%d')" !untyped_count );
         ( "--benchmark",
           Arg.Int (fun s -> benchmark := Some s),
           "<int> Run several times and provide performance metrics. (optional)"
@@ -104,6 +110,7 @@ let config =
     search_impl = !search_impl;
     size = !size;
     count = !count;
+    untyped_count = !untyped_count;
   }
 
 
@@ -111,7 +118,6 @@ let search_impl config : (module Choice.Intf) =
   match config.search_impl with
   | Exhaustive -> (module MSeq)
   | Sampling -> (module MRand_full_removal_with_reset)
-
 
 let generate config =
   let module MSearch = (val search_impl config) in
@@ -154,35 +160,62 @@ let generate config =
       Annot (t, ty)
     | Loc (_loc, t) -> unfold t
   in
-  let typed =
-    match config.filter_impl with
-    | Early -> untyped |> Gen.typed_cut_early ~size:config.size |> MSearch.run
-    | Late ->
-      untyped
-      |> Gen.cut_size ~size:config.size
-      |> unfold
-      |> MSearch.run
-      |> Seq.concat_map (fun untyped ->
-           untyped
-           |> Gen.constraint_
-           |> Gen.solve
-           |> MSearch.run
-           |> Seq.filter_map (function
-                | Ok v -> Some v
-                | Error _ -> None ) )
+  match config.filter_impl with
+  | Early ->
+    untyped
+    |> Gen.typed_cut_early ~size:config.size
+    |> MSearch.run
+    |> Seq.map (fun v -> Ok v)
+  | Late ->
+    let untyped =
+      let run =
+        untyped
+        |> Gen.cut_size ~size:config.size
+        |> unfold
+        |> MSearch.run
+      in
+      match config.search_impl with
+      | Exhaustive ->
+        run
+      | Sampling ->
+        run
+        |> Seq.take 1
+        |> Seq.cycle
+    in
+    untyped
+    |> Seq.concat_map (fun untyped ->
+         untyped
+         |> Gen.constraint_
+         |> Gen.solve
+         |> MSearch.run
+         |> Seq.map (function
+              | Ok v -> Ok v
+              | Error _ -> Error ()) )
+
+let count_terms config =
+  let rec count seq (total, well_typed) =
+    if total >= config.untyped_count
+    || well_typed >= config.count
+    then (total, well_typed)
+    else match Seq.uncons seq with
+    | None ->
+      (total, well_typed)
+    | Some (Error (), seq) ->
+      count seq (total + 1, well_typed)
+    | Some (Ok _, seq) ->
+      count seq (total + 1, well_typed + 1)
   in
-  Seq.take config.count typed
-
-
-let count_terms config = generate config |> Seq.take config.count |> Seq.length
+  count (generate config) (0, 0)
 
 let run_display config =
-  let count = count_terms config in
-  Printf.printf "Found %s well-typed terms of size %d\n%!"
-    ( if config.count = max_int then Printf.sprintf "%d" count
-      else Printf.sprintf "%d out of %d" count config.count )
-    config.size
-
+  let (total, well_typed) = count_terms config in
+  match config.filter_impl with
+  | Early ->
+    Printf.printf "At size %d, found %d well-typed terms out of %d.\n%!"
+      config.size well_typed config.untyped_count
+  | Late ->
+    Printf.printf "At size %d, found %d well-typed terms among %d well-scoped terms (ratio %.4f).\n%!"
+      config.size well_typed total (float well_typed /. float total)
 
 let () =
   Random.self_init ();
